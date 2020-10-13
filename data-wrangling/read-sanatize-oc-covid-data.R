@@ -167,7 +167,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                group_by(id) %>%
                summarise(first_pos = min(posted_date))
 
-  pcr_reduced <- left_join(pcr_results_merged, first_pos) %>%
+  pcr_resuts_reduced <- left_join(pcr_results_merged, first_pos) %>%
     mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
