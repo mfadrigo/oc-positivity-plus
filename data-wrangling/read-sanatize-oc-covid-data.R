@@ -94,7 +94,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                   mutate(test_result = fct_collapse(str_to_lower(Resulted.Organism),
                                                     negative = negative_test_synonyms,
                                                     positive = positive_test_synonyms,
-                                                    other = other_test_synonyms)) %>%
+                                                    unknown = other_test_synonyms)) %>%
                   mutate(sex = fct_collapse(str_to_lower(Sex),
                                             male = "m",
                                             female = "f",
@@ -109,6 +109,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                          sex,
                          race) %>%
                   filter(posted_date >= lubridate::ymd(start_date)) %>%
+                  filter(test_result != "unknown")
                   filter(race != "unknown") %>%
                   filter(sex != "unknown") %>%
                   mutate(zip = str_sub(zip, end = 5)) %>%
