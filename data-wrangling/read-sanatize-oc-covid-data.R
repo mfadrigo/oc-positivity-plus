@@ -138,14 +138,6 @@ read_all_pcr <- function(start_date = "2020-01-01") {
   full_num_data_cases <- nrow(pcr_results_original[pcr_results_original$Specimen.Collected.Date >= 
                                                      lubridate::ymd(start_date),])
   
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                 "40-49","50-59","60-69","70-79","80+")
-  data.table::setDT(pcr_results_adjusted)[, agegroups := cut(age, 
-                                            breaks = age_breaks, 
-                                            right = FALSE, 
-                                            labels = age_labels)]
-  
   pcr_results_adjusted <- pcr_results_original %>%
                   filter(!is.na(Resulted.Organism)) %>%
                   mutate(test_result = fct_collapse(str_to_lower(Resulted.Organism),
@@ -162,7 +154,6 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                          test_result, 
                          zip = Zip,
                          age = Age,
-                         age_group,
                          sex,
                          race) %>%
                   filter(posted_date >= lubridate::ymd(start_date)) %>%
@@ -174,6 +165,53 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                   arrange(posted_date) %>%
                   ungroup()
   
+  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                  "40-49","50-59","60-69","70-79","80+")
+  data.table::setDT(pcr_results_adjusted)[, age_groups := cut(age, 
+                                                             breaks = age_breaks, 
+                                                             right = FALSE, 
+                                                             labels = age_labels)]
+  
+  if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
+  
+  clean_num_data_cases <- nrow(pcr_results_adjusted)
+  
+  ##need to filter all negative tests up to and including the first positive test
+  
+  ##need to join with zippop and ziparea data
+  zip_income_oc <- read_csv(here::here("data", "income-by-zip2.csv"),
+                        col_types = cols(.default = col_skip(),
+                                         Zip = col_character(),
+                                         IncomeMed = col_integer(),
+                                         IncPeriodofMeas = col_character())) %>%
+                mutate(med_adj_income = IncomeMed / 10000) %>%
+                filter(IncPeriodofMeas == "2014-2018") %>%
+                select(zip = Zip,
+                      med_adj_income)
+  pcr_results_merged <- merge(x = pcr_results_adjusted, y = oc_income, by = "zip")
+  
+  zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
+                          col_types = cols(.default = col_skip(),
+                                           Zip = col_character(),
+                                           AreaKm = col_double())) %>%
+                 select(zip = Zip,
+                        area_km = AreaKm)
+  
+  zip_pop_oc <- read_csv(here::here("data", "zip-pop.csv"),
+                         col_types = cols(.default = col_skip(),
+                                          Zip = col_character(),
+                                          Population = col_integer())) %>%
+                drop_na() %>%
+                mutate(population = Population / 1000) %>%
+                select(zip = Zip,
+                       population)
+  
+  pop_area <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
+  pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
+
+  pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
+  
 #  new_deaths_tbl <- read_csv(here::here("data", "oc", line_list_name),
 #                             col_types = cols(.default = col_skip(),
 #                                              `DtDeath` = col_date("%Y-%m-%d"),
@@ -183,7 +221,6 @@ read_all_pcr <- function(start_date = "2020-01-01") {
 #    count(posted_date, zip, name = "new_deaths") %>%
 #    arrange(posted_date)
   
-  if(length(levels(neg_line_list$test_result)) != 3) warning("New test result category not accounted for.")
   
 #  first_pos <- neg_line_list %>%
 #    filter(test_result == "positive") %>%
