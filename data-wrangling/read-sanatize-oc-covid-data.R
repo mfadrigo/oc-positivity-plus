@@ -118,6 +118,8 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                   arrange(posted_date) %>%
                   ungroup()
   
+  pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
+  
   age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
   age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                   "40-49","50-59","60-69","70-79","80+")
