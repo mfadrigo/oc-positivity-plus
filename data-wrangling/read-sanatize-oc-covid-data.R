@@ -149,6 +149,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                                             female = "f",
                                             unknown = c("d", "g", "i", "tf", "tm", "u"))) %>%
                   mutate(race = factor(str_to_lower(Race))) %>%
+                  mutate(posted_month = factor(month(Specimen.Collected.Date))) %>%
                   select(id = PersonId, 
                          posted_date = Specimen.Collected.Date, 
                          test_result, 
@@ -177,9 +178,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
   
   clean_num_data_cases <- nrow(pcr_results_adjusted)
   
-  ##need to filter all negative tests up to and including the first positive test
-  
-  ##need to join with zippop and ziparea data
+
   zip_income_oc <- read_csv(here::here("data", "income-by-zip2.csv"),
                         col_types = cols(.default = col_skip(),
                                          Zip = col_character(),
@@ -206,11 +205,13 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                 mutate(population = Population / 1000) %>%
                 select(zip = Zip,
                        population)
-  
   pop_area <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
+  
   pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
-
   pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
+  
+  
+  
   
 #  new_deaths_tbl <- read_csv(here::here("data", "oc", line_list_name),
 #                             col_types = cols(.default = col_skip(),
