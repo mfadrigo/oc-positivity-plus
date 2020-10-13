@@ -103,6 +103,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                   mutate(posted_month = factor(month(Specimen.Collected.Date))) %>%
                   select(id = PersonId, 
                          posted_date = Specimen.Collected.Date, 
+                         posted_month,
                          test_result, 
                          zip = Zip,
                          age = Age,
