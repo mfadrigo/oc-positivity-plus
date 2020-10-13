@@ -75,8 +75,9 @@ other_test_synonyms <- c("inconclusive",
                          "specimen unsatisfactory for evaluation")
 
 
-read_all_pcr <- function(start_date = "2020-01-01") {
-  pcr_results_original <- read_csv("C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
+read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
+                         start_date = "2020-01-01") {
+  pcr_results_original <- read_csv(file_path,
                             col_types = cols(.default = col_skip(),
                                              PersonId = col_integer(),
                                              Age = col_integer(),
@@ -134,12 +135,12 @@ read_all_pcr <- function(start_date = "2020-01-01") {
   clean_num_data_cases <- nrow(pcr_results_adjusted)
   
   
-  first_pos <- pcr_results_merged %>%
+  first_pos <- pcr_results_adjusted %>%
     filter(test_result == "positive") %>%
     group_by(id) %>%
     summarise(first_pos = min(posted_date))
   
-  pcr_resuts_reduced <- left_join(pcr_results_merged, first_pos) %>%
+  pcr_resuts_reduced <- left_join(pcr_results_adjusted, first_pos) %>%
     mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
@@ -156,7 +157,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                    select(zip = Zip,
                         med_adj_income)
   
-  pcr_results_merged <- merge(x = pcr_results_adjusted, y = oc_income, by = "zip")
+  pcr_results_merged <- merge(x = pcr_results_adjusted, y = zip_income_oc, by = "zip")
   
   zip_education_oc <- read_csv(here::here("data", "education-by-zip.csv"),
                                col_types = cols(.default = col_skip(),
@@ -167,14 +168,14 @@ read_all_pcr <- function(start_date = "2020-01-01") {
   
   pcr_results_merged <- merge(x = pcr_results_merged, y = zip_education_oc, by = "zip")
   
-  zip_insurence_oc <- read_csv(here::here("data", "insurance-by-zip"),
+  zip_insurance_oc <- read_csv(here::here("data", "insurance-by-zip.csv"),
                                col_types = cols(.default = col_skip(),
-                                                Zip = col_character,
+                                                Zip = col_character(),
                                                 PercentInsured = col_double())) %>%
                       select(zip = Zip,
                              percent_insured = PercentInsured)
   
-  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_insurence_oc, by = "zip")
+  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_insurance_oc, by = "zip")
   
   zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
                           col_types = cols(.default = col_skip(),
