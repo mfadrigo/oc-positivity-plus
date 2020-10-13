@@ -124,10 +124,8 @@ other_test_synonyms <- c("inconclusive",
 #    select(posted_date, new_cases, new_tests, new_deaths)
 #}
 
-read_all_pcr <- function(#line_list_name = "9.21.20 release to UCI team.csv",
-                                   all_pcr_results = "All ELR PCR tests updated 10.05.20.csv",
-                                   start_date = "2020-01-01") {
-  pcr_results_original <- read_csv(here::here("data", all_pcr_results),
+read_all_pcr <- function(start_date = "2020-01-01") {
+  pcr_results_original <- read_csv("C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
                             col_types = cols(.default = col_skip(),
                                              PersonId = col_integer(),
                                              Age = col_integer(),
