@@ -109,7 +109,7 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                          sex,
                          race) %>%
                   filter(posted_date >= lubridate::ymd(start_date)) %>%
-                  filter(test_result != "unknown")
+                  filter(test_result != "unknown") %>%
                   filter(race != "unknown") %>%
                   filter(sex != "unknown") %>%
                   mutate(zip = str_sub(zip, end = 5)) %>%
