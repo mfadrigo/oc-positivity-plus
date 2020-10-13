@@ -1,5 +1,5 @@
 library(lme4)
-source(here::here("data-wrangling", "read-sanatize-oc-covid-data.R"))
+source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 all_pcr <- read_all_pcr()
 
 all_pcr$population_density <- scale(all_pcr$population_density, 
