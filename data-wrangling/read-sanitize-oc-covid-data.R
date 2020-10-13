@@ -133,17 +133,48 @@ read_all_pcr <- function(start_date = "2020-01-01") {
   
   clean_num_data_cases <- nrow(pcr_results_adjusted)
   
+  
+  first_pos <- pcr_results_merged %>%
+    filter(test_result == "positive") %>%
+    group_by(id) %>%
+    summarise(first_pos = min(posted_date))
+  
+  pcr_resuts_reduced <- left_join(pcr_results_merged, first_pos) %>%
+    mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
+    filter(posted_date <= first_pos) %>%
+    select(-first_pos) %>%
+    distinct()
+  
 
   zip_income_oc <- read_csv(here::here("data", "income-by-zip2.csv"),
-                        col_types = cols(.default = col_skip(),
-                                         Zip = col_character(),
-                                         IncomeMed = col_integer(),
-                                         IncPeriodofMeas = col_character())) %>%
-                mutate(med_adj_income = IncomeMed / 10000) %>%
-                filter(IncPeriodofMeas == "2014-2018") %>%
-                select(zip = Zip,
-                      med_adj_income)
+                            col_types = cols(.default = col_skip(),
+                                             Zip = col_character(),
+                                             IncomeMed = col_integer(),
+                                             IncPeriodofMeas = col_character())) %>%
+                   mutate(med_adj_income = IncomeMed / 10000) %>%
+                   filter(IncPeriodofMeas == "2014-2018") %>%
+                   select(zip = Zip,
+                        med_adj_income)
+  
   pcr_results_merged <- merge(x = pcr_results_adjusted, y = oc_income, by = "zip")
+  
+  zip_education_oc <- read_csv(here::here("data", "education-by-zip.csv"),
+                               col_types = cols(.default = col_skip(),
+                                                Zip = col_character(),
+                                                PercentBach = col_double())) %>%
+                      select(zip = Zip,
+                             percent_bachelors = PercentBach)
+  
+  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_education_oc, by = "zip")
+  
+  zip_insurence_oc <- read_csv(here::here("data", "insurance-by-zip"),
+                               col_types = cols(.default = col_skip(),
+                                                Zip = col_character,
+                                                PercentInsured = col_double())) %>%
+                      select(zip = Zip,
+                             percent_insured = PercentInsured)
+  
+  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_insurence_oc, by = "zip")
   
   zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
                           col_types = cols(.default = col_skip(),
@@ -151,7 +182,6 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                                            AreaKm = col_double())) %>%
                  select(zip = Zip,
                         area_km = AreaKm)
-  
   zip_pop_oc <- read_csv(here::here("data", "zip-pop.csv"),
                          col_types = cols(.default = col_skip(),
                                           Zip = col_character(),
@@ -160,20 +190,9 @@ read_all_pcr <- function(start_date = "2020-01-01") {
                 mutate(population = Population / 1000) %>%
                 select(zip = Zip,
                        population)
+  
   pop_area <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
   
   pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
   pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
-  
-  
-  first_pos <- pcr_results_merged %>%
-               filter(test_result == "positive") %>%
-               group_by(id) %>%
-               summarise(first_pos = min(posted_date))
-
-  pcr_resuts_reduced <- left_join(pcr_results_merged, first_pos) %>%
-    mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
-    filter(posted_date <= first_pos) %>%
-    select(-first_pos) %>%
-    distinct()
 }
