@@ -122,13 +122,21 @@ read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-posi
   
   pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
   
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+  age_breaks_1 <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 200)
+  age_labels_1 <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                    "40-49","50+")
+  data.table::setDT(pcr_results_adjusted)[, age_groups_1 := cut(age, 
+                                                                breaks = age_breaks_1, 
+                                                                right = FALSE, 
+                                                                labels = age_labels_1)]
+  
+  age_breaks_2 <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+  age_labels_2 <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                   "40-49","50-59","60-69","70-79","80+")
-  data.table::setDT(pcr_results_adjusted)[, age_groups := cut(age, 
-                                                             breaks = age_breaks, 
+  data.table::setDT(pcr_results_adjusted)[, age_groups_2 := cut(age, 
+                                                             breaks = age_breaks_2, 
                                                              right = FALSE, 
-                                                             labels = age_labels)]
+                                                             labels = age_labels_2)]
   
   if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
   
