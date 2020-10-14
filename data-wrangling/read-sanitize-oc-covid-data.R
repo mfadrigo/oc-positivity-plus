@@ -152,10 +152,10 @@ read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-posi
                                              Zip = col_character(),
                                              IncomeMed = col_integer(),
                                              IncPeriodofMeas = col_character())) %>%
-                   mutate(med_adj_income = IncomeMed / 10000) %>%
+                   mutate(med_income = IncomeMed / 10000) %>%
                    filter(IncPeriodofMeas == "2014-2018") %>%
                    select(zip = Zip,
-                        med_adj_income)
+                          med_income)
   
   pcr_results_merged <- merge(x = pcr_results_adjusted, y = zip_income_oc, by = "zip")
   
