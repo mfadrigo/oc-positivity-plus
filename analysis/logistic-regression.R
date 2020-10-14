@@ -75,7 +75,7 @@ tic()
 model_time <- glmer(formula = covid_positive ~ age_group + sex + race + 
                               adj_per_bachelors_quartile + adj_per_insured_quartile +
                               adj_population_density + adj_med_income +
-                              time_days + 
+                              adj_time_days + 
                               (1 | zip),              
                     family = binomial, 
                     data = pcr_march_to_june,
