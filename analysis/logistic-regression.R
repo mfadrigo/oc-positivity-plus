@@ -94,7 +94,24 @@ model_time_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
 toc()
 
 
-compute_exp_ci(model_month, model_name = "Model with month as predictor")
-compute_exp_ci(model_month_int, model_name = "Model with month as predictor and interaction with income")
-compute_exp_ci(model_time, model_name = "Model with days as predictor")
-compute_exp_ci(model_time_int, model_name = "Model with days as predictor and interaction with income")
+(model_month_sum <- compute_exp_ci(model_month, 
+                                   model_name = "Model with month as predictor"))
+(model_month_int_sum <- compute_exp_ci(model_month_int, 
+                                       model_name = "Model with month as predictor and interaction with income"))
+(model_time_sum <- compute_exp_ci(model_time, 
+                                  model_name = "Model with days as predictor"))
+(model_time_int_sum <- compute_exp_ci(model_time_int, 
+                                      model_name = "Model with days as predictor and interaction with income"))
+
+
+
+# Time continuous gam model with thin plate regression spline
+tic()
+model_gam_time <- gam(covid_positive ~ age_groups_2 + sex + race + 
+                      adj_per_bachelors_quartile + adj_per_insured_quartile +
+                      adj_population_density + adj_med_income +
+                      s(time_days, bs = "tp") + 
+                      (1 | zip),              
+                    family = binomial, 
+                    data = pcr_march_to_june)
+toc()
