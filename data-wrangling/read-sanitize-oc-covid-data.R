@@ -100,7 +100,7 @@ read_all_pcr <- function(file_path,
                                             male = "m",
                                             female = "f",
                                             unknown = c("d", "g", "i", "tf", "tm", "u"))) %>%
-                  mutate(race = factor(str_to_lower(Race))) %>%
+                  mutate(race = relevel(factor(str_to_lower(Race)), ref = "white")) %>%
                   mutate(posted_month = factor(month(Specimen.Collected.Date))) %>%
                   mutate(time_days = as.integer(round(difftime(Specimen.Collected.Date, 
                                                                start_date, 
@@ -130,7 +130,7 @@ read_all_pcr <- function(file_path,
   age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
   age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                   "40-49","50-59","60-69","70-79","80+")
-  data.table::setDT(pcr_results_adjusted)[, age_groups := cut(age, 
+  data.table::setDT(pcr_results_adjusted)[, age_group := cut(age, 
                                                              breaks = age_breaks, 
                                                              right = FALSE, 
                                                              labels = age_labels)]
