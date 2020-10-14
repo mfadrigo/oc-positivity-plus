@@ -42,6 +42,7 @@ all_pcr_1$adj_per_insured_quartile <- with(all_pcr_1,
 
 pcr_march_to_june <- all_pcr_1[all_pcr_1$posted_month %in% c("3", "4", "5", "6"), ]
 
+# Time discretized
 tic()
 model_month <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
                                adj_per_bachelors_quartile + adj_per_insured_quartile
@@ -54,6 +55,7 @@ model_month <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
 toc()
 summary_model_month <- summary(model_month)
 
+# Time discretized with interaction with income
 tic()
 model_month_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
                                    adj_per_bachelors_quartile + adj_per_insured_quartile
@@ -66,5 +68,28 @@ model_month_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
 toc()
 summary_model_month_int <- summary(model_month_int)
 
+# Time continuous
+tic()
+model_time <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
+                       adj_per_bachelors_quartile + adj_per_insured_quartile
+                     adj_population_density + adj_med_income +
+                       time_days + 
+                       (1 | zip),              
+                     family = binomial, 
+                     data = pcr_march_to_june,
+                     control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+toc()
+summary_model_time <- summary(model_time)
 
-
+# Time continuous with interaction with income
+tic()
+model_time_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
+                           adj_per_bachelors_quartile + adj_per_insured_quartile
+                         adj_population_density + adj_med_income +
+                           time_days + time_days * adj_med_income +
+                           (1 | zip),              
+                         family = binomial, 
+                         data = pcr_march_to_june,
+                         control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+toc()
+summary_model_time_int <- summary(model_time_int)
