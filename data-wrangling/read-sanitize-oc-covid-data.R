@@ -79,7 +79,7 @@ read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-posi
                          start_date = "2020-01-01") {
   pcr_results_original <- read_csv(file_path,
                             col_types = cols(.default = col_skip(),
-                                             PersonId = col_integer(),
+                                             PersonId = col_character(),
                                              Age = col_integer(),
                                              Sex = col_character(),
                                              Race = col_character(),
@@ -196,5 +196,7 @@ read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-posi
   
   pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
   pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
-  pcr_results_merged
+  pcr_results_merged <- pcr_results_merged %>%
+                          group_by("id") %>%
+                          group_by("posted_date")
 }
