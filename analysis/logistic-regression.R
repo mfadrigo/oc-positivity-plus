@@ -36,7 +36,7 @@ all_pcr_1$adj_percent_insured <- with(all_pcr_1,
                                           labels = c("Q1", "Q2", "Q3", "Q4")))
 
 
-pcr_march_to_june <- all_pcr[all_pcr$posted_month %in% c("3", "4", "5", "6"), ]
+pcr_march_to_june <- all_pcr_1[all_pcr_1$posted_month %in% c("3", "4", "5", "6"), ]
 model1 <- glmer(formula = covid_positive ~ age_groups + sex + race + 
                           med_adj_income + posted_month + population_density + 
                           (1|zip), 
