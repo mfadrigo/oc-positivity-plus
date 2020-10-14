@@ -1,7 +1,9 @@
 library(tictoc)
 library(lme4)
 library(car)
+library(mgcv)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
+source(here::here("analysis", "helpful-data-analysis-functions.R"))
 
 # Change file path for where you saved the all_ELR_PCR_tests_updated file
 all_pcr <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv")
@@ -42,6 +44,7 @@ all_pcr_1$adj_per_insured_quartile <- with(all_pcr_1,
 
 pcr_march_to_june <- all_pcr_1[all_pcr_1$posted_month %in% c("3", "4", "5", "6"), ]
 
+
 # Time discretized
 tic()
 model_month <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
@@ -53,7 +56,6 @@ model_month <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
                      data = pcr_march_to_june,
                      control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
 toc()
-summary_model_month <- summary(model_month)
 
 # Time discretized with interaction with income
 tic()
@@ -66,7 +68,6 @@ model_month_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
                          data = pcr_march_to_june,
                          control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
 toc()
-summary_model_month_int <- summary(model_month_int)
 
 # Time continuous
 tic()
@@ -79,7 +80,6 @@ model_time <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
                     data = pcr_march_to_june,
                     control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
 toc()
-summary_model_time <- summary(model_time)
 
 # Time continuous with interaction with income
 tic()
@@ -90,6 +90,11 @@ model_time_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race +
                                   (1 | zip),              
                         family = binomial, 
                         data = pcr_march_to_june,
-                        control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+                        control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
-summary_model_time_int <- summary(model_time_int)
+
+
+compute_exp_ci(model_month, model_name = "Model with month as predictor")
+compute_exp_ci(model_month_int, model_name = "Model with month as predictor and interaction with income")
+compute_exp_ci(model_time, model_name = "Model with days as predictor")
+compute_exp_ci(model_time_int, model_name = "Model with days as predictor and interaction with income")
