@@ -1,5 +1,8 @@
+library(tictoc)
 library(lme4)
+library(car)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
+
 
 all_pcr <- read_all_pcr()
 all_pcr_1 <- all_pcr
@@ -38,22 +41,30 @@ all_pcr_1$adj_per_insured_quartile <- with(all_pcr_1,
 
 
 pcr_march_to_june <- all_pcr_1[all_pcr_1$posted_month %in% c("3", "4", "5", "6"), ]
-model_1 <- glmer(formula = covid_positive ~ age_groups + sex + race + 
-                   adj_med_income_quartile + adj_per_bachelors_quartile +
-                   adj_per_insured_quartile + adj_population_density +
-                   (1|zip), 
-              family = binomial, 
-              data = pcr_march_to_june,
-              control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+
+tic()
+model_month <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
+                               adj_per_bachelors_quartile + adj_per_insured_quartile
+                               adj_population_density + adj_med_income +
+                               posted_month +
+                               (1 | zip),              
+                     family = binomial, 
+                     data = pcr_march_to_june,
+                     control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+toc()
+summary_model_month <- summary(model_month)
+
+tic()
+model_month_int <- glmer(formula = covid_positive ~ age_groups_2 + sex + race + 
+                                   adj_per_bachelors_quartile + adj_per_insured_quartile
+                                   adj_population_density + adj_med_income +
+                                   posted_month + posted_month * adj_med_income +
+                                   (1 | zip),              
+                         family = binomial, 
+                         data = pcr_march_to_june,
+                         control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
+toc()
+summary_model_month_int <- summary(model_month_int)
 
 
-source(here::here("analysis", "dans-glm-transformed-ci-function.R"))
-model_1_summary <- glmCI(model = model_1, transform = TRUE, robust = TRUE)
-model_1_summary
-############################################################################################################################################################
 
-###Model diagnostics
-###Worried about multicolinearity due to variables based on zipcode
-#Check vif
-library(car)
-vif(model_1)
