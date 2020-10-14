@@ -75,8 +75,8 @@ other_test_synonyms <- c("inconclusive",
                          "specimen unsatisfactory for evaluation")
 
 
-read_all_pcr <- function(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
-                         start_date = "2020-01-01") {
+read_all_pcr <- function(file_path,
+                         start_date = "2020-03-01") {
   pcr_results_original <- read_csv(file_path,
                             col_types = cols(.default = col_skip(),
                                              PersonId = col_character(),
