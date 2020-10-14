@@ -102,9 +102,13 @@ read_all_pcr <- function(file_path,
                                             unknown = c("d", "g", "i", "tf", "tm", "u"))) %>%
                   mutate(race = factor(str_to_lower(Race))) %>%
                   mutate(posted_month = factor(month(Specimen.Collected.Date))) %>%
+                  mutate(time_days = as.integer(round(difftime(Specimen.Collected.Date, 
+                                                               start_date, 
+                                                               units = "days")))) %>%
                   select(id = PersonId, 
                          posted_date = Specimen.Collected.Date, 
                          posted_month,
+                         time_days,
                          test_result, 
                          zip = Zip,
                          age = Age,
