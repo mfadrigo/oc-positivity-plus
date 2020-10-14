@@ -3,8 +3,8 @@ library(lme4)
 library(car)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 
-
-all_pcr <- read_all_pcr()
+# Change file path for where you saved the data
+all_pcr <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv")
 all_pcr_1 <- all_pcr
 
 all_pcr_1$adj_population_density <- scale(all_pcr_1$population_density, 
