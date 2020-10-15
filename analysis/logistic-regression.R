@@ -87,7 +87,7 @@ tic()
 model_time_int <- glmer(formula = covid_positive ~ age_group + sex + race + 
                                   adj_per_bachelors_quartile + adj_per_insured_quartile +
                                   adj_population_density + adj_med_income +
-                                  time_days + time_days * adj_med_income +
+                                  adj_time_days + adj_time_days * adj_med_income +
                                   (1 | zip),              
                         family = binomial, 
                         data = pcr_march_to_june,
@@ -108,8 +108,6 @@ ggplot(pcr_march_to_june, aes(x = adj_population_density)) +
   geom_histogram()
 ggplot(pcr_march_to_june, aes(x = adj_med_income)) + 
   geom_histogram()
-ggplot(pcr_march_to_june, aes(x = time_days)) + 
-  geom_histogram()
 ggplot(pcr_march_to_june, aes(x = adj_time_days)) + 
   geom_histogram()
 
@@ -117,6 +115,7 @@ ggplot(pcr_march_to_june, aes(x = adj_time_days)) +
 ###########################################not working yet###################################################
 # Time continuous gam model with thin plate regression spline
 tic()
+###fix how random intercept is specified
 model_gam_time <- gam(covid_positive ~ age_groups_2 + sex + race + 
                       adj_per_bachelors_quartile + adj_per_insured_quartile +
                       adj_population_density + adj_med_income +
