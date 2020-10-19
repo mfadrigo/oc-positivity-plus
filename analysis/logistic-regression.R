@@ -24,7 +24,7 @@ pcr_march_to_june$adj_percent_insured <- scale(pcr_march_to_june$percent_insured
                                  scale = TRUE)
 pcr_march_to_june$adj_time_days <- scale(pcr_march_to_june$time_days,
                                  center = TRUE,
-                                 scale = FALSE)
+                                 scale = TRUE)
 
 pcr_march_to_june$adj_med_income_quartile <- with(pcr_march_to_june,
                                  cut(adj_med_income,
@@ -52,7 +52,7 @@ tic()
 model_time <- glmer(formula = covid_positive ~ age_group + sex + race + 
                               adj_per_bachelors_quartile + adj_per_insured_quartile +
                               adj_population_density + adj_med_income +
-                              I(adj_time_days) + I(adj_time_days^2) + I(adj_time_days^3)
+                              I(adj_time_days) + I(adj_time_days^2) + I(adj_time_days^3) +
                               (1 | zip),              
                     family = binomial, 
                     data = pcr_march_to_june,
@@ -88,7 +88,7 @@ ggplot(pcr_march_to_june, aes(x = adj_time_days)) +
 # Time continuous gam model with thin plate regression spline
 tic()
 ###fix how random intercept is specified
-model_gam_time <- gam(covid_positive ~ age_groups_2 + sex + race + 
+model_gam_time <- gam(covid_positive ~ age_group + sex + race + 
                       adj_per_bachelors_quartile + adj_per_insured_quartile +
                       adj_population_density + adj_med_income +
                       s(time_days, bs = "tp") + 
