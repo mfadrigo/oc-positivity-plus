@@ -46,36 +46,13 @@ pcr_march_to_june$adj_per_insured_quartile <- with(pcr_march_to_june,
                                           labels = c("Q1", "Q2", "Q3", "Q4")))
 
 
-# Time discretized
-tic()
-model_month <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                               adj_per_bachelors_quartile + adj_per_insured_quartile +
-                               adj_population_density + adj_med_income +
-                               posted_month +
-                               (1 | zip),              
-                     family = binomial, 
-                     data = pcr_march_to_june,
-                     control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
-toc()
-
-# Time discretized with interaction with income
-tic()
-model_month_int <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                                   adj_per_bachelors_quartile + adj_per_insured_quartile +
-                                   adj_population_density + adj_med_income +
-                                   posted_month + posted_month * adj_med_income +
-                                   (1 | zip),              
-                         family = binomial, 
-                         data = pcr_march_to_june,
-                         control = glmerControl(optimizer ="bobyqa", optCtrl=list(maxfun=100000)))
-toc()
 
 # Time continuous
 tic()
 model_time <- glmer(formula = covid_positive ~ age_group + sex + race + 
                               adj_per_bachelors_quartile + adj_per_insured_quartile +
                               adj_population_density + adj_med_income +
-                              adj_time_days + 
+                              I(adj_time_days) + I(adj_time_days^2) + I(adj_time_days^3)
                               (1 | zip),              
                     family = binomial, 
                     data = pcr_march_to_june,
@@ -83,26 +60,21 @@ model_time <- glmer(formula = covid_positive ~ age_group + sex + race +
 toc()
 
 # Time continuous with interaction with income
-tic()
-model_time_int <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                                  adj_per_bachelors_quartile + adj_per_insured_quartile +
-                                  adj_population_density + adj_med_income +
-                                  adj_time_days + adj_time_days * adj_med_income +
-                                  (1 | zip),              
-                        family = binomial, 
-                        data = pcr_march_to_june,
-                        control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-toc()
+#tic()
+#model_time_int <- glmer(formula = covid_positive ~ age_group + sex + race + 
+#                                  adj_per_bachelors_quartile + adj_per_insured_quartile +
+#                                  adj_population_density + adj_med_income +
+#                                  adj_time_days + adj_time_days * adj_med_income +
+#                                  (1 | zip),              
+#                        family = binomial, 
+#                        data = pcr_march_to_june,
+#                        control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+#toc()
 
 
-(model_month_sum <- compute_exp_ci(model_month, 
-                                   model_name = "Model with month as predictor"))
-(model_month_int_sum <- compute_exp_ci(model_month_int, 
-                                       model_name = "Model with month as predictor and interaction with income"))
+
 (model_time_sum <- compute_exp_ci(model_time, 
-                                  model_name = "Model with days as predictor"))
-(model_time_int_sum <- compute_exp_ci(model_time_int, 
-                                      model_name = "Model with days as predictor and interaction with income"))
+                                  model_name = "Model with days as cubic predictor"))
 
 ggplot(pcr_march_to_june, aes(x = adj_population_density)) + 
   geom_histogram()
@@ -120,7 +92,7 @@ model_gam_time <- gam(covid_positive ~ age_groups_2 + sex + race +
                       adj_per_bachelors_quartile + adj_per_insured_quartile +
                       adj_population_density + adj_med_income +
                       s(time_days, bs = "tp") + 
-                      (1 | zip),              
+                      s(zip, bs = "re"),              
                     family = binomial, 
                     data = pcr_march_to_june)
 toc()
