@@ -201,5 +201,6 @@ read_all_pcr <- function(file_path,
   
   pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
   pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
+  pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   pcr_results_merged
 }
