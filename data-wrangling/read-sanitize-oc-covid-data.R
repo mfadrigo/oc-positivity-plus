@@ -76,7 +76,8 @@ other_test_synonyms <- c("inconclusive",
 
 
 read_all_pcr <- function(file_path,
-                         start_date = "2020-03-01") {
+                         start_date = "2020-03-01",
+                         end_date = "2020-08-16") {
   pcr_results_original <- read_csv(file_path,
                             col_types = cols(.default = col_skip(),
                                              PersonId = col_character(),
@@ -114,7 +115,7 @@ read_all_pcr <- function(file_path,
                          age = Age,
                          sex,
                          race) %>%
-                  filter(posted_date >= lubridate::ymd(start_date)) %>%
+                  filter((posted_date >= lubridate::ymd(start_date)) & (posted_date <= lubridate::ymd(end_date))) %>%
                   filter(test_result != "unknown") %>%
                   filter(race != "unknown") %>%
                   filter(sex != "unknown") %>%
@@ -151,7 +152,26 @@ read_all_pcr <- function(file_path,
     select(-first_pos) %>%
     distinct()
   
-
+  
+  zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
+                          col_types = cols(.default = col_skip(),
+                                           Zip = col_character(),
+                                           AreaKm = col_double())) %>%
+    select(zip = Zip,
+           area_km = AreaKm)
+  
+  zip_pop_oc <- read_csv(here::here("data", "zip-pop.csv"),
+                         col_types = cols(.default = col_skip(),
+                                          Zip = col_character(),
+                                          Population = col_integer())) %>%
+    drop_na() %>%
+    mutate(population = Population / 1000) %>%
+    select(zip = Zip,
+           population)
+  
+  zip_data_merged <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
+  zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
+  
   zip_income_oc <- read_csv(here::here("data", "income-by-zip2.csv"),
                             col_types = cols(.default = col_skip(),
                                              Zip = col_character(),
@@ -162,8 +182,8 @@ read_all_pcr <- function(file_path,
                    select(zip = Zip,
                           med_income)
   
-  pcr_results_merged <- merge(x = pcr_results_adjusted, y = zip_income_oc, by = "zip")
-  
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
+
   zip_education_oc <- read_csv(here::here("data", "education-by-zip.csv"),
                                col_types = cols(.default = col_skip(),
                                                 Zip = col_character(),
@@ -171,8 +191,8 @@ read_all_pcr <- function(file_path,
                       select(zip = Zip,
                              percent_bachelors = PercentBach)
   
-  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_education_oc, by = "zip")
-  
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
+
   zip_insurance_oc <- read_csv(here::here("data", "insurance-by-zip.csv"),
                                col_types = cols(.default = col_skip(),
                                                 Zip = col_character(),
@@ -180,27 +200,13 @@ read_all_pcr <- function(file_path,
                       select(zip = Zip,
                              percent_insured = PercentInsured)
   
-  pcr_results_merged <- merge(x = pcr_results_merged, y = zip_insurance_oc, by = "zip")
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
+
   
-  zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
-                          col_types = cols(.default = col_skip(),
-                                           Zip = col_character(),
-                                           AreaKm = col_double())) %>%
-                 select(zip = Zip,
-                        area_km = AreaKm)
-  zip_pop_oc <- read_csv(here::here("data", "zip-pop.csv"),
-                         col_types = cols(.default = col_skip(),
-                                          Zip = col_character(),
-                                          Population = col_integer())) %>%
-                drop_na() %>%
-                mutate(population = Population / 1000) %>%
-                select(zip = Zip,
-                       population)
-  
-  pop_area <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
-  
-  pcr_results_merged <- merge(x = pcr_results_merged, y = pop_area, by = "zip")
-  pcr_results_merged$population_density <- pcr_results_merged$population / pcr_results_merged$area_km
+  pcr_resuts_reduced$new_zip[pcr_resuts_reduced$zip == "92678"] <- "92679"
+  pcr_results_merged <- merge(x = pcr_resuts_reduced, y = zip_data_merged, by = "zip")
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
-  pcr_results_merged
+  pcr_results_merged$new_zip <- factor(pcr_results_merged$new_zip)
+  
+  list(pcr_results_merged, zip_data_merged)
 }
