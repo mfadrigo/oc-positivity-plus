@@ -4,7 +4,7 @@ library(tidyverse)
 library(lubridate)
 library(here)
 
-# Get Line List Data ------------------------------------------------------
+# Test results need to be categorized ------------------------------------------------------
 negative_test_synonyms <- c("not detected",
                             "negative",
                             "coronavirus 2019 novel not detected",
@@ -88,8 +88,8 @@ read_all_pcr <- function(file_path,
                                              Resulted.Organism = col_character(),
                                              Zip = col_character())) 
   
-  full_num_data_cases <- nrow(pcr_results_original[pcr_results_original$Specimen.Collected.Date >= 
-                                                     lubridate::ymd(start_date),])
+  full_num_data_cases <- nrow(pcr_results_original[(pcr_results_original$Specimen.Collected.Date >= ymd(start_date)) & 
+                                                   (pcr_results_original$Specimen.Collected.Date <= ymd(end_date)), ])
   
   pcr_results_adjusted <- pcr_results_original %>%
                   filter(!is.na(Resulted.Organism)) %>%
@@ -125,21 +125,10 @@ read_all_pcr <- function(file_path,
                   arrange(posted_date) %>%
                   ungroup()
   
-  pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
-
-  
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  data.table::setDT(pcr_results_adjusted)[, age_group := cut(age, 
-                                                             breaks = age_breaks, 
-                                                             right = FALSE, 
-                                                             labels = age_labels)]
   
   if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
   
-  clean_num_data_cases <- nrow(pcr_results_adjusted)
-  
+  pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
   
   first_pos <- pcr_results_adjusted %>%
     filter(test_result == "positive") %>%
@@ -151,6 +140,15 @@ read_all_pcr <- function(file_path,
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
     distinct()
+  
+  
+  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                  "40-49","50-59","60-69","70-79","80+")
+  data.table::setDT(pcr_results_reduced)[, age_group := cut(age, 
+                                                             breaks = age_breaks, 
+                                                             right = FALSE, 
+                                                             labels = age_labels)]
   
   
   zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
@@ -202,12 +200,25 @@ read_all_pcr <- function(file_path,
   
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
 
-  
+  #23 rows in 92678 zipcode we don't have area data for
   pcr_results_reduced$old_zip <- pcr_results_reduced$zip
   pcr_results_reduced$zip[pcr_results_reduced$old_zip == "92678"] <- "92679"
   pcr_results_merged <- merge(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
   pcr_results_merged$old_zip <- factor(pcr_results_merged$old_zip)
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   
-  list("pcr_results_merged" = pcr_results_merged, "zip_data_merged" = zip_data_merged)
+  
+  missing_counts <- c(full_num_data_cases , 
+                      full_num_data_cases - nrow(pcr_results_adjusted), 
+                      nrow(pcr_results_adjusted) - nrow(pcr_results_reduced),
+                      nrow(pcr_results_reduced) - nrow(pcr_results_merged))
+  names(missing_counts) <- c("full_num_data_cases", 
+                             "num_na_cases_removed", 
+                             "num_consecutive_cases_removed",
+                             "num_bad_zip_cases_removed")
+  
+  
+  list("pcr_results_merged" = pcr_results_merged, 
+       "zip_data_merged" = zip_data_merged, 
+       "counts" = missing_counts)
 }
