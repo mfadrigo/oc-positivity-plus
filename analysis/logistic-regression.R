@@ -105,10 +105,12 @@ tic()
 model_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
                         adj_perc_bachelors_quartile + adj_perc_insured_quartile +
                         adj_pop_density  + adj_med_income +
-                        s(adj_time_days, adj_med_income, bs = "ts", k = -1) + 
+                        te(adj_time_days, adj_med_income, bs = "ts", k = -1) + 
                         s(zip, bs = "re"),              
                       family = binomial, 
                       data = all_pcr,
                       method = "REML",
                       gamma = 1.5)
 toc()
+
+AIC(model_time_game, model_time_gam_int)
