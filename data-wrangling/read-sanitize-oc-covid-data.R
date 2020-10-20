@@ -208,5 +208,5 @@ read_all_pcr <- function(file_path,
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   pcr_results_merged$new_zip <- factor(pcr_results_merged$new_zip)
   
-  list(pcr_results_merged, zip_data_merged)
+  list("pcr_results_merged" = pcr_results_merged, "zip_data_merged" = zip_data_merged)
 }
