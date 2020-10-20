@@ -153,9 +153,11 @@ read_all_pcr <- function(file_path,
   
   zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
                           col_types = cols(.default = col_skip(),
+                                           NAME = col_character(),
                                            Zip = col_character(),
                                            AreaKm = col_double())) %>%
-    select(zip = Zip,
+    select(name = NAME,
+           zip = Zip,
            area_km = AreaKm)
   
   zip_pop_oc <- read_csv(here::here("data", "zip-pop.csv"),
