@@ -8,7 +8,6 @@ source(here::here("analysis", "helpful-data-analysis-functions.R"))
 # Change file path for where you saved the all_ELR_PCR_tests_updated file
 all_pcr <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv")
 pcr_march_to_june <- all_pcr[all_pcr$posted_month %in% c("3", "4", "5", "6"), ]
-pcr_march_to_june$zip <- factor(pcr_march_to_june$zip)
 
 
 pcr_march_to_june$adj_population_density <- scale(pcr_march_to_june$population_density, 
@@ -98,3 +97,8 @@ model_gam_time <- gam(covid_positive ~ age_group + sex + race +
                       method = "REML",
                       gamma = 1.5)
 toc()
+
+
+plot_smooth(model_gam_time, 
+            view = "NormTime", 
+            cond = list(Nasality = "nasal"))
