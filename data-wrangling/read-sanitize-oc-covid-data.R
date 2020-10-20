@@ -203,11 +203,11 @@ read_all_pcr <- function(file_path,
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
 
   
-  pcr_results_reduced$new_zip <- pcr_results_reduced$zip
-  pcr_results_reduced$new_zip[pcr_results_reduced$zip == "92678"] <- "92679"
+  pcr_results_reduced$old_zip <- pcr_results_reduced$zip
+  pcr_results_reduced$zip[pcr_results_reduced$old_zip == "92678"] <- "92679"
   pcr_results_merged <- merge(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
+  pcr_results_merged$old_zip <- factor(pcr_results_merged$old_zip)
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
-  pcr_results_merged$new_zip <- factor(pcr_results_merged$new_zip)
   
   list("pcr_results_merged" = pcr_results_merged, "zip_data_merged" = zip_data_merged)
 }
