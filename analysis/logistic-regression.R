@@ -13,6 +13,7 @@ all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
 
+
 all_pcr$adj_time_days <- scale(all_pcr$time_days,
                                center = TRUE,
                                scale = TRUE)
@@ -59,30 +60,55 @@ all_pcr$adj_perc_insured_quartile <- with(all_pcr,
 
 
 tic()
-model_time <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                              adj_perc_bachelors_quartile + adj_perc_insured_quartile +
-                              adj_pop_density + adj_med_income +
-                              I(adj_time_days) + I(adj_time_days^2) + I(adj_time_days^3) +
-                              (1 | zip),              
+model_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race + 
+                                  adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                                  adj_pop_density + adj_med_income +
+                                  I(adj_time_days) +
+                                  (1 | zip),              
                     family = binomial, 
                     data = all_pcr,
                     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
 
+(model_time_lin_sum <- compute_exp_ci(model_time_lin, 
+                                  model_name = "Model with days as linear predictor"))
 
-(model_time_sum <- compute_exp_ci(model_time, 
-                                  model_name = "Model with days as cubic predictor"))
+tic()
+model_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race + 
+                                   adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                                   adj_pop_density + adj_med_income +
+                                   I(adj_time_days) + I(adj_time_days^2) + 
+                                   (1 | zip),              
+                        family = binomial, 
+                        data = all_pcr,
+                        control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
+toc()
+
+
+(model_time_quad_sum <- compute_exp_ci(model_time_quad, 
+                                  model_name = "Model with days as quad predictor"))
 
 
 tic()
-model_gam_time <- gam(covid_positive ~ age_group + sex + race + 
-                      adj_perc_bachelors_quartile + adj_perc_insured_quartile +
-                      adj_pop_density  + adj_med_income +
-                      s(adj_time_days, bs = "ts", k = -1) + 
-                      s(zip, bs = "re"),              
+model_time_gam <- gam(covid_positive ~ age_group + sex + race + 
+                                       adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                                       adj_pop_density  + adj_med_income +
+                                       s(adj_time_days, bs = "ts", k = -1) + 
+                                       s(zip, bs = "re"),              
                       family = binomial, 
                       data = all_pcr,
                       method = "REML",
                       gamma = 1.5)
 toc()
 
+tic()
+model_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
+                        adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                        adj_pop_density  + adj_med_income +
+                        s(adj_time_days, adj_med_income, bs = "ts", k = -1) + 
+                        s(zip, bs = "re"),              
+                      family = binomial, 
+                      data = all_pcr,
+                      method = "REML",
+                      gamma = 1.5)
+toc()
