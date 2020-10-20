@@ -11,7 +11,7 @@ all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/
                                 end_date = "2020-08-16")
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
-
+all_counts <- all_pcr_and_zip[["counts"]]
 
 all_pcr$adj_time_days <- scale(all_pcr$time_days,
                                center = TRUE,
