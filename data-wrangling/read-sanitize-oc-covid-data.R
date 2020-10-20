@@ -146,7 +146,7 @@ read_all_pcr <- function(file_path,
     group_by(id) %>%
     summarise(first_pos = min(posted_date))
   
-  pcr_resuts_reduced <- left_join(pcr_results_adjusted, first_pos) %>%
+  pcr_results_reduced <- left_join(pcr_results_adjusted, first_pos) %>%
     mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
@@ -203,8 +203,9 @@ read_all_pcr <- function(file_path,
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
 
   
-  pcr_resuts_reduced$new_zip[pcr_resuts_reduced$zip == "92678"] <- "92679"
-  pcr_results_merged <- merge(x = pcr_resuts_reduced, y = zip_data_merged, by = "zip")
+  pcr_results_reduced$new_zip <- pcr_results_reduced$zip
+  pcr_results_reduced$new_zip[pcr_results_reduced$zip == "92678"] <- "92679"
+  pcr_results_merged <- merge(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   pcr_results_merged$new_zip <- factor(pcr_results_merged$new_zip)
   
