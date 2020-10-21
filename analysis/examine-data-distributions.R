@@ -45,12 +45,30 @@ all_pcr$adj_perc_insured_quartile <- with(all_pcr,
                                               include.lowest = TRUE,
                                               labels = c("Q1", "Q2", "Q3", "Q4")))
 
+#bimodial distrubtion of income across data
+hist(all_zip$med_income, breaks = 30)
+hist(all_pcr$med_income, breaks = 30)
 
-ggplot(all_zip,
+ggplot(all_pcr,
+       aes(x = zip)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(size = 7, angle = 90))
+# Santa Ana 92703 has highest zip code representation in data, 
+# reasonable since they have almost the max population density.
+# Similarly the next highest is Anaheim 92804,
+# also has a population density in last quartile
+
+
+
+ggplot(all_zip[order(all_zip$med_income), ],
        aes(x = zip, y = med_income)) +
   geom_bar(stat = "identity") +
-  theme(axis.text.x = element_text(size = 12, angle = 90))
+  theme(axis.text.x = element_text(size = 9, angle = 90)) +
+  scale_x_discrete(limits = all_zip$zip[order(all_zip$med_income)]) +
+  ylab("Median Income (in $10,000)")
 # investigate highest median income
+length(unique(all_zip$med_income))
+#no zip codes have the same median income
 all_zip[all_zip$zip == "92657",]
 # Newport coast has highest median income ... yup
 
