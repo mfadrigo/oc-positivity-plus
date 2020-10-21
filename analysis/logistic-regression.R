@@ -200,3 +200,10 @@ glmer_lin_ci_plot
 glmer_quad_ci_plot
 gam_ci_plot
 gam_inter_ci_plot
+
+
+save(list = c("model_time_lin", 
+              "model_time_quad",
+              "model_time_gam",
+              "model_time_gam_int"), 
+     file = here::here("analysis", "model_output.rda"))
