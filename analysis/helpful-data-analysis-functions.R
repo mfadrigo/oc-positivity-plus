@@ -7,10 +7,10 @@ compute_exp_ci <- function(model, alpha = 0.05, model_name = "model"){
   cat(paste(model_name, "\n", 
             "with ", (1 - alpha) * 100, "% Exponentiated Confidence Intervals (not robust std error) \n", 
             collapse = ""))
-  cbind("exp_est" = exp(coeffs), 
-        "exp_ci_lb" = exp(ci_lower_bound),
-        "exp_ci_ub" = exp(ci_upper_bound),
-        "std_err" = std_err,
+  cbind("odds" = exp(coeffs), 
+        "lower_bound" = exp(ci_lower_bound),
+        "upper_bound" = exp(ci_upper_bound),
+        "se" = std_err,
         "p-value" = model_summary$coefficients[, 4])
 }
 
