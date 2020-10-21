@@ -52,13 +52,6 @@ all_pcr$adj_perc_insured_quartile <- with(all_pcr,
                                               labels = c("Q1", "Q2", "Q3", "Q4")))
 
 
-# ggplot(all_pcr, aes(x = adj_population_density)) + 
-#   geom_histogram()
-# ggplot(all_pcr, aes(x = adj_med_income)) + 
-#   geom_histogram()
-# ggplot(all_pcr, aes(x = adj_time_days)) + 
-#   geom_histogram()
-
 
 tic()
 model_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race + 
@@ -73,7 +66,7 @@ toc()
 
 (model_time_lin_sum <- compute_exp_ci(model_time_lin, 
                                   model_name = "Model with days as linear predictor"))
-model_time_lin_sum <- data.frame(model_time_lin_sum, par_names)
+model_time_lin_sum <- data.frame(model_time_lin_sum, par_names = c(par_names, "days"))
 
 glmer_lin_ci_plot <- ggplot(model_time_lin_sum, 
                       aes(x = par_names, y = odds),
@@ -101,8 +94,10 @@ model_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
 toc()
 
 
-(model_time_quad_sum <- compute_exp_ci(model_time_quad, 
-                                  model_name = "Model with days as quad predictor"))
+model_time_quad_sum <- compute_exp_ci(model_time_quad, 
+                                  model_name = "Model with days as quad predictor")
+model_time_quad_sum <- data.frame(model_time_quad_sum, par_names = c(par_names, "days", "days^2"))
+
 glmer_quad_ci_plot <- ggplot(model_time_quad_sum, 
                             aes(x = par_names, y = odds),
                             size = 5, colour = "red") +
