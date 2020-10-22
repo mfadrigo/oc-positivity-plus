@@ -1,4 +1,5 @@
-compute_exp_ci <- function(model, alpha = 0.05, model_name = "model"){
+
+compute_ci_logistic <- function(model, alpha = 0.05, model_name = "model", plot_ci = FALSE){
   model_summary <- summary(model)
   coeffs <- model_summary$coefficients[, 1]
   std_err <- model_summary$coefficients[, 2]
@@ -7,12 +8,34 @@ compute_exp_ci <- function(model, alpha = 0.05, model_name = "model"){
   cat(paste(model_name, "\n", 
             "with ", (1 - alpha) * 100, "% Exponentiated Confidence Intervals (not robust std error) \n", 
             collapse = ""))
-  cbind("odds" = exp(coeffs), 
-        "lower_bound" = exp(ci_lower_bound),
-        "upper_bound" = exp(ci_upper_bound),
-        "se" = std_err,
-        "p-value" = model_summary$coefficients[, 4])
+  
+  model_sum <- data.frame("odds" = exp(coeffs), 
+                          "lower_bound" = exp(ci_lower_bound),
+                          "upper_bound" = exp(ci_upper_bound),
+                          "se" = std_err,
+                          "p-value" = model_summary$coefficients[, 4],
+                          "par_names" = names(coeffs))
+  
+  if (plot_ci) {
+    ci_plot <- ggplot(model_sum, 
+                      aes(x = par_names, y = odds),
+                      size = 5, colour = "red") +
+      ylim(min(model_sum$lower_bound), max(model_sum$upper_bound)) +
+      geom_point() +
+      geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), 
+                    colour = "black") +
+      geom_hline(yintercept = 1, linetype = "dashed", colour = "gray") +
+      theme(axis.text.x = element_text(face = "bold", 
+                                       size = 12, angle = 90)) +
+      ggtitle(model_name)
+    
+    return(list("model_sum" = model_sum, "ci_plot" = ci_plot))
+  }
+  
+  model_sum
 }
+
+
 
 # par_names <- c("Intercept",
 #                "5-9",
