@@ -101,7 +101,14 @@ read_all_pcr <- function(file_path,
                                             male = "m",
                                             female = "f",
                                             unknown = c("d", "g", "i", "tf", "tm", "u"))) %>%
-                  mutate(race = relevel(factor(str_to_lower(Race)), ref = "white")) %>%
+                  mutate(race = fct_collapse(str_to_lower(Race),
+                                                 white = "white",
+                                                 american_indigenous = "american indian or alaska native",
+                                                 asian = "asian",
+                                                 black = "black or african american",
+                                                 islander = "native hawaiian or other pacific islander",
+                                                 other = c("multiple races", "other"))) %>%
+                  mutate(race = relevel(factor(str_to_lower(race)), ref = "white")) %>%
                   mutate(posted_month = factor(month(Specimen.Collected.Date))) %>%
                   mutate(time_days = as.integer(round(difftime(Specimen.Collected.Date, 
                                                                start_date, 
@@ -140,15 +147,6 @@ read_all_pcr <- function(file_path,
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
     distinct()
-  
-  
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  data.table::setDT(pcr_results_reduced)[, age_group := cut(age, 
-                                                             breaks = age_breaks, 
-                                                             right = FALSE, 
-                                                             labels = age_labels)]
   
   
   zip_area_oc <- read_csv(here::here("data", "zip-area2.csv"),
@@ -218,6 +216,50 @@ read_all_pcr <- function(file_path,
                              "num_na_cases_removed", 
                              "num_consecutive_cases_removed",
                              "num_bad_zip_cases_removed")
+  
+  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                  "40-49","50-59","60-69","70-79","80+")
+  data.table::setDT(pcr_results_merged)[, age_group := cut(age, 
+                                                            breaks = age_breaks, 
+                                                            right = FALSE, 
+                                                            labels = age_labels)]
+  
+  pcr_results_merged$adj_time_days <- scale(pcr_results_merged$time_days,
+                                 center = TRUE,
+                                 scale = TRUE)
+  pcr_results_merged$adj_pop_density <- scale(pcr_results_merged$pop_density, 
+                                   center = TRUE, 
+                                   scale = TRUE)
+  pcr_results_merged$adj_med_income <- scale(pcr_results_merged$med_income, 
+                                  center = TRUE, 
+                                  scale = TRUE)
+  pcr_results_merged$adj_med_income_quar <- with(pcr_results_merged,
+                                          cut(adj_med_income,
+                                              breaks = quantile(adj_med_income, 
+                                                                probs = seq(0, 1, by = 0.25)),
+                                              include.lowest = TRUE,
+                                              labels = c("Q1", "Q2", "Q3", "Q4")))
+  
+  pcr_results_merged$adj_perc_bach <- scale(pcr_results_merged$percent_bachelors,
+                                      center = TRUE,
+                                      scale = TRUE)
+  pcr_results_merged$adj_perc_bach_quar <- with(pcr_results_merged,
+                                              cut(adj_perc_bach,
+                                                  breaks = quantile(adj_perc_bach, 
+                                                                    probs = seq(0, 1, by = 0.25)),
+                                                  include.lowest = TRUE,
+                                                  labels = c("Q1", "Q2", "Q3", "Q4")))
+  
+  pcr_results_merged$adj_perc_insured <- scale(pcr_results_merged$percent_insured,
+                                    center = TRUE,
+                                    scale = TRUE)
+  pcr_results_merged$adj_perc_insured_quar <- with(pcr_results_merged,
+                                            cut(adj_perc_insured,
+                                                breaks = quantile(adj_perc_insured, 
+                                                                  probs = seq(0, 1, by = 0.25)),
+                                                include.lowest = TRUE,
+                                                labels = c("Q1", "Q2", "Q3", "Q4")))
   
   
   list("pcr_results_merged" = pcr_results_merged, 
