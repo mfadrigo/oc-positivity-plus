@@ -19,7 +19,7 @@ all_counts <- all_pcr_and_zip[["counts"]]
 
 tic()
 fit_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                          adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                        adj_perc_bach_quar + adj_perc_insured_quar +
                           adj_pop_density + adj_med_income +
                           I(adj_time_days) +
                           (1 | zip),              
@@ -37,7 +37,7 @@ fit_time_lin_plot <- fit_time_lin_info[["model_sum"]]
 
 tic()
 fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race + 
-                           adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                         adj_perc_bach_quar + adj_perc_insured_quar +
                            adj_pop_density + adj_med_income +
                            I(adj_time_days) + I(adj_time_days^2) + 
                            (1 | zip),              
@@ -47,8 +47,8 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
 toc()
 
 fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
-                                      model_name = "Model with days as quad predictor",
-                                      plot_ci = TRUE)
+                                          model_name = "Model with days as quad predictor",
+                                          plot_ci = TRUE)
 fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
 fit_time_quad_plot <- fit_time_quad_info[["model_sum"]]
 
@@ -56,7 +56,7 @@ fit_time_quad_plot <- fit_time_quad_info[["model_sum"]]
 tic()
 #abut 8 minutes to run
 model_time_gam <- gam(covid_positive ~ age_group + sex + race + 
-                        adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                        adj_perc_bach_quar + adj_perc_insured_quar +
                         adj_pop_density  + adj_med_income +
                         s(adj_time_days, bs = "ts", k = -1) + 
                         s(zip, bs = "re"),              
@@ -96,7 +96,7 @@ tic()
 
 
 model_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
-                            adj_perc_bachelors_quartile + adj_perc_insured_quartile +
+                            adj_perc_bach_quar + adj_perc_insured_quar +
                             adj_pop_density  + adj_med_income +
                             s(adj_time_days) +
                             ti(adj_time_days, adj_med_income, bs = "ts") + 
