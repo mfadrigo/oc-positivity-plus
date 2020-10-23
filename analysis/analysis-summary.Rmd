@@ -3,7 +3,6 @@ title: "Untitled"
 author: "Catalina Medina"
 date: "10/21/2020"
 output: pdf_document
-classoption: landscape
 ---
 
 ```{r setup, include=FALSE}
@@ -30,7 +29,7 @@ all_counts <- all_pcr_and_zip[["counts"]]
 load(file = here("analysis", "fit_time_lin.Rdata"))
 load(file = here("analysis", "fit_time_quad.Rdata"))
 load(file = here("analysis", "fit_time_gam.Rdata"))
-load(file = here("analysis", "fit_time_gam_int.Rdata"))
+load(file = here("analysis", "fit_time_gam_inter.Rdata"))
 ```
 
 
@@ -74,6 +73,8 @@ BIC(fit_time_lin, fit_time_quad)
 
 
 ```{r gam_inter_results}
+library(knitr)
+library(kableExtra)
 fit_m1 <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
 
 rr_m1 <- round(fit_m1[, "odds"], 3)
@@ -113,7 +114,7 @@ rownames(table_m1) <- c("0-4",
                         "2nd Quartile ",
                         "3rd Quartile ",
                         "4th Quartile ",
-                        "Zip code Population Density")
+                        "Zip code Population Density (1000people/km^2)")
 reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
                      TRUE, FALSE,
                      TRUE, FALSE, FALSE, FALSE, FALSE, FALSE,
@@ -137,18 +138,18 @@ for(i in 1:nrow(table_m1)) {
 }      
 
 
-kable(table_1a, 
+kable(table_m1, 
       format = "latex", 
-      caption = "Cox regression estimates from baseline model of adjusted relative risk of mortality for patients on dialysis in the US with end stage renal disease") %>%
+      caption = "GAM regression estimation of odds of testing positive for covid in Orange county from March 1st to August 16, 2020. Model has a smooth term for time and an interaction between median income and time.") %>%
   kable_styling(latex_options = c("HOLD_position"),
                 font_size = 11) %>%
-  pack_rows("Sex", 2, 3, bold = FALSE) %>%
-  pack_rows("Race", 4, 6, bold = FALSE) %>%
-  pack_rows("Previous CVD", 8, 9, bold = FALSE) %>%
-  pack_rows("Diabetes", 10, 11, bold = FALSE) %>%
-  pack_rows("Smoker", 12, 14, bold = FALSE) %>%
-  add_footnote(c("Adjusted for all covariates listed", 
-                 "Abreviations: CI = confidence interval, ESRD = end stage renal disease, CVD = cardiovascular disease, BMI = body mass index"),
+  pack_rows("Age", 1, 13, bold = FALSE) %>%
+  pack_rows("Sex", 14,15, bold = FALSE) %>%
+  pack_rows("Race", 16, 21, bold = FALSE) %>%
+  pack_rows("Zip Code POP with bachelors", 22, 25, bold = FALSE) %>%
+  pack_rows("Zip code POP with medical insurance", 26, 29, bold = FALSE) %>%
+  add_footnote(c("Adjusted for all covariates listed plus zip code median income and time of test in days", 
+                 "Abreviations: CI = confidence interval, POP = percentage of population"),
                notation = "symbol")                 
 ```
 
@@ -183,7 +184,7 @@ kable(table_1a,
 
 
 
-
+\newpage
 Also, we saw a bimodal distribution to income when we graphed it from the patients data.
 
 ```{r , eval = FALSE}
