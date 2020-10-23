@@ -32,7 +32,7 @@ fit_time_lin_info <- compute_ci_logistic(fit_time_lin,
                                           model_name = "Model with days as linear predictor",
                                           plot_ci = TRUE)
 fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
-fit_time_lin_plot <- fit_time_lin_info[["model_sum"]]
+fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
 
 
 tic()
@@ -47,15 +47,13 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
 toc()
 
 fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
-                                          model_name = "Model with days as quad predictor",
-                                          plot_ci = TRUE)
+                                          model_name = "Model with days as quad predictor")
 fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_quad_plot <- fit_time_quad_info[["model_sum"]]
+fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
 
 
 tic()
-#abut 8 minutes to run
-model_time_gam <- gam(covid_positive ~ age_group + sex + race + 
+fit_time_gam <- gam(covid_positive ~ age_group + sex + race + 
                         adj_perc_bach_quar + adj_perc_insured_quar +
                         adj_pop_density  + adj_med_income +
                         s(adj_time_days, bs = "ts", k = -1) + 
@@ -66,36 +64,15 @@ model_time_gam <- gam(covid_positive ~ age_group + sex + race +
                       gamma = 1.5)
 toc()
 
-#Note:here I use the variance-covariance matrix that is adjusted to account for 
-#the selection of the smoothness parameter for the smooth in the model
-#This is a ci for the variance components
-gam_smooth_var_ci <- gam.vcomp(model_time_gam)
+fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam, 
+                                              model_name = "Model time gam no interaction")
+fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
+fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
 
-model_time_gam_sum <- summary(model_time_gam)
-coeffs <- model_time_gam_sum$p.coeff
-se <- sqrt(diag(vcov(model_time_gam, unconditional = TRUE)))[1:length(coeffs)]
-model_gam_time_sum <- data.frame("odds" = exp(coeffs),
-                                 "lower_bound" = exp(coeffs - qnorm(0.975) * se),
-                                 "upper_bound" = exp(coeffs + qnorm(0.975) * se),
-                                 "par_names" = factor(par_names, levels = par_names))
-
-#need to plot each separately
-gam_ci_plot <- ggplot(model_gam_time_sum, 
-                      aes(x = par_names, y = odds),
-                      size = 5, colour = "red") +
-  ylim(min(model_gam_time_sum$lower_bound), max(model_gam_time_sum$upper_bound)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), 
-                colour = "black") +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "gray") +
-  theme(axis.text.x = element_text(face = "bold", 
-                                   size = 12, angle = 45)) +
-  ggtitle("GAM model")
 
 tic()
-
-
-model_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
+fit_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
                             adj_perc_bach_quar + adj_perc_insured_quar +
                             adj_pop_density  + adj_med_income +
                             s(adj_time_days) +
@@ -107,44 +84,30 @@ model_time_gam_int <- gam(covid_positive ~ age_group + sex + race +
                           gamma = 1.5)
 toc()
 
-#Note:here I use the variance-covariance matrix that is adjusted to account for 
-#the selection of the smoothness parameter for the smooth in the model
-#This is a ci for the variance components
-gam_inter_smooth_var_ci <- gam.vcomp(model_time_gam_int)
-
-model_time_inter_gam_sum <- summary(model_time_gam_int)
-coeffs <- model_time_inter_gam_sum$p.coeff
-se <- sqrt(diag(vcov(model_time_gam_int, unconditional = TRUE)))[1:length(coeffs)]
-model_gam_time_inter_sum <- data.frame("odds" = exp(coeffs),
-                                       "lower_bound" = exp(coeffs - qnorm(0.975) * se),
-                                       "upper_bound" = exp(coeffs + qnorm(0.975) * se),
-                                       "par_names" = factor(par_names, levels = par_names))
-
-#need to plot each separately
-gam_inter_ci_plot <- ggplot(model_gam_time_inter_sum, 
-                            aes(x = par_names, y = odds),
-                            size = 5, colour = "red") +
-  ylim(min(model_gam_time_inter_sum$lower_bound), max(model_gam_time_inter_sum$upper_bound)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), 
-                colour = "black") +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "gray") +
-  theme(axis.text.x = element_text(face = "bold", 
-                                   size = 12, angle = 45)) +
-  ggtitle("GAM model with time income interaction")
+fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
+                                             model_name = "Model time gam no interaction")
+fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
+fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
 
 
 
-AIC(model_time_lin, model_time_quad)
-AIC(model_time_gam, model_time_gam_int)
 
-glmer_lin_ci_plot
-glmer_quad_ci_plot
-gam_ci_plot
-gam_inter_ci_plot
 
-save(model_time_lin, file = here("analysis", "model_time_lin.Rdata"))
-save(model_time_quad, file = here("analysis", "model_time_quad.Rdata"))
-save(model_time_gam, file = here("analysis", "model_time_gam.Rdata"))
-save(model_time_gam_int, file = here("analysis", "model_time_gam_int.Rdata"))
+BIC(fit_time_lin, fit_time_quad)
+BIC(fit_time_gam, fit_time_gam_int)
+
+fit_time_lin_plot
+fit_time_quad_plot
+fit_time_gam_plot
+fit_time_gam_inter_plot
+
+
+
+
+
+save(fit_time_lin, file = here("analysis", "fit_time_lin.Rdata"))
+save(fit_time_quad, file = here("analysis", "fit_time_quad.Rdata"))
+save(fit_time_gam, file = here("analysis", "fit_time_gam.Rdata"))
+save(fit_time_gam_int, file = here("analysis", "fit_time_gam_inter.Rdata"))
 
