@@ -1,0 +1,246 @@
+---
+title: "Untitled"
+author: "Catalina Medina"
+date: "10/21/2020"
+output: pdf_document
+classoption: landscape
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fi.pos = "H", warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+```{r data_and_model_output}
+library(here)
+library(lme4)
+library(car)
+library(mgcv)
+library(ggplot2)
+source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
+source(here::here("analysis", "helpful-data-analysis-functions.R"))
+
+all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
+                                start_date = "2020-03-01",
+                                end_date = "2020-08-16")
+all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
+all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
+all_counts <- all_pcr_and_zip[["counts"]]
+
+
+load(file = here("analysis", "fit_time_lin.Rdata"))
+load(file = here("analysis", "fit_time_quad.Rdata"))
+load(file = here("analysis", "fit_time_gam.Rdata"))
+load(file = here("analysis", "fit_time_gam_int.Rdata"))
+```
+
+
+
+```{r}
+
+fit_time_lin_info <- compute_ci_logistic(fit_time_lin, 
+                                          model_name = "Model with days as linear predictor")
+fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
+fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
+
+
+fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
+                                          model_name = "Model with days as quad predictor")
+fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
+fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
+
+
+fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam, 
+                                              model_name = "Model time gam no interaction")
+fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
+fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
+
+
+fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
+                                             model_name = "Model time gam no interaction")
+fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
+fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
+
+```
+
+
+The AIC prefers gam model with interaction to gam model without. BIC does not have a preference between a linear or quadratic fit to time
+
+```{r}
+BIC(fit_time_gam, fit_time_gam_int)
+BIC(fit_time_lin, fit_time_quad)
+```
+
+
+```{r gam_inter_results}
+fit_m1 <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
+
+rr_m1 <- round(fit_m1[, "odds"], 3)
+ci_lb_m1 <- round(fit_m1[, "lower_bound"], 3)
+ci_ub_m1 <- round(fit_m1[, "upper_bound"], 3)
+p_values_m1 <- fit_m1$p.value
+p_values_m1 <- ifelse(p_values_m1 <= 0.001, "Less than 0.001", paste(round(p_values_m1, 3)))
+
+table_m1 <- data.frame(matrix(NA, nrow = nrow(fit_m1) + 5, ncol = 2))
+colnames(table_m1) <- c("Adjusted odds[note] (95% CI[note])", "p-Value")
+rownames(table_m1) <- c("0-4",
+                        "5-9",
+                        "10-14",
+                        "15-19",
+                        "20-24",
+                        "25-29",
+                        "30-34",
+                        "35-39",
+                        "40-49",
+                        "50-59",
+                        "60-69",
+                        "70-79",
+                        "80+",
+                        "Female",
+                        "Male",
+                        "White",
+                        "Native American or Alaskan",
+                        "Asian",
+                        "Black or African American",
+                        "Native Hawaiian or other Pacific Islander",
+                        "Other",
+                        "1st Quartile",
+                        "2nd Quartile",
+                        "3rd Quartile",
+                        "4th Quartile",
+                        "1st Quartile ",
+                        "2nd Quartile ",
+                        "3rd Quartile ",
+                        "4th Quartile ",
+                        "Zip code Population Density")
+reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+                     TRUE, FALSE,
+                     TRUE, FALSE, FALSE, FALSE, FALSE, FALSE,
+                     TRUE, FALSE, FALSE, FALSE,
+                     TRUE, FALSE, FALSE, FALSE,
+                     FALSE)
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_m1)) {
+  if (reference_group[i]) {
+    table_m1[i, 1] <- "Reference"
+    table_m1[i, 2] <- "Reference"
+  } else {
+    table_m1[i, 1] <- paste(rr_m1[non_ref_counter], " (", 
+                          ci_lb_m1[non_ref_counter], ", ", 
+                          ci_ub_m1[non_ref_counter], ")", 
+                          sep = "")
+    table_m1[i, 2] <- p_values_m1[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
+
+
+kable(table_1a, 
+      format = "latex", 
+      caption = "Cox regression estimates from baseline model of adjusted relative risk of mortality for patients on dialysis in the US with end stage renal disease") %>%
+  kable_styling(latex_options = c("HOLD_position"),
+                font_size = 11) %>%
+  pack_rows("Sex", 2, 3, bold = FALSE) %>%
+  pack_rows("Race", 4, 6, bold = FALSE) %>%
+  pack_rows("Previous CVD", 8, 9, bold = FALSE) %>%
+  pack_rows("Diabetes", 10, 11, bold = FALSE) %>%
+  pack_rows("Smoker", 12, 14, bold = FALSE) %>%
+  add_footnote(c("Adjusted for all covariates listed", 
+                 "Abreviations: CI = confidence interval, ESRD = end stage renal disease, CVD = cardiovascular disease, BMI = body mass index"),
+               notation = "symbol")                 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Also, we saw a bimodal distribution to income when we graphed it from the patients data.
+
+```{r , eval = FALSE}
+hist(all_pcr$med_income, breaks = 40, main = "Histogram of median income ($10,000) from all patient data")
+
+#h <- hist(all_zip$med_income, breaks = 40, main = "Histogram of median income ($10,000) from zip code data")
+#text(x = h$mids, y = h$counts, 
+#     labels=h$counts, adj=c(0.5, -0.5))
+
+ggplot(all_pcr, 
+       aes(med_income, fill = zip)) +
+  geom_histogram(bins = 40) +
+  theme(legend.position = "none")
+  #theme(legend.text = element_text(size = 3)) +
+  #guides(color = guide_legend(override.aes = list(size = 0.5))) +
+  #guides(shape = guide_legend(override.aes = list(size = 0.5)))
+```
+
+
+```{r , eval = FALSE}
+ggplot(all_zip[order(all_zip$med_income), ],
+       aes(x = zip, y = med_income)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(size = 6, angle = 90)) +
+  scale_x_discrete(limits = all_zip$zip[order(all_zip$med_income)]) +
+  ylab("Median Income (in $10,000)")
+# investigate highest median income
+#length(unique(all_zip$med_income))
+#no zip codes have the same median income
+#all_zip[all_zip$zip == "92657",]
+# Newport coast has highest median income ... yup
+```
+
+No two zipcode have the same median income and the zip code with the highest median income is Newport Coast 92657.
+
+
+```{r, eval = FALSE}
+ggplot(all_pcr,
+       aes(x = zip)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(size = 6, angle = 90)) +
+  ggtitle("Representation of zipcodes in patient data")
+```
+
+Santa Ana 92703 has highest zip code representation in data, reasonable since they have almost the max population density.
+Similarly the next highest is Anaheim 92804, also has a population density in last quartile
+
+
+## Unkown test results  
+We have 524 observations that are dropped because their test results are classified as unknown
+
+```{r, eval = FALSE}
+ggplot(pcr_results_adjusted[pcr_results_adjusted$test_result == "unknown", ],
+       aes(x = zip)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(size = 7, angle = 90))
+```
+
+There are 30 observations from the zip code 92804 dropped.
+
