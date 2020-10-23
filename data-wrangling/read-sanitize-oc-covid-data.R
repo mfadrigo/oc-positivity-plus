@@ -135,6 +135,19 @@ read_all_pcr <- function(file_path,
   
   if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
   
+  # Refactor the sex and race because unknown groups were dropped
+  pcr_results_adjusted$race <- ordered(pcr_results_adjusted$race, 
+                                       levels = c("white", 
+                                                  "american_indigenous", 
+                                                  "asian", 
+                                                  "black", 
+                                                  "islander",
+                                                  "other"))
+  pcr_results_adjusted$sex <- ordered(pcr_results_adjusted$sex,
+                                      levels = c("female", 
+                                                 "male"))
+  
+
   pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
   
   first_pos <- pcr_results_adjusted %>%
@@ -224,6 +237,10 @@ read_all_pcr <- function(file_path,
                                                             breaks = age_breaks, 
                                                             right = FALSE, 
                                                             labels = age_labels)]
+  
+  pcr_results_merged$age_group <- factor(pcr_results_merged$age_group,
+                                         ordered = TRUE,
+                                         levels = age_labels)
   
   pcr_results_merged$adj_time_days <- scale(pcr_results_merged$time_days,
                                  center = TRUE,
