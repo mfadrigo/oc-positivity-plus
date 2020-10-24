@@ -5,6 +5,7 @@ date: "10/21/2020"
 output: pdf_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, fi.pos = "H", warning = FALSE, message = FALSE, fig.align = "center")
 ```
@@ -56,7 +57,7 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
 
 
 fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
-                                             model_name = "Model time gam no interaction")
+                                             model_name = "Model time gam with interaction between days and median income")
 fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
 fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
@@ -67,24 +68,46 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
 The AIC prefers gam model with interaction to gam model without. BIC does not have a preference between a linear or quadratic fit to time
 
 ```{r}
-BIC(fit_time_gam, fit_time_gam_int)
+library(knitr)
+library(kableExtra)
+
+gam_bic <- BIC(fit_time_gam, fit_time_gam_int) 
+row.names(gam_bic) <- c("No", "Yes")
+
+kable(gam_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex") %>%
+  kable_styling() %>%
+  pack_rows("Interaction between time and median income", 1, 2, bold = FALSE)
+
 BIC(fit_time_lin, fit_time_quad)
 ```
 
 
+```{r}
+smooth_df <- summary(fit_time_gam_int)
+smooth_df <- smooth_df$s.table
+
+kable(smooth_df,
+      col.names = c("Effective DF", "Ref. DF", "Chi Sq.", "p-value"),
+      format = "latex") %>%
+  kable_styling() 
+```
+
+
 ```{r gam_inter_results}
-library(knitr)
-library(kableExtra)
+
+
 fit_m1 <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
 
 rr_m1 <- round(fit_m1[, "odds"], 3)
 ci_lb_m1 <- round(fit_m1[, "lower_bound"], 3)
 ci_ub_m1 <- round(fit_m1[, "upper_bound"], 3)
-p_values_m1 <- fit_m1$p.value
-p_values_m1 <- ifelse(p_values_m1 <= 0.001, "Less than 0.001", paste(round(p_values_m1, 3)))
-
+#p_values_m1 <- fit_m1$p.value
+#p_values_m1 <- ifelse(p_values_m1 <= 0.001, "0.000", paste(round(p_values_m1, 3)))
+# The 5 accounts for the reference groups
 table_m1 <- data.frame(matrix(NA, nrow = nrow(fit_m1) + 5, ncol = 2))
-colnames(table_m1) <- c("Adjusted odds[note] (95% CI[note])", "p-Value")
+colnames(table_m1) <- c("Counts", "Adjusted odds[note] (95% CI[note])")
 rownames(table_m1) <- c("0-4",
                         "5-9",
                         "10-14",
@@ -114,7 +137,7 @@ rownames(table_m1) <- c("0-4",
                         "2nd Quartile ",
                         "3rd Quartile ",
                         "4th Quartile ",
-                        "Zip code Population Density (1000people/km^2)")
+                        "Zip Code Population Density (1000people/km^2)")
 reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
                      TRUE, FALSE,
                      TRUE, FALSE, FALSE, FALSE, FALSE, FALSE,
@@ -125,17 +148,39 @@ reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALS
 non_ref_counter <- 1
 for(i in 1:nrow(table_m1)) {
   if (reference_group[i]) {
-    table_m1[i, 1] <- "Reference"
+    #table_m1[i, 1] <- "Reference"
     table_m1[i, 2] <- "Reference"
   } else {
-    table_m1[i, 1] <- paste(rr_m1[non_ref_counter], " (", 
+    table_m1[i, 2] <- paste(rr_m1[non_ref_counter], " (", 
                           ci_lb_m1[non_ref_counter], ", ", 
                           ci_ub_m1[non_ref_counter], ")", 
                           sep = "")
-    table_m1[i, 2] <- p_values_m1[non_ref_counter]
+    #table_m1[i, 2] <- p_values_m1[non_ref_counter]
     non_ref_counter <- non_ref_counter + 1
   }
 }      
+
+levels(all_pcr$race)
+variable_counts <- rep(NA, nrow(fit_m1) + 5)
+
+quant_vars <- c("adj_pop_density")
+order_quant_vars <- c(30)
+variable_counts[order_quant_vars] <- ""
+
+qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:30)[-order_quant_vars]
+calc_freq <- function(df) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
+}
+variable_counts[order_qual_vars] <- calc_freq(all_pcr[, qual_vars])
+variable_counts <- c(variable_counts[1:15], 
+                     variable_counts[21],
+                     variable_counts[16:20],
+                     variable_counts[22:30])
+
+table_m1[, 1] <- variable_counts
 
 
 kable(table_m1, 
@@ -146,14 +191,18 @@ kable(table_m1,
   pack_rows("Age", 1, 13, bold = FALSE) %>%
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 21, bold = FALSE) %>%
-  pack_rows("Zip Code POP with bachelors", 22, 25, bold = FALSE) %>%
-  pack_rows("Zip code POP with medical insurance", 26, 29, bold = FALSE) %>%
+  pack_rows("Zip Code POP with Bachelors", 22, 25, bold = FALSE) %>%
   add_footnote(c("Adjusted for all covariates listed plus zip code median income and time of test in days", 
                  "Abreviations: CI = confidence interval, POP = percentage of population"),
                notation = "symbol")                 
 ```
 
 
+```{r}
+fit_time_gam_inter_plot +
+  ylab("Odds of testing COVID positive") +
+  xlab("")
+```
 
 
 
@@ -190,7 +239,7 @@ Also, we saw a bimodal distribution to income when we graphed it from the patien
 ```{r , eval = FALSE}
 hist(all_pcr$med_income, breaks = 40, main = "Histogram of median income ($10,000) from all patient data")
 
-#h <- hist(all_zip$med_income, breaks = 40, main = "Histogram of median income ($10,000) from zip code data")
+hist(all_zip$med_income, breaks = 40, main = "Histogram of median income ($10,000) from zip code data")
 #text(x = h$mids, y = h$counts, 
 #     labels=h$counts, adj=c(0.5, -0.5))
 
