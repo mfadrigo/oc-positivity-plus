@@ -6,15 +6,15 @@ library(mgcv)
 library(ggplot2)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 source(here::here("analysis", "helpful-data-analysis-functions.R"))
-
 # Change file path for where you saved the all_ELR_PCR_tests_updated file
+
 all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
                                 start_date = "2020-03-01",
                                 end_date = "2020-08-16")
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
-
+all_inconsistencies <- all_pcr_and_zip[["inconsistencies"]]
 
 
 tic()
@@ -101,10 +101,6 @@ fit_time_lin_plot
 fit_time_quad_plot
 fit_time_gam_plot
 fit_time_gam_inter_plot
-
-
-
-
 
 save(fit_time_lin, file = here("analysis", "fit_time_lin.Rdata"))
 save(fit_time_quad, file = here("analysis", "fit_time_quad.Rdata"))
