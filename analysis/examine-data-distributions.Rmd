@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = FALSE, fi.pos = "H", warning = FALSE, message = FAL
 library(ggplot2)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 
-all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
+all_pcr_and_zip <- read_all_pcr(file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
                                 start_date = "2020-03-01",
                                 end_date = "2020-08-16")
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
