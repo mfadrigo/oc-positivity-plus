@@ -26,6 +26,7 @@ all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
+all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 
 
 load(file = here("analysis", "fit_time_lin.Rdata"))
@@ -228,72 +229,6 @@ fit_time_gam_inter_plot +
 
 
 
-
-
-
-
-
-
-\newpage
-Also, we saw a bimodal distribution to income when we graphed it from the patients data.
-
-```{r , eval = FALSE}
-hist(all_pcr$med_income, breaks = 40, main = "Histogram of median income ($10,000) from all patient data")
-
-hist(all_zip$med_income, breaks = 40, main = "Histogram of median income ($10,000) from zip code data")
-#text(x = h$mids, y = h$counts, 
-#     labels=h$counts, adj=c(0.5, -0.5))
-
-ggplot(all_pcr, 
-       aes(med_income, fill = zip)) +
-  geom_histogram(bins = 40) +
-  theme(legend.position = "none")
-  #theme(legend.text = element_text(size = 3)) +
-  #guides(color = guide_legend(override.aes = list(size = 0.5))) +
-  #guides(shape = guide_legend(override.aes = list(size = 0.5)))
-```
-
-
-```{r , eval = FALSE}
-ggplot(all_zip[order(all_zip$med_income), ],
-       aes(x = zip, y = med_income)) +
-  geom_bar(stat = "identity") +
-  theme(axis.text.x = element_text(size = 6, angle = 90)) +
-  scale_x_discrete(limits = all_zip$zip[order(all_zip$med_income)]) +
-  ylab("Median Income (in $10,000)")
-# investigate highest median income
-#length(unique(all_zip$med_income))
-#no zip codes have the same median income
-#all_zip[all_zip$zip == "92657",]
-# Newport coast has highest median income ... yup
-```
-
-No two zipcode have the same median income and the zip code with the highest median income is Newport Coast 92657.
-
-
-```{r, eval = FALSE}
-ggplot(all_pcr,
-       aes(x = zip)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(size = 6, angle = 90)) +
-  ggtitle("Representation of zipcodes in patient data")
-```
-
-Santa Ana 92703 has highest zip code representation in data, reasonable since they have almost the max population density.
-Similarly the next highest is Anaheim 92804, also has a population density in last quartile
-
-
-## Unkown test results  
-We have 524 observations that are dropped because their test results are classified as unknown
-
-```{r, eval = FALSE}
-ggplot(pcr_results_adjusted[pcr_results_adjusted$test_result == "unknown", ],
-       aes(x = zip)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(size = 7, angle = 90))
-```
-
-There are 30 observations from the zip code 92804 dropped.
 
 
 
