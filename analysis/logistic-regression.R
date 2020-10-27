@@ -8,7 +8,7 @@ source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 source(here::here("analysis", "helpful-data-analysis-functions.R"))
 # Change file path for where you saved the all_ELR_PCR_tests_updated file
 
-all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/oc-positivity-plus-outer/All ELR PCR tests updated 10.05.20.csv",
+all_pcr_and_zip <- read_all_pcr(file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
                                 start_date = "2020-03-01",
                                 end_date = "2020-08-16")
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
@@ -106,4 +106,4 @@ save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdat
 save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
 save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
 save(fit_time_gam_int, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
-
+save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
