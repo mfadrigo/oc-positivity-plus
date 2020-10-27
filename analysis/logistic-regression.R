@@ -14,7 +14,7 @@ all_pcr_and_zip <- read_all_pcr(file_path = "C:/Users/Catalina Medina/Documents/
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
-all_inconsistencies <- all_pcr_and_zip[["inconsistencies"]]
+all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 
 
 tic()
@@ -102,8 +102,8 @@ fit_time_quad_plot
 fit_time_gam_plot
 fit_time_gam_inter_plot
 
-save(fit_time_lin, file = here("analysis", "fit_time_lin.Rdata"))
-save(fit_time_quad, file = here("analysis", "fit_time_quad.Rdata"))
-save(fit_time_gam, file = here("analysis", "fit_time_gam.Rdata"))
-save(fit_time_gam_int, file = here("analysis", "fit_time_gam_inter.Rdata"))
+save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
+save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
+save(fit_time_gam_int, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 
