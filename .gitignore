@@ -4,3 +4,7 @@
 .Ruserdata
 *.PNG
 *.pdf
+cleaned_process_pcr_data.Rdata
+all-elr-pcr-tests-updated-2020-10-05.csv
+positive-tests-release-to-uci-team-2020-10-05.csv
+*.log
