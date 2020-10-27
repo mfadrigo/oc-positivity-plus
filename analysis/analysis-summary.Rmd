@@ -16,6 +16,7 @@ library(lme4)
 library(car)
 library(mgcv)
 library(ggplot2)
+library(dplyr)
 source(here::here("data-wrangling", "read-sanitize-oc-covid-data.R"))
 source(here::here("analysis", "helpful-data-analysis-functions.R"))
 
@@ -293,4 +294,11 @@ ggplot(pcr_results_adjusted[pcr_results_adjusted$test_result == "unknown", ],
 ```
 
 There are 30 observations from the zip code 92804 dropped.
+
+
+
+
+
+
+
 
