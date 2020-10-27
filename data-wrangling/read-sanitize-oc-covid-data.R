@@ -152,9 +152,9 @@ read_all_pcr <- function(file_path,
     mutate(identical_sex = n_distinct(sex) == 1) %>%
     ungroup()
   
-  pcr_inconsistent <- data.frame(pcr_inconsistent[!pcr_inconsistent$reasonable_ages | 
-                                                  !pcr_inconsistent$identical_sex | 
-                                                  !pcr_inconsistent$identical_race, ])
+  pcr_inconsistent <- data.frame(pcr_rep_id2[!pcr_rep_id2$reasonable_ages | 
+                                             !pcr_rep_id2$identical_sex | 
+                                             !pcr_rep_id2$identical_race, ])
   
   inconsistent_counts <- c(length(unique(pcr_inconsistent$id[(!pcr_inconsistent$reasonable_ages)])),
                            length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_sex)])),
