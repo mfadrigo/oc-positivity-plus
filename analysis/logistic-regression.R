@@ -27,7 +27,7 @@ fit_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race +
                         data = all_pcr,
                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
-
+# 4478.8 sec elapsed
 
 
 tic()
@@ -40,7 +40,10 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
                          data = all_pcr,
                          control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
-
+# 5008.36 sec elapsed
+# Warning message:
+# In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
+# Model failed to converge with max|grad| = 0.00240301 (tol = 0.002, component 1)
 
 
 tic()
@@ -54,7 +57,9 @@ fit_time_gam <- gam(covid_positive ~ age_group + sex + race +
                       method = "REML",
                       gamma = 1.5)
 toc()
-
+# 392.55 sec elapsed
+# Error in gam.fit3(x = X, y = y, sp = L %*% lsp3 + lsp0, Eb = Eb, UrS = UrS,  : 
+# 'Calloc' could not allocate memory (52510528 of 8 bytes)
 
 
 
@@ -70,8 +75,9 @@ fit_time_gam_int <- gam(covid_positive ~ age_group + sex + race +
                           method = "REML",
                           gamma = 1.5)
 toc()
-
-
+# 95 sec elapsed
+# Error in gam.fit3(x = X, y = y, sp = L %*% lsp + lsp0, Eb = Eb, UrS = UrS,  : 
+# 'Calloc' could not allocate memory (59305680 of 8 bytes)
 
 
 
