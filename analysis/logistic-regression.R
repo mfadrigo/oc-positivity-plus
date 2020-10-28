@@ -38,7 +38,7 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
                            (1 | zip),              
                          family = binomial, 
                          data = all_pcr,
-                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
+                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e5)))
 toc()
 # 5008.36 sec elapsed
 # Warning message:
@@ -75,9 +75,7 @@ fit_time_gam_int <- gam(covid_positive ~ age_group + sex + race +
                           method = "REML",
                           gamma = 1.5)
 toc()
-# 95 sec elapsed
-# Error in gam.fit3(x = X, y = y, sp = L %*% lsp + lsp0, Eb = Eb, UrS = UrS,  : 
-# 'Calloc' could not allocate memory (59305680 of 8 bytes)
+# 3925.58 sec elapsed
 
 
 
