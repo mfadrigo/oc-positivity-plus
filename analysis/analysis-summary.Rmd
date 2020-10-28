@@ -17,6 +17,8 @@ library(car)
 library(mgcv)
 library(ggplot2)
 library(dplyr)
+library(knitr)
+library(kableExtra)
 source(here::here("analysis", "helpful-data-analysis-functions.R"))
 
 
@@ -26,49 +28,48 @@ all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
 all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 
-load(file = here("analysis", "fit_time_lin.Rdata"))
-load(file = here("analysis", "fit_time_quad.Rdata"))
-load(file = here("analysis", "fit_time_gam.Rdata"))
-load(file = here("analysis", "fit_time_gam_inter.Rdata"))
+# load(file = here("analysis/regression-results", "fit_time_lin.Rdata"))
+# load(file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+# load(file = here("analysis/regression-results", "fit_time_gam.Rdata"))
+load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 ```
 
 
 
 ```{r}
 
-fit_time_lin_info <- compute_ci_logistic(fit_time_lin, 
-                                          model_name = "Model with days as linear predictor")
-fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
-fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
+# fit_time_lin_info <- compute_ci_logistic(fit_time_lin, 
+#                                           model_name = "Model with days as linear predictor")
+# fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
+# fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
+# fit_time_lin_plot
+# 
+# fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
+#                                           model_name = "Model with days as quad predictor")
+# fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
+# fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
+# fit_time_quad_plot
 
-
-fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
-                                          model_name = "Model with days as quad predictor")
-fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
-
-
-fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam, 
-                                              model_name = "Model time gam no interaction")
-fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
-gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
-
+# Need to re run this regression
+# fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam, 
+#                                               model_name = "Model time gam no interaction")
+# fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
+# fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
+# gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
+# fit_time_gam_plot
 
 fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
                                              model_name = "Model time gam with interaction between days and median income")
 fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
 fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
-
 ```
 
 
 The AIC prefers gam model with interaction to gam model without. BIC does not have a preference between a linear or quadratic fit to time
 
-```{r}
-library(knitr)
-library(kableExtra)
+```{r , eval = FALSE}
+
 
 gam_bic <- BIC(fit_time_gam, fit_time_gam_int) 
 row.names(gam_bic) <- c("No", "Yes")
@@ -100,13 +101,13 @@ kable(smooth_df,
 fit_m1 <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
 
 rr_m1 <- round(fit_m1[, "odds"], 3)
-ci_lb_m1 <- round(fit_m1[, "lower_bound"], 3)
-ci_ub_m1 <- round(fit_m1[, "upper_bound"], 3)
+ci_lb_m1 <- round(fit_m1[, "lower_bound"], 2)
+ci_ub_m1 <- round(fit_m1[, "upper_bound"], 2)
 #p_values_m1 <- fit_m1$p.value
 #p_values_m1 <- ifelse(p_values_m1 <= 0.001, "0.000", paste(round(p_values_m1, 3)))
 # The 5 accounts for the reference groups
-table_m1 <- data.frame(matrix(NA, nrow = nrow(fit_m1) + 5, ncol = 2))
-colnames(table_m1) <- c("Counts", "Adjusted odds[note] (95% CI[note])")
+table_m1 <- data.frame(matrix(NA, nrow = nrow(fit_m1) + 5, ncol = 3))
+colnames(table_m1) <- c("COVID19+", "Total", "with (95% CI[note])")
 rownames(table_m1) <- c("0-4",
                         "5-9",
                         "10-14",
@@ -126,7 +127,7 @@ rownames(table_m1) <- c("0-4",
                         "Native American or Alaskan",
                         "Asian",
                         "Black or African American",
-                        "Native Hawaiian or other Pacific Islander",
+                        "Native Hawaiian or Pacific Islander",
                         "Other",
                         "Unknown",
                         "1st Quartile",
@@ -137,7 +138,7 @@ rownames(table_m1) <- c("0-4",
                         "2nd Quartile ",
                         "3rd Quartile ",
                         "4th Quartile ",
-                        "Zip Code Population Density (1000people/km^2)")
+                        "Zip Code Pop Density (1000ppl/km^2)")
 reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
                      TRUE, FALSE,
                      TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
@@ -149,9 +150,9 @@ non_ref_counter <- 1
 for(i in 1:nrow(table_m1)) {
   if (reference_group[i]) {
     #table_m1[i, 1] <- "Reference"
-    table_m1[i, 2] <- "Reference"
+    table_m1[i, 3] <- "Reference"
   } else {
-    table_m1[i, 2] <- paste(rr_m1[non_ref_counter], " (", 
+    table_m1[i, 3] <- paste(rr_m1[non_ref_counter], " (", 
                           ci_lb_m1[non_ref_counter], ", ", 
                           ci_ub_m1[non_ref_counter], ")", 
                           sep = "")
@@ -160,14 +161,13 @@ for(i in 1:nrow(table_m1)) {
   }
 }      
 
-variable_counts <- rep(NA, nrow(fit_m1) + 5)
-
+variable_counts <- data.frame(matrix(NA, 
+                                     nrow = nrow(fit_m1) + 5,
+                                     ncol = 2))
+cov_pos_pcr <- all_pcr[all_pcr$covid_positive == 1, ]
 quant_vars <- c("pop_density")
 order_quant_vars <- c(31)
-variable_counts[order_quant_vars] <- paste(round(mean(all_pcr[, quant_vars]), 2),
-                                           " (",
-                                           round(sd(all_pcr[, quant_vars]), 2),
-                                           ")", sep = "")
+variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
 qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
 order_qual_vars <- (1:31)[-order_quant_vars]
@@ -176,14 +176,23 @@ calc_freq <- function(df) {
   qual_freq <- round(100 * qual_count / nrow(df), 2)
   paste(qual_count, " (", qual_freq, "%)", sep = "")
 }
-variable_counts[order_qual_vars] <- calc_freq(all_pcr[, qual_vars])
-variable_counts[order_qual_vars] <- c(variable_counts[1:15], 
-                     variable_counts[22],
-                     variable_counts[16:21],
-                     variable_counts[23:30])
+variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars])
+variable_counts[order_qual_vars, 2] <- c(
+                     variable_counts[1:15, 2], 
+                     variable_counts[22, 2],
+                     variable_counts[16:21, 2],
+                     variable_counts[23:30, 2])
 
-table_m1[, 1] <- variable_counts
+variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars])
+variable_counts[order_qual_vars, 1] <- c(
+                     variable_counts[1:15, 1], 
+                     variable_counts[22, 1],
+                     variable_counts[16:21, 1],
+                     variable_counts[23:30, 1])
 
+
+table_m1[, 2] <- variable_counts[, 2]
+table_m1[, 1] <- variable_counts[, 1]
 
 kable(table_m1, 
       format = "latex", 
@@ -195,6 +204,7 @@ kable(table_m1,
   pack_rows("Race", 16, 22, bold = FALSE) %>%
   pack_rows("Zip Code POP with Bachelors", 23, 26, bold = FALSE) %>%
   pack_rows("Zip Code POP insured", 27, 28, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
   add_footnote(c("Adjusted for all covariates listed plus zip code median income and time of test in days", 
                  "Abreviations: CI = confidence interval, POP = percentage of population"),
                notation = "symbol")                 
