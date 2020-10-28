@@ -23,43 +23,80 @@ all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
 all_counts <- all_pcr_and_zip[["counts"]]
 all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 
-
-all_pcr$adj_time_days <- scale(all_pcr$time_days,
-                               center = TRUE,
-                               scale = TRUE)
-all_pcr$adj_pop_density <- scale(all_pcr$pop_density, 
-                                 center = TRUE, 
-                                 scale = TRUE)
-all_pcr$adj_med_income <- scale(all_pcr$med_income, 
-                                center = TRUE, 
-                                scale = TRUE)
-all_pcr$adj_med_income_quartile <- with(all_pcr,
-                                        cut(adj_med_income,
-                                            breaks = quantile(adj_med_income, 
-                                                              probs = seq(0, 1, by = 0.25)),
-                                            include.lowest = TRUE,
-                                            labels = c("Q1", "Q2", "Q3", "Q4")))
-
-all_pcr$adj_perc_bachelors <- scale(all_pcr$percent_bachelors,
-                                    center = TRUE,
-                                    scale = TRUE)
-all_pcr$adj_perc_bachelors_quartile <- with(all_pcr,
-                                            cut(adj_perc_bachelors,
-                                                breaks = quantile(adj_perc_bachelors, 
-                                                                  probs = seq(0, 1, by = 0.25)),
-                                                include.lowest = TRUE,
-                                                labels = c("Q1", "Q2", "Q3", "Q4")))
-
-all_pcr$adj_perc_insured <- scale(all_pcr$percent_insured,
-                                  center = TRUE,
-                                  scale = TRUE)
-all_pcr$adj_perc_insured_quartile <- with(all_pcr,
-                                          cut(adj_perc_insured,
-                                              breaks = quantile(adj_perc_insured, 
-                                                                probs = seq(0, 1, by = 0.25)),
-                                              include.lowest = TRUE,
-                                              labels = c("Q1", "Q2", "Q3", "Q4")))
 ```
+
+
+```{r}
+all_pcr$race_known <- ifelse(all_pcr$race == "unknown", "No", "Yes")
+
+ggplot(all_pcr, aes(x = race_known)) +
+  geom_bar(aes(fill = as.factor(covid_positive)))
+
+ggplot(all_pcr, aes(x = as.factor(covid_positive))) +
+  geom_bar(aes(fill = race_known))
+```
+
+```{r}
+all_pcr$race_known <- ifelse(all_pcr$race == "unknown", 0, 1)
+
+ggplot(all_pcr, aes(x = zip, y = race_known))+
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(size = 7, angle = 90))
+
+#Highest two zipcodes
+all_zip$name[all_zip$zip == 92703]
+all_zip$name[all_zip$zip == 92804]
+```
+
+There are two zip codes that have an extremely high number of unknown race observations. The highest is Santa Ana (92703) but this is reasonable since that zip code has the 6th highest population and the 2nd highest population density. The zip code with the second highest number of unknowns is Anaheim (92804) which is also reasonable since they have the 3rd highest population and the 4th highest population density.
+
+
+```{r eval = FALSE}
+
+unknown_race_by_zip <- all_pcr %>% 
+  group_by(zip) %>% 
+  summarize(per_race_unknown = sum(race_known == 0)/n())
+
+quantile(unknown_race_by_zip$per_race_unknown)
+
+unknown_race_by_zip_pop <- data.frame(cbind(unknown_race_by_zip[order(unknown_race_by_zip$zip), ], 
+                                            "population" = all_zip[order(all_zip$zip), "population"]))
+
+unknown_race_by_zip_pop[order(unknown_race_by_zip_pop$per_race_unknown, decreasing = TRUE), ]
+
+#library(reshape2)
+#
+
+# 
+# unknown_race_pop_by_zip_melt <- melt(unknown_race_by_zip_pop2, id = "zip")
+# 
+# ggplot (unknown_race_pop_by_zip_melt, aes(x=zip, y=value, fill=variable)) + 
+#   geom_bar (stat="identity", position = "identity", alpha = .3) +
+#   theme(axis.text.x = element_text(size = 7, angle = 90))
+# 
+# 
+
+ unknown_race_by_zip_pop2 <- data.frame(cbind(unknown_race_by_zip[order(unknown_race_by_zip$zip), ], 
+                                  "population" = all_zip[order(all_zip$zip), "population"])) %>% 
+   mutate("scaled_num_unknowns" = (population * per_race_unknown)) %>% 
+   select(zip,
+          scaled_num_unknowns,
+          population)
+ 
+ ggplot(unknown_race_by_zip_pop2, aes(x = zip)) +
+   geom_bar(aes(y=population), stat="identity", position ="identity", alpha=.3, fill='blue', color='lightblue4') +
+   geom_bar(aes(y=scaled_num_unknowns), stat="identity", position="identity", alpha=.8, fill='black', color='red')
+
+
+```
+
+
+
+
+
+
+
+
 
 ```{r }
 #bimodial distrubtion of income across data
