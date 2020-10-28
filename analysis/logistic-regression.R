@@ -28,11 +28,6 @@ fit_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race +
                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
 
-fit_time_lin_info <- compute_ci_logistic(fit_time_lin, 
-                                          model_name = "Model with days as linear predictor",
-                                          plot_ci = TRUE)
-fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
-fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
 
 
 tic()
@@ -46,10 +41,6 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
                          control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000)))
 toc()
 
-fit_time_quad_info <- compute_ci_logistic(fit_time_quad, 
-                                          model_name = "Model with days as quad predictor")
-fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
 
 
 tic()
@@ -64,11 +55,7 @@ fit_time_gam <- gam(covid_positive ~ age_group + sex + race +
                       gamma = 1.5)
 toc()
 
-fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam, 
-                                              model_name = "Model time gam no interaction")
-fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
-gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
+
 
 
 tic()
@@ -84,23 +71,10 @@ fit_time_gam_int <- gam(covid_positive ~ age_group + sex + race +
                           gamma = 1.5)
 toc()
 
-fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
-                                             model_name = "Model time gam no interaction")
-fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
-fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
-gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
 
 
 
 
-
-BIC(fit_time_lin, fit_time_quad)
-BIC(fit_time_gam, fit_time_gam_int)
-
-fit_time_lin_plot
-fit_time_quad_plot
-fit_time_gam_plot
-fit_time_gam_inter_plot
 
 save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
