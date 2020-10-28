@@ -217,6 +217,21 @@ fit_time_gam_inter_plot +
   xlab("")
 ```
 
+```{r}
+
+
+# first smooth of time:
+plot(fit_time_gam_int, select=1, shade=TRUE, scale=0)
+abline(h=0)
+# second smooth, of trial:
+plot(fit_time_gam_int, select=2, shade=TRUE, scale=0)
+abline(h=0)
+
+
+income_quants <- quantile(all_pcr$adj_med_income)
+plot(fit_time_gam_int, select=1, shade=TRUE, scale=0, adj_med_income = income_quants[1])
+
+```
 
 
 
