@@ -38,24 +38,24 @@ load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 
 ```{r}
 
-fit_time_lin_info <- compute_ci_logistic(fit_time_lin,
-                                          model_name = "Model with days as linear predictor")
-fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
-fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
-fit_time_lin_plot
-
-fit_time_quad_info <- compute_ci_logistic(fit_time_quad,
-                                          model_name = "Model with days as quad predictor")
-fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
-fit_time_quad_plot
-
-fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam,
-                                              model_name = "Model time gam no interaction")
-fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
-fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
-gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
-fit_time_gam_plot
+# fit_time_lin_info <- compute_ci_logistic(fit_time_lin,
+#                                           model_name = "Model with days as linear predictor")
+# fit_time_lin_summary <- fit_time_lin_info[["model_sum"]]
+# fit_time_lin_plot <- fit_time_lin_info[["ci_plot"]]
+# fit_time_lin_plot
+# 
+# fit_time_quad_info <- compute_ci_logistic(fit_time_quad,
+#                                           model_name = "Model with days as quad predictor")
+# fit_time_quad_summary <- fit_time_quad_info[["model_sum"]]
+# fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
+# fit_time_quad_plot
+# 
+# fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam,
+#                                               model_name = "Model time gam no interaction")
+# fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
+# fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
+# gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
+# fit_time_gam_plot
 
 fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
                                              model_name = "Model time gam with interaction between days and median income")
@@ -65,7 +65,6 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
 ```
 
 
-The AIC prefers gam model with interaction to gam model without. BIC does not have a preference between a linear or quadratic fit to time
 
 ```{r , eval = FALSE}
 
@@ -218,17 +217,9 @@ fit_time_gam_inter_plot +
 
 ```{r}
 
-
-# first smooth of time:
-plot(fit_time_gam_int, select=1, shade=TRUE, scale=0)
-abline(h=0)
-# second smooth, of trial:
-plot(fit_time_gam_int, select=2, shade=TRUE, scale=0)
-abline(h=0)
-
-
-income_quants <- quantile(all_pcr$adj_med_income)
-plot(fit_time_gam_int, select=1, shade=TRUE, scale=0, adj_med_income = income_quants[1])
+plot(fit_time_gam_int, scheme = 1)
+plot(fit_time_gam_int, scheme = 2)
+plot(fit_time_gam_int, scheme = 3)
 
 ```
 
