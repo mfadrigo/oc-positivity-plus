@@ -50,15 +50,16 @@ load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 # fit_time_quad_plot <- fit_time_quad_info[["ci_plot"]]
 # fit_time_quad_plot
 # 
-# fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam,
-#                                               model_name = "Model time gam no interaction")
-# fit_time_gam_summary <- fit_time_quad_info[["model_sum"]]
-# fit_time_gam_plot <- fit_time_quad_info[["ci_plot"]]
-# gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
+ fit_time_gam_info <- compute_ci_gam_logistic(model = fit_time_gam,
+                                               model_name = "Model time gam no interaction")
+ fit_time_gam_summary <- fit_time_gam_info[["model_sum"]]
+ fit_time_gam_plot <- fit_time_gam_info[["ci_plot"]]
+ gam_smooth_var_ci <- gam.vcomp(fit_time_gam)
 # fit_time_gam_plot
 
 fit_time_gam_inter_info <- compute_ci_gam_logistic(model = fit_time_gam_int, 
                                              model_name = "Model time gam with interaction between days and median income")
+
 fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
 fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_int)
@@ -122,10 +123,11 @@ rownames(table_m1) <- c("0-4",
                         "Female",
                         "Male",
                         "White",
-                        "Native American or Alaskan",
                         "Asian",
-                        "Black or African American",
-                        "Native Hawaiian or Pacific Islander",
+                        "Black",
+                        "Hispanic",
+                        "Native American",
+                        "Pacific Islander",
                         "Other",
                         "Unknown",
                         "1st Quartile",
@@ -139,7 +141,7 @@ rownames(table_m1) <- c("0-4",
                         "Zip Code Pop Density (1000ppl/km^2)")
 reference_group <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
                      TRUE, FALSE,
-                     TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+                     TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
                      TRUE, FALSE, FALSE, FALSE,
                      TRUE, FALSE, FALSE, FALSE,
                      FALSE)
@@ -164,29 +166,37 @@ variable_counts <- data.frame(matrix(NA,
                                      ncol = 2))
 cov_pos_pcr <- all_pcr[all_pcr$covid_positive == 1, ]
 quant_vars <- c("pop_density")
-order_quant_vars <- c(31)
+order_quant_vars <- c(nrow(table_m1))
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
 qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
-order_qual_vars <- (1:31)[-order_quant_vars]
-calc_freq <- function(df) {
+order_qual_vars <- (1:nrow(table_m1))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "age_group.0-4","age_group.5-9", "age_group.10-14", "age_group.15-19",
+  "age_group.20-24", "age_group.25-29", "age_group.30-34", "age_group.35-39",
+  "age_group.40-49", "age_group.50-59", "age_group.60-69", "age_group.70-79",
+  "age_group.80+", 
+  "sex.female", "sex.male", 
+  "race.white", "race.asian",
+  "race.black or african american", "race.hispanic or latino",
+  "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
+  "race.other", "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+                       )
+ 
+calc_freq <- function(df, order) {
   qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+  qual_count <- qual_count[order]
   qual_freq <- round(100 * qual_count / nrow(df), 2)
   paste(qual_count, " (", qual_freq, "%)", sep = "")
 }
-variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars])
-variable_counts[order_qual_vars, 2] <- c(
-                     variable_counts[1:15, 2], 
-                     variable_counts[22, 2],
-                     variable_counts[16:21, 2],
-                     variable_counts[23:30, 2])
 
-variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars])
-variable_counts[order_qual_vars, 1] <- c(
-                     variable_counts[1:15, 1], 
-                     variable_counts[22, 1],
-                     variable_counts[16:21, 1],
-                     variable_counts[23:30, 1])
+variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars], qual_vars_ordered)
 
 
 table_m1[, 2] <- variable_counts[, 2]
@@ -199,9 +209,9 @@ kable(table_m1,
                 font_size = 11) %>%
   pack_rows("Age", 1, 13, bold = FALSE) %>%
   pack_rows("Sex", 14,15, bold = FALSE) %>%
-  pack_rows("Race", 16, 22, bold = FALSE) %>%
-  pack_rows("Zip Code POP with Bachelors", 23, 26, bold = FALSE) %>%
-  pack_rows("Zip Code POP insured", 27, 30, bold = FALSE) %>% 
+  pack_rows("Race", 16, 23, bold = FALSE) %>%
+  pack_rows("Zip Code POP with Bachelors", 24, 27, bold = FALSE) %>%
+  pack_rows("Zip Code POP insured", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
   add_footnote(c("Adjusted for all covariates listed plus zip code median income and time of test in days", 
                  "Abreviations: CI = confidence interval, POP = percentage of population"),
