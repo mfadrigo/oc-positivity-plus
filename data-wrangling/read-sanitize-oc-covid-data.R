@@ -83,6 +83,7 @@ read_all_pcr <- function(file_path,
                                              PersonId = col_character(),
                                              Age = col_integer(),
                                              Sex = col_character(),
+                                             Ethnicity = col_character(),
                                              Race = col_character(),
                                              Specimen.Collected.Date = col_date("%m-%d-%Y"),
                                              Resulted.Organism = col_character(),
@@ -92,6 +93,16 @@ read_all_pcr <- function(file_path,
   
   full_num_data_cases <- nrow(pcr_results_original[(pcr_results_original$Specimen.Collected.Date >= ymd(start_date)) & 
                                                    (pcr_results_original$Specimen.Collected.Date <= ymd(end_date)), ])
+  
+
+  hispanic_race_unknown <- (pcr_results_original$Race == "Other" & pcr_results_original$Ethnicity == "Hispanic or Latino") |
+                           (pcr_results_original$Race == "Unknown" & pcr_results_original$Ethnicity == "Hispanic or Latino") |
+                           (pcr_results_original$Race == "Multiple Races" & pcr_results_original$Ethnicity == "Hispanic or Latino") 
+  non_hispanic_unknown <- (pcr_results_original$Race == "Unknown" & pcr_results_original$Ethnicity != "Hispanic or Latino") |
+                          (pcr_results_original$Race == "Multiple Races" & pcr_results_original$Ethnicity != "Hispanic or Latino")
+  pcr_results_original$race1 <- str_to_lower(pcr_results_original$Race)
+  pcr_results_original$race1[hispanic_race_unknown] <- "hispanic or latino"
+  pcr_results_original$race1[non_hispanic_unknown] <- "unknown"
   
   pcr_results_adjusted <- pcr_results_original %>%
                   filter(!is.na(Resulted.Organism)) %>%
@@ -103,15 +114,14 @@ read_all_pcr <- function(file_path,
                                             male = "m",
                                             female = "f",
                                             unknown = c("d", "g", "i", "tf", "tm", "u"))) %>%
-                  mutate(race = fct_collapse(str_to_lower(Race),
-                                                 white = "white",
-                                                 american_indigenous = "american indian or alaska native",
-                                                 asian = "asian",
-                                                 black = "black or african american",
-                                                 islander = "native hawaiian or other pacific islander",
-                                                 other = c("multiple races", "other"),
-                                                 unknown = "unknown")) %>%
-                  mutate(race = relevel(factor(str_to_lower(race)), ref = "white")) %>%
+                  mutate(race = factor(race1, levels = c("white",
+                                                         "asian",
+                                                         "black or african american",
+                                                         "hispanic or latino",
+                                                         "american indian or alaska native",
+                                                         "native hawaiian or other pacific islander",
+                                                         "other",
+                                                         "unknown"),)) %>% 
                   mutate(time_days = as.integer(round(difftime(Specimen.Collected.Date, 
                                                                start_date, 
                                                                units = "days")))) %>%
@@ -122,6 +132,7 @@ read_all_pcr <- function(file_path,
                          age = Age,
                          sex,
                          race,
+                         ethnicity = Ethnicity,
                          zip = Zip,
                          city = City,
                          facility = Performing.Facility.ID
@@ -139,6 +150,8 @@ read_all_pcr <- function(file_path,
   if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
 
   pcr_results_adjusted$covid_positive <- ifelse(pcr_results_adjusted$test_result == "positive", 1, 0)
+  
+
   
   
   # Extract df of all observations with an id that has inconsistencies for the demographic variables (age, sex, race)
@@ -262,28 +275,24 @@ read_all_pcr <- function(file_path,
                                                             labels = age_labels)]
   
   pcr_results_merged$age_group <- factor(pcr_results_merged$age_group,
-                                         ordered = TRUE,
                                          levels = age_labels)
   
   pcr_results_merged$adj_time_days <- scale(pcr_results_merged$time_days,
                                  center = TRUE,
                                  scale = TRUE)
+  
   pcr_results_merged$adj_pop_density <- scale(pcr_results_merged$pop_density, 
                                    center = TRUE, 
                                    scale = TRUE)
+  
   pcr_results_merged$adj_med_income <- scale(pcr_results_merged$med_income, 
                                   center = TRUE, 
                                   scale = TRUE)
-  pcr_results_merged$adj_med_income_quar <- with(pcr_results_merged,
-                                          cut(adj_med_income,
-                                              breaks = quantile(adj_med_income, 
-                                                                probs = seq(0, 1, by = 0.25)),
-                                              include.lowest = TRUE,
-                                              labels = c("Q1", "Q2", "Q3", "Q4")))
   
   pcr_results_merged$adj_perc_bach <- scale(pcr_results_merged$percent_bachelors,
                                       center = TRUE,
                                       scale = TRUE)
+  
   pcr_results_merged$adj_perc_bach_quar <- with(pcr_results_merged,
                                               cut(adj_perc_bach,
                                                   breaks = quantile(adj_perc_bach, 
