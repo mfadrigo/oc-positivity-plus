@@ -38,7 +38,7 @@ fit_time_quad <- glmer(formula = covid_positive ~ age_group + sex + race +
                            (1 | zip),              
                          family = binomial, 
                          data = all_pcr,
-                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e5)))
+                         control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6)))
 toc()
 # 5008.36 sec elapsed
 # Warning message:
@@ -54,7 +54,7 @@ fit_time_quad_inter <- glmer(formula = covid_positive ~ age_group + sex + race +
                          (1 | zip),              
                        family = binomial, 
                        data = all_pcr,
-                       control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e5)))
+                       control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6)))
 toc()
 
 
@@ -79,8 +79,8 @@ tic()
 fit_time_gam_inter <- gam(covid_positive ~ age_group + sex + race + 
                             adj_perc_bach_quar + adj_perc_insured_quar +
                             adj_pop_density  + adj_med_income +
-                            s(adj_time_days) +
-                            ti(adj_time_days, adj_med_income, bs = "ts") + 
+                            s(time_days) +
+                            ti(time_days, adj_med_income, bs = "ts") + 
                             s(zip, bs = "re"),              
                           family = binomial, 
                           data = all_pcr,
