@@ -62,7 +62,7 @@ tic()
 fit_time_gam <- gam(covid_positive ~ age_group + sex + race + 
                         adj_perc_bach_quar + adj_perc_insured_quar +
                         adj_pop_density  + adj_med_income +
-                        s(adj_time_days, bs = "ts", k = -1) + 
+                        s(time_days, bs = "ts", k = -1) + 
                         s(zip, bs = "re"),              
                       family = binomial, 
                       data = all_pcr,
