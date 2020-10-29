@@ -21,7 +21,7 @@ tic()
 fit_time_lin <- glmer(formula = covid_positive ~ age_group + sex + race + 
                         adj_perc_bach_quar + adj_perc_insured_quar +
                           adj_pop_density + adj_med_income +
-                          I(adj_time_days) +
+                          adj_time_days +
                           (1 | zip),              
                         family = binomial, 
                         data = all_pcr,
@@ -45,6 +45,18 @@ toc()
 # In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
 # Model failed to converge with max|grad| = 0.00240301 (tol = 0.002, component 1)
 
+tic()
+fit_time_quad_inter <- glmer(formula = covid_positive ~ age_group + sex + race + 
+                         adj_perc_bach_quar + adj_perc_insured_quar +
+                         adj_pop_density + adj_med_income +
+                         adj_time_days + I(adj_time_days^2) + 
+                         adj_time_days:adj_med_income + I(adj_time_days^2):adj_med_income +
+                         (1 | zip),              
+                       family = binomial, 
+                       data = all_pcr,
+                       control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e5)))
+toc()
+
 
 tic()
 fit_time_gam <- gam(covid_positive ~ age_group + sex + race + 
@@ -64,7 +76,7 @@ toc()
 
 
 tic()
-fit_time_gam_int <- gam(covid_positive ~ age_group + sex + race + 
+fit_time_gam_inter <- gam(covid_positive ~ age_group + sex + race + 
                             adj_perc_bach_quar + adj_perc_insured_quar +
                             adj_pop_density  + adj_med_income +
                             s(adj_time_days) +
@@ -82,6 +94,8 @@ toc()
 
 save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
-save(fit_time_gam_int, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
+save(fit_time_gam_inter, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
+
