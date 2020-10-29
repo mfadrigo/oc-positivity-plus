@@ -201,7 +201,7 @@ kable(table_m1,
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 22, bold = FALSE) %>%
   pack_rows("Zip Code POP with Bachelors", 23, 26, bold = FALSE) %>%
-  pack_rows("Zip Code POP insured", 27, 28, bold = FALSE) %>% 
+  pack_rows("Zip Code POP insured", 27, 30, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
   add_footnote(c("Adjusted for all covariates listed plus zip code median income and time of test in days", 
                  "Abreviations: CI = confidence interval, POP = percentage of population"),
