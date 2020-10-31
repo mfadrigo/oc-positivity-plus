@@ -230,7 +230,10 @@ fit_time_gam_inter_plot +
 plot(fit_time_gam_int, scheme = 1)
 plot(fit_time_gam_int, scheme = 2)
 plot(fit_time_gam_int, scheme = 3)
-
+vis.gam(x = fit_time_gam_int, 
+        view = c("time_days", "adj_med_income"),
+        plot.type = "persp",
+        se = 2)
 ```
 
 
