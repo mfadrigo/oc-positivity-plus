@@ -2,6 +2,9 @@
 title: "Factors associated with testing positive for COVID-19 in Orange County"
 date: "11/5/2020"
 output: pdf_document
+params:
+  reclean_data: FALSE
+  refit_models: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -101,7 +104,7 @@ other_test_synonyms <- c(
   )
 
 
-read_all_pcr <- function(file_path, start_date = "2020-03-01", end_date = "2020-08-16") {
+read_all_pcr <- function(file_path, start_date, end_date) {
   pcr_results_original <- read_csv(
     file_path,
     col_types = cols(
@@ -436,4 +439,25 @@ read_all_pcr <- function(file_path, start_date = "2020-03-01", end_date = "2020-
 ```
 
 
+```{r load-clean-data}
+if(reclean_data){
+  all_pcr_and_zip <- read_all_pcr(
+    file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
+    start_date = "2020-03-01",
+    end_date = "2020-08-16"
+    )
+  
+  all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
+  all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
+  all_counts <- all_pcr_and_zip[["counts"]]
+  all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+} else {
+  load(file = here("data", "cleaned_process_pcr_data.Rdata"))
+  
+  all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
+  all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
+  all_counts <- all_pcr_and_zip[["counts"]]
+  all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+}
+```
 
