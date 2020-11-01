@@ -488,3 +488,30 @@ if (refit_model1) {
 }
 ```
 
+[Add description for model 2]
+
+```{r fit_model2}
+if(refit_model2){
+  tic()
+  fit_time_quad <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              I(adj_time_days) + I(adj_time_days^2) + 
+              (1 | zip),              
+    family = binomial, 
+    data = all_pcr,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  # Does not converge, 
+  # not after a second run with bobyqa from the previous run's estimates
+  # or after runs with all different optimizers starting from the second run's estimates.
+  # The estimates from the first and third runs are almost identical and off in the hundreths from gam inter estimates
+  # updated and saved 11-1-2020
+  save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+} else {
+  load(file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+}
+```
+
