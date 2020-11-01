@@ -481,7 +481,8 @@ if (params$refit_model1) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000))
     )
   toc()
-  
+  # 4478.8 sec elapsed
+  # updated and saved 10-29-2020
   save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_lin.Rdata"))
@@ -504,6 +505,7 @@ if (params$refit_model2) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
+  # hour and a half to run
   # Does not converge, 
   # not after a second run with bobyqa from the previous run's estimates
   # or after runs with all different optimizers starting from the second run's estimates.
@@ -535,6 +537,31 @@ if (params$refit_model3) {
   save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
+}
+```
+
+[Add description for model 4]
+
+```{r fit_model4}
+if (params$refit_model4) {
+  tic()
+  fit_time_gam <- gam(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density  + adj_med_income +
+              s(time_days, bs = "ts", k = -1) + 
+              s(zip, bs = "re"),              
+    family = binomial, 
+    data = all_pcr,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+  # 392.55 sec elapsed
+  # updated and saved 10-29-2020
+  save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
+} else {
+  load(file = here("analysis/regression-results", "fit_time_gam.Rdata"))
 }
 ```
 
