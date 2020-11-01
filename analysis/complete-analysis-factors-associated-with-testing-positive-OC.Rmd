@@ -565,3 +565,29 @@ if (params$refit_model4) {
 }
 ```
 
+[Add description for model 5]
+
+```{r fit_model5}
+if (params$refit_model5) {
+  tic()
+  fit_time_gam_inter <- gam(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density  + adj_med_income +
+              s(time_days) +
+              ti(time_days, adj_med_income, bs = "ts") + 
+              s(zip, bs = "re"),              
+    family = binomial, 
+    data = all_pcr,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+# 3925.58 sec elapsed
+# updated and saved 10-29-2020
+} else {
+  load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
+}
+```
+
+
