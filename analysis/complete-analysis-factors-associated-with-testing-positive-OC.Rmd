@@ -4,7 +4,11 @@ date: "11/5/2020"
 output: pdf_document
 params:
   reclean_data: FALSE
-  refit_models: FALSE
+  refit_model1: FALSE
+  refit_model2: FALSE
+  refit_model3: FALSE
+  refit_model4: FALSE
+  refit_model5: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -458,6 +462,29 @@ if(reclean_data){
   all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
   all_counts <- all_pcr_and_zip[["counts"]]
   all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+}
+```
+
+[Add description for model 1]
+
+```{r fit_model1}
+if (refit_model1) {
+  tic()
+  fit_time_lin <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days +
+              (1 | zip),              
+    family = binomial, 
+    data = all_pcr,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000))
+    )
+  toc()
+  
+  save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
+} else {
+  load(file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 }
 ```
 
