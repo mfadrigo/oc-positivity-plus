@@ -16,17 +16,21 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
 ```
 
 
-```{r}
+```{r loading-libraries}
 # data-wrangling-function chunk
 library(tidyverse)
 library(here)
 library(lubridate)
 library(data.table)
-
+# missing-data-table chunk
+library(knitr)
+library(kableExtra)
+# fit-model1 chunk
 library(tictoc)
 library(lme4)
 library(car)
 library(mgcv)
+
 library(ggplot2)
 ```
 
@@ -465,9 +469,17 @@ if (params$reclean_data) {
 }
 ```
 
+
+```{r missing-data-table}
+tab_obs <- data.frame(matrix(
+  data = NA, ncol = 2, nrow = 5
+))
+```
+
+
 [Add description for model 1]
 
-```{r fit_model1}
+```{r fit-model1}
 if (params$refit_model1) {
   tic()
   fit_time_lin <- glmer(
@@ -491,7 +503,7 @@ if (params$refit_model1) {
 
 [Add description for model 2]
 
-```{r fit_model2}
+```{r fit-model2}
 if (params$refit_model2) {
   tic()
   fit_time_quad <- glmer(
@@ -519,7 +531,7 @@ if (params$refit_model2) {
 
 [Add description for model 3]
 
-```{r fit_model3}
+```{r fit-model3}
 if (params$refit_model3) {
   tic()
   fit_time_quad_inter <- glmer(
@@ -542,7 +554,7 @@ if (params$refit_model3) {
 
 [Add description for model 4]
 
-```{r fit_model4}
+```{r fit-model4}
 if (params$refit_model4) {
   tic()
   fit_time_gam <- gam(
@@ -567,7 +579,7 @@ if (params$refit_model4) {
 
 [Add description for model 5]
 
-```{r fit_model5}
+```{r fit-model5}
 if (params$refit_model5) {
   tic()
   fit_time_gam_inter <- gam(
