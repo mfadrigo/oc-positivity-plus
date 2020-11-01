@@ -12,7 +12,7 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
 ```
 
 
@@ -444,7 +444,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
 
 
 ```{r load-clean-data}
-if(reclean_data){
+if (params$reclean_data) {
   all_pcr_and_zip <- read_all_pcr(
     file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
     start_date = "2020-03-01",
@@ -468,7 +468,7 @@ if(reclean_data){
 [Add description for model 1]
 
 ```{r fit_model1}
-if (refit_model1) {
+if (params$refit_model1) {
   tic()
   fit_time_lin <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
@@ -491,7 +491,7 @@ if (refit_model1) {
 [Add description for model 2]
 
 ```{r fit_model2}
-if(refit_model2){
+if (params$refit_model2) {
   tic()
   fit_time_quad <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
@@ -512,6 +512,29 @@ if(refit_model2){
   save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+}
+```
+
+[Add description for model 3]
+
+```{r fit_model3}
+if (params$refit_model3) {
+  tic()
+  fit_time_quad_inter <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + I(adj_time_days^2) + 
+              adj_time_days:adj_med_income + I(adj_time_days^2):adj_med_income +
+              (1 | zip),              
+    family = binomial, 
+    data = all_pcr,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
+} else {
+  load(file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 }
 ```
 
