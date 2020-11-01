@@ -4,6 +4,8 @@ date: "11/5/2020"
 output: pdf_document
 params:
   reclean_data: FALSE
+  first_test_date: "2020-03-01"
+  last_test_date: "2020-08-16"
   refit_model1: FALSE
   refit_model2: FALSE
   refit_model3: FALSE
@@ -451,8 +453,8 @@ read_all_pcr <- function(file_path, start_date, end_date) {
 if (params$reclean_data) {
   all_pcr_and_zip <- read_all_pcr(
     file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
-    start_date = "2020-03-01",
-    end_date = "2020-08-16"
+    start_date = params$first_test_date,
+    end_date = params$last_test_date
     )
   
   all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
@@ -471,9 +473,40 @@ if (params$reclean_data) {
 
 
 ```{r missing-data-table}
-tab_obs <- data.frame(matrix(
-  data = NA, ncol = 2, nrow = 5
-))
+tab_obs <- data.frame(matrix( data = NA, ncol = 2, nrow = 5,))
+rownames(tab_obs) <- c(
+  "Unmodified",
+  "Nonresponse[note]",
+  "Inconsistent",
+  "Consecutive testing[note]",
+  "Invalid zip code"
+  )
+tab_obs[1, 1] <- all_counts["full_num_data_cases"]
+tab_obs[1, 2] <- NA
+tab_obs[2:5, 1] <- all_counts[-1]
+tab_obs[2, 2] <- tab_obs[1, 1] - tab_obs[2, 1]
+tab_obs[3, 2] <- tab_obs[2, 2] - tab_obs[3, 1]
+tab_obs[4, 2] <- tab_obs[3, 2] - tab_obs[4, 1]
+tab_obs[5, 2] <- tab_obs[4, 2] - tab_obs[5, 1]
+
+kable(
+  tab_obs,
+  col.names = c("Number of tests", "Number of usable tests after removal"),
+  format = "latex",
+  caption = paste(
+    "Number of COVID-19 tests in Orange County from ", 
+      params$first_test_date, " to ", params$last_test_date, 
+      ". Includes number of removed tests from data by type of issue for this analysis.", 
+    sep = "")
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position")) %>% 
+  add_footnote(
+    c(
+      "Number of tests without test result or complete demographic information",
+      "Kept an indivdual's tests up to and including their first positive"
+      ),
+    notation = "symbol"
+    )
 ```
 
 
@@ -546,6 +579,9 @@ if (params$refit_model3) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
+  # Model failed to converge with max|grad| = 0.00500437 (tol = 0.002, component 1)
+  # 5430.44 sec elapsed
+  # Updated 11/1/2020
   save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
