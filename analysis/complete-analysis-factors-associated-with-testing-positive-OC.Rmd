@@ -677,6 +677,19 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
 
 
+```{r bic-table}
+compare_bic <- BIC(fit_time_lin, fit_time_quad, fit_time_quad_inter, fit_time_gam, fit_time_gam_inter) 
+row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5")
+
+kable(compare_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex",
+      caption = "Model comparison using BIC supports Model 5.") %>%
+  kable_styling()
+```
+
+
+
 ```{r final-model-results-table}
 fit_final_model <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
 
