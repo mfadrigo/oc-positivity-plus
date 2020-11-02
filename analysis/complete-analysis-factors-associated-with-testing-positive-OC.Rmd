@@ -10,7 +10,7 @@ params:
   refit_model2: FALSE
   refit_model3: FALSE
   refit_model4: FALSE
-  refit_model5: FALSE
+  refit_model5: TRUE
 ---
 
 ```{r setup, include=FALSE}
@@ -661,8 +661,9 @@ if (params$refit_model5) {
     gamma = 1.5
     )
   toc()
-# 3925.58 sec elapsed
-# updated and saved 10-29-2020
+# 4714.62 sec elapsed
+# updated and saved 11-2-2020
+  save(fit_time_gam_inter, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 }
