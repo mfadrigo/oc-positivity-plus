@@ -91,7 +91,6 @@ other_test_synonyms <- c(
   "see note",
   "clotted",
   "coronavirus 2019 novel unsatisfactory",
-  # "cryptococcus neoformans",
   "equivocal",
   "non reactive",
   "result comments",
@@ -126,56 +125,48 @@ read_all_pcr <- function(file_path, start_date, end_date) {
       Race = col_character(),
       Specimen.Collected.Date = col_date("%m-%d-%Y"),
       Resulted.Organism = col_character(),
-      Zip = col_character(),
-      City = col_character(),
-      Performing.Facility.ID = col_character()
+      Zip = col_character()
       )
     ) 
   
-  full_num_data_cases <- nrow(
-    pcr_results_original[(
-      pcr_results_original$Specimen.Collected.Date >= ymd(start_date) & 
-      pcr_results_original$Specimen.Collected.Date <= ymd(end_date)
-      ), ]
-    )
+  full_num_data_cases <- pcr_results_original %>% 
+    filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
+    nrow()
   
+  pcr_results_original$Race[is.na(pcr_results_original$Race)] <- "Unknown"
+  pcr_results_original$Ethnicity[is.na(pcr_results_original$Ethnicity)] <- "Unknown"
 
   hispanic_race_unknown <- (
-    (
-      pcr_results_original$Race == "Other" & 
-      pcr_results_original$Ethnicity == "Hispanic or Latino" 
-      ) |
-    (
-      pcr_results_original$Race == "Unknown" & 
-      pcr_results_original$Ethnicity == "Hispanic or Latino"
-      ) |
-    (
-      pcr_results_original$Race == "Multiple Races" & 
-      pcr_results_original$Ethnicity == "Hispanic or Latino"
-      ) 
+    (pcr_results_original$Race == "Other" & 
+     pcr_results_original$Ethnicity == "Hispanic or Latino") |
+    (pcr_results_original$Race == "Unknown" & 
+     pcr_results_original$Ethnicity == "Hispanic or Latino") |
+    (pcr_results_original$Race == "Multiple Races" & 
+     pcr_results_original$Ethnicity == "Hispanic or Latino") 
     )
+  
   non_hispanic_unknown <- (
-    (
-      pcr_results_original$Race == "Unknown" & 
-      pcr_results_original$Ethnicity != "Hispanic or Latino"
-      ) |
-    (
-      pcr_results_original$Race == "Multiple Races" & 
-      pcr_results_original$Ethnicity != "Hispanic or Latino"
-      )
+    (pcr_results_original$Race == "Unknown" & 
+     pcr_results_original$Ethnicity != "Hispanic or Latino") |
+    (pcr_results_original$Race == "Multiple Races" & 
+     pcr_results_original$Ethnicity != "Hispanic or Latino")
     )
   
-  pcr_results_original$race1 <- str_to_lower(pcr_results_original$Race)
-  pcr_results_original$race1[hispanic_race_unknown] <- "hispanic or latino"
-  pcr_results_original$race1[non_hispanic_unknown] <- "unknown"
+  pcr_results_original_new_race <- data.frame(
+    pcr_results_original, 
+    "race1" = str_to_lower(pcr_results_original$Race)
+    )
+  pcr_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
+  pcr_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
   
-  pcr_results_adjusted <- pcr_results_original %>%
+  pcr_results_adjusted <- pcr_results_original_new_race %>%
     filter(!is.na(Resulted.Organism)) %>%
     mutate(test_result = fct_collapse(
       str_to_lower(Resulted.Organism),
       negative = negative_test_synonyms,
       positive = positive_test_synonyms,
-      unknown = other_test_synonyms)) %>%
+      unknown = other_test_synonyms) 
+      ) %>%
     mutate(sex = fct_collapse(
       str_to_lower(Sex),
       male = "m",
@@ -212,17 +203,12 @@ read_all_pcr <- function(file_path, start_date, end_date) {
       race,
       ethnicity = Ethnicity,
       zip = Zip,
-      city = City,
-      facility = Performing.Facility.ID
       ) %>%
-    filter(
-      (posted_date >= ymd(start_date)) & 
-      (posted_date <= ymd(end_date))
-      ) %>%
+    filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>%
     filter(test_result != "unknown") %>%
     filter(sex != "unknown") %>%
     mutate(zip = str_sub(zip, end = 5)) %>%
-    drop_na() %>%
+    drop_na() %>% 
     group_by(id) %>%
     arrange(posted_date) %>%
     ungroup()
@@ -461,6 +447,7 @@ if (params$reclean_data) {
   all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
   all_counts <- all_pcr_and_zip[["counts"]]
   all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+  save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
 } else {
   load(file = here("data", "cleaned_process_pcr_data.Rdata"))
   
@@ -507,6 +494,49 @@ kable(
       ),
     notation = "symbol"
     )
+```
+
+
+```{r compute-ci-gam-logistic-function}
+param_names <- c(
+  "Intercept",
+  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other Race", "Unknown Race",
+  "Bachelors Q2", "Bachelors Q3", "Bachelors Q4",
+  "Insured Q2", "Insured Q3", "Insured Q4",
+  "Pop Density",
+  "Median Income"
+  )
+
+compute_ci_gam_logistic <- function(model, alpha = 0.05, model_name, plot_estimates = TRUE) {
+  model_summary <- summary(model)
+  coeffs <- model_summary$p.coeff
+  se <- sqrt(diag(vcov(model, unconditional = TRUE)))[1:length(coeffs)]
+  model_sum <- data.frame("odds" = exp(coeffs),
+                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
+                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
+                          "p-value" =  model_summary$p.pv,
+                          "param_names" = param_names)
+  
+  if (plot_estimates) {
+    ci_plot <- ggplot(model_sum, 
+                        aes(x = param_names, y = odds),
+                        size = 5, colour = "red") +
+    ylim(min(model_sum$lower_bound), max(model_sum$upper_bound)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
+    geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+    scale_x_discrete(limits = model_sum$param_names) +
+    theme(axis.text.x = element_text(face = "bold", size = 12, angle = 90)) +
+    ggtitle(model_name)
+    
+    return(list("model_sum" = model_sum, "ci_plot" = ci_plot))
+  }
+  
+  return("model_sum" = model_sum)
+}
 ```
 
 
@@ -615,7 +645,7 @@ if (params$refit_model4) {
 
 [Add description for model 5]
 
-```{r fit-model5}
+```{r fit-model5, results="hide"}
 if (params$refit_model5) {
   tic()
   fit_time_gam_inter <- gam(
@@ -636,6 +666,124 @@ if (params$refit_model5) {
 } else {
   load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
 }
+ 
+fit_time_gam_inter_info <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  model_name = "Final model"
+  )
+fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
+fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
 
+
+```{r final-model-results-table}
+fit_final_model <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
+
+rr_fm <- round(fit_final_model[, "odds"], 3)
+ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
+ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
+#p_values_fm <- fit_final_model$p.value
+#p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
+# The 5 accounts for the reference groups
+table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + 5, ncol = 3))
+colnames(table_fm) <- c("COVID19+", "Total", "with (95% CI[note])")
+rownames(table_fm) <- c(
+  "0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Female", "Male",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Zip Code Pop Density (1000ppl/km^2)"
+  )
+reference_group <- c(
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE,
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  FALSE
+  )
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_fm)) {
+  if (reference_group[i]) {
+    #table_fm[i, 1] <- "Reference"
+    table_fm[i, 3] <- "Reference"
+  } else {
+    table_fm[i, 3] <- paste(rr_fm[non_ref_counter], " (", 
+                          ci_lb_fm[non_ref_counter], ", ", 
+                          ci_ub_fm[non_ref_counter], ")", 
+                          sep = "")
+    #table_fm[i, 2] <- p_values_fm[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
+
+variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + 5, ncol = 2))
+cov_pos_pcr <- all_pcr[all_pcr$covid_positive == 1, ]
+quant_vars <- c("pop_density")
+order_quant_vars <- c(nrow(table_fm))
+variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
+
+qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "age_group.0-4","age_group.5-9", "age_group.10-14", "age_group.15-19",
+  "age_group.20-24", "age_group.25-29", "age_group.30-34", "age_group.35-39",
+  "age_group.40-49", "age_group.50-59", "age_group.60-69", "age_group.70-79",
+  "age_group.80+", 
+  "sex.female", "sex.male", 
+  "race.white", "race.asian",
+  "race.black or african american", "race.hispanic or latino",
+  "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
+  "race.other", "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+                       )
+ 
+calc_freq <- function(df, order_vars) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+
+  qual_count <- qual_count[order_vars]
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
+}
+
+variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars], qual_vars_ordered)
+
+table_fm[, 2] <- variable_counts[, 2]
+table_fm[, 1] <- variable_counts[, 1]
+
+
+kable(
+  table_fm, 
+  format = "latex", 
+  caption = paste(
+    "GAM regression estimation of odds of testing positive for covid in Orange county from ",
+    params$first_test_date, " to ", params$last_test_date,
+    ". Model has a smooth term for time and an interaction between median income and time.", 
+    sep = ""
+    )
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
+  pack_rows("Age", 1, 13, bold = FALSE) %>%
+  pack_rows("Sex", 14,15, bold = FALSE) %>%
+  pack_rows("Race", 16, 23, bold = FALSE) %>%
+  pack_rows("Zip Code POP with Bachelors", 24, 27, bold = FALSE) %>%
+  pack_rows("Zip Code POP insured", 28, 31, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
+  add_footnote(
+    c(
+      "Adjusted for all covariates listed plus zip code median income and time of test in days", 
+      "Abreviations: CI = confidence interval, POP = percentage of population"
+      ),
+    notation = "symbol"
+  )  
+```
 
