@@ -1,7 +1,10 @@
 ---
 title: "Factors associated with testing positive for COVID-19 in Orange County"
-date: "11/5/2020"
-output: pdf_document
+date: "11/4/2020"
+output: 
+  pdf_document:
+    extra_dependencies:
+      amsmath 
 params:
   reclean_data: FALSE
   first_test_date: "2020-03-01"
@@ -10,11 +13,14 @@ params:
   refit_model2: FALSE
   refit_model3: FALSE
   refit_model4: FALSE
-  refit_model5: TRUE
+  refit_model5: FALSE
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      error = FALSE,
+                      fig.pos = "H")
 ```
 
 
@@ -30,7 +36,8 @@ library(kableExtra)
 # fit-model1 chunk
 library(tictoc)
 library(lme4)
-library(car)
+library(BRRR)
+library(car) # I dont think I need this anymore
 library(mgcv)
 
 library(ggplot2)
@@ -506,20 +513,19 @@ param_names <- c(
   "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other Race", "Unknown Race",
   "Bachelors Q2", "Bachelors Q3", "Bachelors Q4",
   "Insured Q2", "Insured Q3", "Insured Q4",
-  "Pop Density",
-  "Median Income"
+  "Pop Density"
   )
 
-compute_ci_gam_logistic <- function(model, alpha = 0.05, model_name, plot_estimates = TRUE) {
+compute_ci_gam_logistic <- function(model, alpha = 0.05, plot_estimates = TRUE) {
   model_summary <- summary(model)
-  coeffs <- model_summary$p.coeff
+  in_med_inc <- length(model_summary$p.coeff)
+  coeffs <- model_summary$p.coeff[-in_med_inc]
   se <- sqrt(diag(vcov(model, unconditional = TRUE)))[1:length(coeffs)]
   model_sum <- data.frame("odds" = exp(coeffs),
                           "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
                           "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
-                          "p-value" =  model_summary$p.pv,
+                          "p-value" =  model_summary$p.pv[-in_med_inc],
                           "param_names" = param_names)
-  
   if (plot_estimates) {
     ci_plot <- ggplot(model_sum, 
                         aes(x = param_names, y = odds),
@@ -529,8 +535,7 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, model_name, plot_estima
     geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
     geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
     scale_x_discrete(limits = model_sum$param_names) +
-    theme(axis.text.x = element_text(face = "bold", size = 12, angle = 90)) +
-    ggtitle(model_name)
+    theme(axis.text.x = element_text(face = "bold", size = 12, angle = 90))
     
     return(list("model_sum" = model_sum, "ci_plot" = ci_plot))
   }
@@ -539,13 +544,29 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, model_name, plot_estima
 }
 ```
 
+For simplicity let  
+$p_{i}$ being the probability of testing positive for COVID-19 in Orange County  
+$\overrightarrow{\beta}^{T}_{(1-12)} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
+$\overrightarrow{\beta}_{(14-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
+$\overrightarrow{\beta}_{(24-26)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
 
-[Add description for model 1]
+
+Model 1:
+\begin{equation}
+  \label{eq:Model1}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\ 
+    &+ \beta_{29}\text{Days}_i
+  \end{split}
+\end{equation}
 
 ```{r fit-model1}
 if (params$refit_model1) {
   tic()
-  fit_time_lin <- glmer(
+  fit_time_lin1 <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -553,18 +574,42 @@ if (params$refit_model1) {
               (1 | zip),              
     family = binomial, 
     data = all_pcr,
-    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 100000))
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  # 4478.8 sec elapsed
-  # updated and saved 10-29-2020
+  # 4423.84 sec elapsed
+  # Model failed to converge with max|grad| = 0.00298652 (tol = 0.002, component 1)
+  tic()
+  ss <- getME(fit_time_lin1, c("theta","fixef"))
+  fit_time_lin2 <- update(
+    fit_time_lin1,
+    start = ss,
+    control = glmerControl(
+      optimizer = "bobyqa",
+      optCtrl = list(maxfun = 2e6)
+    )
+  )
+  toc()
+  fit_time_lin <- fit_time_lin2
+  skrrrahh("drummaboy")
+  # 4372.56 sec elapsed
+  # updated and saved 11-3-2020
   save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_lin.Rdata"))
 }
 ```
 
-[Add description for model 2]
+Model 2:
+\begin{equation}
+  \label{eq:Model2}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\ 
+    &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2
+  \end{split}
+\end{equation}
 
 ```{r fit-model2}
 if (params$refit_model2) {
@@ -580,24 +625,30 @@ if (params$refit_model2) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  # hour and a half to run
-  # Does not converge, 
-  # not after a second run with bobyqa from the previous run's estimates
-  # or after runs with all different optimizers starting from the second run's estimates.
-  # The estimates from the first and third runs are almost identical and off in the hundreths from gam inter estimates
-  # updated and saved 11-1-2020
+  skrrrahh("drummaboy")
+  # 4846.83 sec elapsed
+  # updated and saved 11-2-2020
   save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_quad.Rdata"))
 }
 ```
 
-[Add description for model 3]
-
+Model 3:
+\begin{equation}
+  \label{eq:Model3}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\
+    &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2\\ 
+    &+ \beta_{31}\text{MedianIncome}_i\times\text{Days}_i + \beta_{32}\text{MedianIncome}_i\times(\text{Days}_i)^2
+  \end{split}
+\end{equation}
 ```{r fit-model3}
 if (params$refit_model3) {
   tic()
-  fit_time_quad_inter <- glmer(
+  fit_time_quad_inter1 <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -609,17 +660,41 @@ if (params$refit_model3) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  # Model failed to converge with max|grad| = 0.00500437 (tol = 0.002, component 1)
-  # 5430.44 sec elapsed
-  # Updated 11/1/2020
+  # 5212.67 sec elapsed
+  # Model failed to converge with max|grad| = 0.00348316 (tol = 0.002, component 1)
+    tic()
+  ss <- getME(fit_time_quad_inter1, c("theta","fixef"))
+  fit_time_quad_inter2 <- update(
+    fit_time_quad_inter1,
+    start = ss,
+    control = glmerControl(
+      optimizer = "bobyqa",
+      optCtrl = list(maxfun = 2e6)
+    )
+  )
+  toc()
+
+  fit_time_quad_inter <- fit_time_quad_inter2
+  # 3284.9 sec elapsed
+  # Model failed to converge with max|grad| = 0.00348316 (tol = 0.002, component 1)
+  skrrrahh("drummaboy")
+  # updated 11/3/2020
   save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
 }
 ```
 
-[Add description for model 4]
-
+Model 4:
+\begin{equation}
+  \label{eq:Model4}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\ 
+    &+ \beta_{29}f(\text{Days}_i)
+  \end{split}
+\end{equation}
 ```{r fit-model4}
 if (params$refit_model4) {
   tic()
@@ -635,16 +710,26 @@ if (params$refit_model4) {
     gamma = 1.5
     )
   toc()
-  # 392.55 sec elapsed
-  # updated and saved 10-29-2020
+  skrrrahh("drummaboy")
+  # 1289.41 sec elapsed
+  # updated and saved 11-2-2020
   save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
 } else {
   load(file = here("analysis/regression-results", "fit_time_gam.Rdata"))
 }
 ```
 
-[Add description for model 5]
-
+Model 5:
+\begin{equation}
+  \label{eq:Model5}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\ 
+    &+ \beta_{29}f(\text{Days}_i)\\
+    &+ \beta_{30}f(\text{Days}_i\times\text{MedianIncome}_i)
+  \end{split}
+\end{equation}
 ```{r fit-model5, results="hide"}
 if (params$refit_model5) {
   tic()
@@ -661,6 +746,7 @@ if (params$refit_model5) {
     gamma = 1.5
     )
   toc()
+  skrrrahh("drummaboy")
 # 4714.62 sec elapsed
 # updated and saved 11-2-2020
   save(fit_time_gam_inter, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
@@ -669,8 +755,7 @@ if (params$refit_model5) {
 }
  
 fit_time_gam_inter_info <- compute_ci_gam_logistic(
-  model = fit_time_gam_inter,
-  model_name = "Final model"
+  model = fit_time_gam_inter
   )
 fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
 fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
@@ -685,14 +770,13 @@ row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
       format = "latex",
-      caption = "Model comparison using BIC supports Model 5.") %>%
-  kable_styling()
+      caption = "Model comparison using BIC supports Model 5 to model odds of testing positive for COVID-19 in Orange County.") %>%
+  kable_styling(latex_options = "HOLD_position")
 ```
 
 
-
 ```{r final-model-results-table}
-fit_final_model <- fit_time_gam_inter_summary[-c(1, nrow(fit_time_gam_inter_summary)), ]
+fit_final_model <- fit_time_gam_inter_summary[-1, ]
 
 rr_fm <- round(fit_final_model[, "odds"], 3)
 ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
@@ -758,7 +842,7 @@ qual_vars_ordered <- c(
   "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
   "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
   "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
-                       )
+  )
  
 calc_freq <- function(df, order_vars) {
   qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
@@ -779,9 +863,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "GAM regression estimation of odds of testing positive for covid in Orange county from ",
-    params$first_test_date, " to ", params$last_test_date,
-    ". Model has a smooth term for time and an interaction between median income and time.", 
+    "Model 5 regression estimation of fixed effects for of odds of testing positive for COVID-19 in Orange County. Model includes a smooth term for time and an interaction between median income and time.", 
     sep = ""
     )
   ) %>%
@@ -800,4 +882,21 @@ kable(
     notation = "symbol"
   )  
 ```
+
+
+```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+fit_time_gam_inter_plot +
+  ylab("Odds of testing COVID positive") +
+  xlab("")
+```
+
+
+```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase."}
+plot(fit_time_gam_inter, scheme = 1, select = 2, 
+     xlab = "Time (days)",
+     ylab = "Adjusted median income",
+     main = "Interaction") 
+```
+
+
 
