@@ -9,6 +9,7 @@ all-elr-pcr-tests-updated-2020-10-05.csv
 positive-tests-release-to-uci-team-2020-10-05.csv
 *.log
 *.xlsx
+*.csv
 !fit_time_lin.Rdata
 !fit_time_quad.Rdata
 !fit_time_quad_inter.Rdata
