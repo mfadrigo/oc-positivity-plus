@@ -1,0 +1,24 @@
+---
+title: "Complete Analysis: Factors associated with morality among people diagnosed
+  with COVID-19"
+output: 
+  pdf_document:
+    extra_dependencies:
+      amsmath 
+params:
+  reclean_data: TRUE
+  first_test_date: "2020-03-01"
+  last_test_date: "2020-08-16"
+  refit_model1: FALSE
+  refit_model2: FALSE
+  refit_model3: FALSE
+  refit_model4: FALSE
+  refit_model5: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
