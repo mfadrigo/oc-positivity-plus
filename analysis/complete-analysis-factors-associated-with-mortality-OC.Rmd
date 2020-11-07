@@ -45,7 +45,7 @@ library(ggplot2)
 
 
 ```{r data-wrangling-function}
-read_all_pcr <- function(file_path, start_date, end_date) {
+read_pos_pcr <- function(file_path, start_date, end_date) {
   pos_results_original <- read_csv(
     file_path,
     col_types = cols(
@@ -65,5 +65,29 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     nrow()
 }
 
+```
+
+
+```{r load-clean-data}
+if (params$reclean_data) {
+  pos_pcr_and_zip <- read_pos_pcr(
+    file_path = here("data", "11.2.20 release to UCI team.csv"),
+    start_date = params$first_test_date,
+    end_date = params$last_test_date
+    )
+  
+  pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
+  pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
+  pos_counts <- pos_pcr_and_zip[["counts"]]
+  pos_inconsist_ids <- pos_pcr_and_zip[["inconsistencies"]]
+  save(pos_pcr_and_zip, file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
+} else {
+  load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
+  
+  pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
+  pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
+  pos_counts <- pos_pcr_and_zip[["counts"]]
+  pos_inconsist_ids <- pos_pcr_and_zip[["inconsistencies"]]
+}
 ```
 
