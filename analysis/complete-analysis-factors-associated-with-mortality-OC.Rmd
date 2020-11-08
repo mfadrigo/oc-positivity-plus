@@ -231,12 +231,12 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   pos_results_merged$zip <- factor(pos_results_merged$zip)
   
   
-  missing_counts <- c(
+  pos_missing_counts <- c(
     full_num_data_cases , # number of observations with test date between start date and end date
     full_num_data_cases - nrow(pos_results_adjusted),  # number of NA for age, sex and zip
     nrow(pos_results_adjusted) - nrow(pos_results_merged) # number of invalid or non Orange County zip codes
   )
-  names(missing_counts) <- c(
+  names(pos_missing_counts) <- c(
     "full_num_data_cases", 
     "num_na_cases_removed", 
     "num_bad_zip_cases_removed"
@@ -308,6 +308,12 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       )
     )
   
+  
+  list(
+    "pos_results_merged" = pos_results_merged, 
+    "zip_data_merged" = zip_data_merged, 
+    "counts" = pos_missing_counts
+  )
 }
 
 ```
