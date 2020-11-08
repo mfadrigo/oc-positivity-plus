@@ -330,7 +330,6 @@ if (params$reclean_data) {
   pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
   pos_counts <- pos_pcr_and_zip[["counts"]]
-  pos_inconsist_ids <- pos_pcr_and_zip[["inconsistencies"]]
   save(pos_pcr_and_zip, file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
 } else {
   load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
@@ -338,7 +337,40 @@ if (params$reclean_data) {
   pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
   pos_counts <- pos_pcr_and_zip[["counts"]]
-  pos_inconsist_ids <- pos_pcr_and_zip[["inconsistencies"]]
 }
 ```
 
+
+```{r missing-data-table}
+tab_obs <- data.frame(matrix( data = NA, ncol = 2, nrow = 3,))
+rownames(tab_obs) <- c(
+  "Unmodified",
+  "Nonresponse[note]",
+  "Invalid zip code[note]"
+)
+tab_obs[1, 1] <- pos_counts["full_num_data_cases"]
+tab_obs[1, 2] <- NA
+tab_obs[2:3, 1] <- pos_counts[-1]
+tab_obs[2, 2] <- tab_obs[1, 1] - tab_obs[2, 1]
+tab_obs[3, 2] <- tab_obs[2, 2] - tab_obs[3, 1]
+
+
+kable(
+  tab_obs,
+  col.names = c("Number of tests", "Number of usable tests after removal"),
+  format = "latex",
+  caption = paste(
+    "Number of COVID-19 tests in Orange County from ", 
+    params$first_test_date, " to ", params$last_test_date, 
+    ". Includes number of removed tests from data by type of issue for this analysis.", 
+    sep = ""
+  )) %>%
+  kable_styling(latex_options = c("HOLD_position")) %>% 
+  add_footnote(
+    c(
+      "Number of tests without complete demographic (sex, age, zip) information",
+      "Number of invalid zip codes and non Orange County zip codes"
+    ),
+    notation = "symbol"
+  )
+```
