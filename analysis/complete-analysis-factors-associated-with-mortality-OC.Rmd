@@ -1,12 +1,12 @@
 ---
-title: "Complete Analysis: Factors associated with morality among people diagnosed
+title: "Complete analysis: Factors associated with morality among people diagnosed
   with COVID-19"
 output: 
   pdf_document:
     extra_dependencies:
       amsmath 
 params:
-  reclean_data: TRUE
+  reclean_data: FALSE
   first_test_date: "2020-03-01"
   last_test_date: "2020-08-16"
   refit_model1: FALSE
@@ -374,3 +374,6 @@ kable(
     notation = "symbol"
   )
 ```
+
+
+
