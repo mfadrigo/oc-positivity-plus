@@ -882,7 +882,7 @@ kable(
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 23, bold = FALSE) %>%
   pack_rows("Zip Code POP with Bachelors", 24, 27, bold = FALSE) %>%
-  pack_rows("Zip Code POP insured", 28, 31, bold = FALSE) %>% 
+  pack_rows("Zip Code POP with Medical Insurance", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
