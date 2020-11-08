@@ -868,6 +868,15 @@ variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars], qual_
 table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
 
+intercept <- paste0(
+  round(fit_time_gam_inter_summary[1, 1], 3),
+  " (",
+  round(fit_time_gam_inter_summary[1, 2], 2),
+  ",",
+  round(fit_time_gam_inter_summary[1, 3], 2),
+  ")"
+)
+
 
 kable(
   table_fm, 
@@ -886,7 +895,10 @@ kable(
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
-      "Adjusted for all covariates listed plus zip code median income and time of test in days", 
+      paste0(
+        "Adjusted for all covariates listed plus zip code median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of bachelors and insured with the average population density. The odds of this individual testing positive for COVID-19 is estimated to be ",
+        intercept
+      ), 
       "Abreviations: CI = confidence interval, POP = percentage of population"
       ),
     notation = "symbol"
@@ -896,7 +908,7 @@ kable(
 
 ```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
 fit_time_gam_inter_plot +
-  ylab("Odds of testing COVID positive") +
+  ylab("Odds Ratio of testing COVID positive") +
   xlab("")
 ```
 
