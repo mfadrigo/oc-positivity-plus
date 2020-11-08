@@ -12,5 +12,5 @@ This project includes the following analyses:
 
 ## Data  
 The data for these investigations came from Orange County Public Health Department and may be available upon request.  
-Estimates for zipcode level variable such as median income are available under the "data" folder.  
+Estimates for zip code level variable such as median income are available under the "data" folder.  
 All fitted models for testing positive investigation are available under "analysis/testing-positive-regression-results" folder.
