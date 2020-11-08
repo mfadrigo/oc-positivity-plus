@@ -594,9 +594,9 @@ if (params$refit_model1) {
   skrrrahh("drummaboy")
   # 4372.56 sec elapsed
   # updated and saved 11-3-2020
-  save(fit_time_lin, file = here("analysis/regression-results", "fit_time_lin.Rdata"))
+  save(fit_time_lin, file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
 } else {
-  load(file = here("analysis/regression-results", "fit_time_lin.Rdata"))
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
 }
 ```
 
@@ -628,9 +628,9 @@ if (params$refit_model2) {
   skrrrahh("drummaboy")
   # 4846.83 sec elapsed
   # updated and saved 11-2-2020
-  save(fit_time_quad, file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+  save(fit_time_quad, file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
 } else {
-  load(file = here("analysis/regression-results", "fit_time_quad.Rdata"))
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
 }
 ```
 
@@ -679,9 +679,9 @@ if (params$refit_model3) {
   # Model failed to converge with max|grad| = 0.00348316 (tol = 0.002, component 1)
   skrrrahh("drummaboy")
   # updated 11/3/2020
-  save(fit_time_quad_inter, file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
+  save(fit_time_quad_inter, file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
 } else {
-  load(file = here("analysis/regression-results", "fit_time_quad_inter.Rdata"))
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
 }
 ```
 
@@ -713,9 +713,9 @@ if (params$refit_model4) {
   skrrrahh("drummaboy")
   # 1289.41 sec elapsed
   # updated and saved 11-2-2020
-  save(fit_time_gam, file = here("analysis/regression-results", "fit_time_gam.Rdata"))
+  save(fit_time_gam, file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
 } else {
-  load(file = here("analysis/regression-results", "fit_time_gam.Rdata"))
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
 }
 ```
 
@@ -749,9 +749,9 @@ if (params$refit_model5) {
   skrrrahh("drummaboy")
 # 4714.62 sec elapsed
 # updated and saved 11-2-2020
-  save(fit_time_gam_inter, file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
+  save(fit_time_gam_inter, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 } else {
-  load(file = here("analysis/regression-results", "fit_time_gam_inter.Rdata"))
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 }
  
 fit_time_gam_inter_info <- compute_ci_gam_logistic(
