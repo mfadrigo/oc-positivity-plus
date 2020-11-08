@@ -7,8 +7,8 @@
 
 ## Content
 This project includes the following analyses:
-- [Factors associated with testing positive for COIVD-19 in Orange County (OC)](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
-- [Factors associated with mortality among those who tested positive for COVID-19 in OC](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
+- [Factors associated with testing positive for COIVD-19 in Orange County](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
+- [Factors associated with mortality among those who tested positive for COVID-19 in Orange County](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
 
 ## Data  
 The data for these investigations came from Orange County Public Health Department and may be available upon request.  
