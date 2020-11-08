@@ -556,7 +556,7 @@ Model 1:
 \begin{equation}
   \label{eq:Model1}
   \begin{split}
-    \log(\frac{p_{ij}}{1 + p_{ij}}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}\text{Days}_i,
@@ -883,7 +883,7 @@ kable(
   pack_rows("Race", 16, 23, bold = FALSE) %>%
   pack_rows("Zip Code POP with Bachelors", 24, 27, bold = FALSE) %>%
   pack_rows("Zip Code POP with Medical Insurance", 28, 31, bold = FALSE) %>% 
-  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds[note]" = 1), line = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
       "Adjusted for all covariates listed plus zip code median income and time of test in days", 
