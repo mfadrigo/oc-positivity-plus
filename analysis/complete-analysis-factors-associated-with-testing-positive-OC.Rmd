@@ -556,12 +556,13 @@ Model 1:
 \begin{equation}
   \label{eq:Model1}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(\frac{p_{ij}}{1 + p_{ij}}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
-    &+ \beta_{29}\text{Days}_i
+    &+ \beta_{29}\text{Days}_i,
   \end{split}
 \end{equation}
+with a random intercept for zip code, $b_j \sim N(0, \sigma_b^2)$.
 
 ```{r fit-model1}
 if (params$refit_model1) {
@@ -607,9 +608,10 @@ Model 2:
     \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
-    &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2
+    &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2,
   \end{split}
 \end{equation}
+with a random intercept for zip code, $b_j \sim N(0, \sigma_b^2)$.
 
 ```{r fit-model2}
 if (params$refit_model2) {
@@ -642,9 +644,11 @@ Model 3:
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\
     &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2\\ 
-    &+ \beta_{31}\text{MedianIncome}_i\times\text{Days}_i + \beta_{32}\text{MedianIncome}_i\times(\text{Days}_i)^2
+    &+ \beta_{31}\text{MedianIncome}_i\times\text{Days}_i + \beta_{32}\text{MedianIncome}_i\times(\text{Days}_i)^2,
   \end{split}
 \end{equation}
+with a random intercept for zip code, $b_j \sim N(0, \sigma_b^2)$.
+
 ```{r fit-model3}
 if (params$refit_model3) {
   tic()
@@ -685,16 +689,19 @@ if (params$refit_model3) {
 }
 ```
 
-Model 4:
+Model 4:  
+Generalized additive model
 \begin{equation}
   \label{eq:Model4}
   \begin{split}
     \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
-    &+ \beta_{29}f(\text{Days}_i)
+    &+ \beta_{29}f(\text{Days}_i),
   \end{split}
 \end{equation}
+with a random intercept for zip code, $b_j \sim N(0, \sigma_b^2)$.
+
 ```{r fit-model4}
 if (params$refit_model4) {
   tic()
@@ -719,7 +726,8 @@ if (params$refit_model4) {
 }
 ```
 
-Model 5:
+Model 5:  
+Generalized additive model
 \begin{equation}
   \label{eq:Model5}
   \begin{split}
@@ -727,9 +735,11 @@ Model 5:
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}f(\text{Days}_i)\\
-    &+ \beta_{30}f(\text{Days}_i\times\text{MedianIncome}_i)
+    &+ \beta_{30}f(\text{Days}_i\times\text{MedianIncome}_i),
   \end{split}
 \end{equation}
+with a random intercept for zip code, $b_j \sim N(0, \sigma_b^2)$.
+
 ```{r fit-model5, results="hide"}
 if (params$refit_model5) {
   tic()
