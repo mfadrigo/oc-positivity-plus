@@ -5,11 +5,12 @@
 [Catalina Medina](https://www.stat.uci.edu/grad-student-directory/)  
 (*More authors to be added and order undetermined*)  
 
+## Content
 This project includes the following analyses:
 - [Factors associated with testing positive for COIVD-19 in Orange County (OC)](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
-- [Factors associated with mortality among those who tested positive for COVID-19 in OC](complete-analysis-factors-associated-with-mortality-OC.Rmd)  
+- [Factors associated with mortality among those who tested positive for COVID-19 in OC](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
 
-# Data  
+## Data  
 The data for these investigations came from Orange County Public Health Department and may be available upon request.  
-Estimates for zipcode level variable such as median income are [available](data).  
-All fitted models for testing positive investigation are [available](analysis/testing-positive-regression-results).
+Estimates for zipcode level variable such as median income are available under the "data" folder.  
+All fitted models for testing positive investigation are available under "analysis/testing-positive-regression-results" folder.
