@@ -115,7 +115,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       male = "m",
       female = "f",
       unknown = c("o", "u")
-      )) %>%
+    )) %>%
     mutate(race = factor(
       race1, 
       levels = c(
@@ -127,13 +127,21 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
         "native hawaiian or other pacific islander",
         "other",
         "unknown"
-        ),
-      )) %>% 
+      ),
+    )) %>% 
+    mutate(           # time_days = days from start date to date they tested positive
+      time_days = as.integer(round(difftime(
+        SpCollDt, 
+        start_date, 
+        units = "days"
+      )))
+    ) %>%
     select(
       test_date = SpCollDt,
       death_date = DtDeath,
       death_due_to_covid,
       zip = Zip,
+      time_days,
       age = Age,
       sex,
       race
@@ -155,8 +163,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       NAME = col_character(),
       Zip = col_character(),
       AreaKm = col_double()
-      )
-    ) %>%
+    )
+  ) %>%
     select(name = NAME, zip = Zip, area_km = AreaKm)
   
   zip_pop_oc <- read_csv(
@@ -165,8 +173,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       .default = col_skip(),
       Zip = col_character(),
       Population = col_integer()
-      )
-    ) %>%
+    )
+  ) %>%
     drop_na() %>%
     mutate(population = Population / 1000) %>%
     select(zip = Zip, population)
@@ -181,8 +189,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       Zip = col_character(),
       IncomeMed = col_integer(),
       IncPeriodofMeas = col_character()
-      )
-    ) %>%
+    )
+  ) %>%
     mutate(med_income = IncomeMed / 10000) %>%
     filter(IncPeriodofMeas == "2014-2018") %>%
     select(zip = Zip, med_income)
@@ -195,8 +203,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       .default = col_skip(),
       Zip = col_character(),
       PercentBach = col_double()
-      )
-    ) %>%
+    )
+  ) %>%
     select(zip = Zip, percent_bachelors = PercentBach)
   
   zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
@@ -207,8 +215,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       .default = col_skip(),
       Zip = col_character(),
       PercentInsured = col_double()
-      )
-    ) %>%                           
+    )
+  ) %>%                           
     select(zip = Zip, percent_insured = PercentInsured)
   
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
