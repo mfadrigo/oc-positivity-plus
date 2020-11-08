@@ -1,4 +1,4 @@
-# OC COVID-19 Positivity Plus Project  
+# OC COVID-19 Positivity Plus Investigation  
 ## Authors:  
 [Daniel Parker](https://www.faculty.uci.edu/profile.cfm?faculty_id=6346), 
 [Vladimir Minin](https://vnminin.github.io/), 
