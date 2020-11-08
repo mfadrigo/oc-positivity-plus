@@ -58,8 +58,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       Gender = col_character(),
       Ethnicity = col_character(),
       Race = col_character()
-      )
-    ) 
+    )
+  ) 
   
   full_num_data_cases <- pos_results_original %>% 
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
@@ -76,25 +76,75 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
      pos_results_original$Ethnicity == "Hispanic or Latino") |
     (pos_results_original$Race == "Multiple Races" & 
      pos_results_original$Ethnicity == "Hispanic or Latino") 
-    )
+  )
   
   non_hispanic_unknown <- (
     (pos_results_original$Race == "Unknown" & 
      pos_results_original$Ethnicity != "Hispanic or Latino") |
     (pos_results_original$Race == "Multiple Races" & 
      pos_results_original$Ethnicity != "Hispanic or Latino")
-    )
+  )
   
   pos_results_original_new_race <- data.frame(
     pos_results_original, 
     "race1" = str_to_lower(pos_results_original$Race)
-    )
+  )
+  
   pos_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
   pos_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
   
   
+  pos_results_original_new_race$DeathDueCOVID <- replace_na(
+    pos_results_original_new_race$DeathDueCOVID,
+    "unknown"
+  )
+  pos_results_original_new_race$Age <- replace_na(
+    pos_results_original_new_race$Age,
+    -999
+  )
+  pos_results_original_new_race$Zip <- replace_na(
+    pos_results_original_new_race$Zip,
+    "unknown"
+  )
+  
+  
   pos_results_adjusted <- pos_results_original_new_race %>% 
-    mutate()
+    mutate(death_due_to_covid = str_to_lower(DeathDueCOVID)) %>% 
+    mutate(sex = fct_collapse(
+      str_to_lower(Gender),
+      male = "m",
+      female = "f",
+      unknown = c("o", "u")
+      )) %>%
+    mutate(race = factor(
+      race1, 
+      levels = c(
+        "white",
+        "asian",
+        "black or african american",
+        "hispanic or latino",
+        "american indian or alaska native",
+        "native hawaiian or other pacific islander",
+        "other",
+        "unknown"
+        ),
+      )) %>% 
+    select(
+      test_date = SpCollDt,
+      death_date = DtDeath,
+      death_due_to_covid,
+      zip = Zip,
+      age = Age,
+      sex,
+      race
+    ) %>% 
+    filter((test_date >= ymd(start_date)) & (test_date <= ymd(end_date))) %>% 
+    filter(sex != "unknown") %>% 
+    filter(age != -999) %>% 
+    filter(zip != "unknown") %>% 
+    mutate(zip = str_sub(zip, end = 5)) %>% 
+    arrange(test_date) 
+  # make time variable for time since start date to ?
 }
 
 ```
