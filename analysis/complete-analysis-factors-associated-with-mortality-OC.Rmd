@@ -50,8 +50,9 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     file_path,
     col_types = cols(
       .default = col_skip(),
-      SpCollDt = col_date(),
-      DtDeath = col_date(),
+      SpCollDt = col_date("%m/%d/%Y"),
+      DtDeath = col_date("%m/%d/%Y"),
+      DeathDueCOVID = col_character(),
       Zip = col_character(),
       Age = col_integer(),
       Gender = col_character(),
@@ -63,6 +64,37 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   full_num_data_cases <- pos_results_original %>% 
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
     nrow()
+  
+  
+  pos_results_original$Race[is.na(pos_results_original$Race)] <- "Unknown"
+  pos_results_original$Ethnicity[is.na(pos_results_original$Ethnicity)] <- "Unknown"
+
+  hispanic_race_unknown <- (
+    (pos_results_original$Race == "Other" & 
+     pos_results_original$Ethnicity == "Hispanic or Latino") |
+    (pos_results_original$Race == "Unknown" & 
+     pos_results_original$Ethnicity == "Hispanic or Latino") |
+    (pos_results_original$Race == "Multiple Races" & 
+     pos_results_original$Ethnicity == "Hispanic or Latino") 
+    )
+  
+  non_hispanic_unknown <- (
+    (pos_results_original$Race == "Unknown" & 
+     pos_results_original$Ethnicity != "Hispanic or Latino") |
+    (pos_results_original$Race == "Multiple Races" & 
+     pos_results_original$Ethnicity != "Hispanic or Latino")
+    )
+  
+  pos_results_original_new_race <- data.frame(
+    pos_results_original, 
+    "race1" = str_to_lower(pos_results_original$Race)
+    )
+  pos_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
+  pos_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
+  
+  
+  pos_results_adjusted <- pos_results_original_new_race %>% 
+    mutate()
 }
 
 ```
@@ -71,7 +103,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data", "11.2.20 release to UCI team.csv"),
+    file_path = here("data", "all-positive-tests-update-11-2-20.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
     )
