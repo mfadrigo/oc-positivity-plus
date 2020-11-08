@@ -145,6 +145,82 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     mutate(zip = str_sub(zip, end = 5)) %>% 
     arrange(test_date) 
   # make time variable for time since start date to ?
+  
+  
+  # Add zip code level data and merge with pcr results
+  zip_area_oc <- read_csv(
+    here("data", "zip-area2.csv"),
+    col_types = cols(
+      .default = col_skip(),
+      NAME = col_character(),
+      Zip = col_character(),
+      AreaKm = col_double()
+      )
+    ) %>%
+    select(name = NAME, zip = Zip, area_km = AreaKm)
+  
+  zip_pop_oc <- read_csv(
+    here("data", "zip-pop.csv"),
+    col_types = cols(
+      .default = col_skip(),
+      Zip = col_character(),
+      Population = col_integer()
+      )
+    ) %>%
+    drop_na() %>%
+    mutate(population = Population / 1000) %>%
+    select(zip = Zip, population)
+  
+  zip_data_merged <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
+  zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
+  
+  zip_income_oc <- read_csv(
+    here("data", "income-by-zip2.csv"),
+    col_types = cols(
+      .default = col_skip(),
+      Zip = col_character(),
+      IncomeMed = col_integer(),
+      IncPeriodofMeas = col_character()
+      )
+    ) %>%
+    mutate(med_income = IncomeMed / 10000) %>%
+    filter(IncPeriodofMeas == "2014-2018") %>%
+    select(zip = Zip, med_income)
+  
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
+
+  zip_education_oc <- read_csv(
+    here("data", "education-by-zip.csv"),
+    col_types = cols(
+      .default = col_skip(),
+      Zip = col_character(),
+      PercentBach = col_double()
+      )
+    ) %>%
+    select(zip = Zip, percent_bachelors = PercentBach)
+  
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
+
+  zip_insurance_oc <- read_csv(
+    here("data", "insurance-by-zip.csv"),
+    col_types = cols(
+      .default = col_skip(),
+      Zip = col_character(),
+      PercentInsured = col_double()
+      )
+    ) %>%                           
+    select(zip = Zip, percent_insured = PercentInsured)
+  
+  zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
+
+    #23 rows in 92678 zipcode we don't have area data for
+  pos_results_adjusted$old_zip <- pos_results_adjusted$zip
+  pos_results_adjusted$zip[pos_results_adjusted$old_zip == "92678"] <- "92679"
+  pos_results_merged <- merge(x = pos_results_adjusted, y = zip_data_merged, by = "zip")
+  pos_results_merged$old_zip <- factor(pos_results_merged$old_zip)
+  pos_results_merged$zip <- factor(pos_results_merged$zip)
+  
+  
 }
 
 ```
