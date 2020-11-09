@@ -505,40 +505,17 @@ kable(
 
 
 ```{r compute-ci-gam-logistic-function}
-param_names <- c(
-  "Intercept",
-  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
-  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other Race", "Unknown Race",
-  "Bachelors Q2", "Bachelors Q3", "Bachelors Q4",
-  "Insured Q2", "Insured Q3", "Insured Q4",
-  "Pop Density"
-  )
-
-compute_ci_gam_logistic <- function(model, alpha = 0.05, plot_estimates = TRUE) {
+compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
+  #does not include intercept or median income
   model_summary <- summary(model)
   in_med_inc <- length(model_summary$p.coeff)
-  coeffs <- model_summary$p.coeff[-in_med_inc]
-  se <- sqrt(diag(vcov(model, unconditional = TRUE)))[1:length(coeffs)]
+  coeffs <- model_summary$p.coeff[-c(1, in_med_inc)]
+  se <- sqrt(diag(vcov(model, unconditional = TRUE)))[2:(length(coeffs) + 1)]
   model_sum <- data.frame("odds" = exp(coeffs),
                           "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
                           "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
-                          "p-value" =  model_summary$p.pv[-in_med_inc],
+                          "p-value" =  model_summary$p.pv[-c(1, in_med_inc)],
                           "param_names" = param_names)
-  if (plot_estimates) {
-    ci_plot <- ggplot(model_sum, 
-                        aes(x = param_names, y = odds),
-                        size = 5, colour = "red") +
-    ylim(min(model_sum$lower_bound), max(model_sum$upper_bound)) +
-    geom_point() +
-    geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
-    geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-    scale_x_discrete(limits = model_sum$param_names) +
-    theme(axis.text.x = element_text(face = "bold", size = 12, angle = 90))
-    
-    return(list("model_sum" = model_sum, "ci_plot" = ci_plot))
-  }
   
   return("model_sum" = model_sum)
 }
@@ -764,11 +741,21 @@ if (params$refit_model5) {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 }
  
-fit_time_gam_inter_info <- compute_ci_gam_logistic(
-  model = fit_time_gam_inter
+parameter_names <- c(
+  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Population Density"
   )
-fit_time_gam_inter_summary <- fit_time_gam_inter_info[["model_sum"]]
-fit_time_gam_inter_plot <- fit_time_gam_inter_info[["ci_plot"]]
+
+fit_time_gam_inter_summary <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  param_names = parameter_names
+)
+
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
 
@@ -786,7 +773,7 @@ kable(compare_bic,
 
 
 ```{r final-model-results-table}
-fit_final_model <- fit_time_gam_inter_summary[-1, ]
+fit_final_model <- fit_time_gam_inter_summary
 
 rr_fm <- round(fit_final_model[, "odds"], 3)
 ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
@@ -868,12 +855,13 @@ variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars], qual_
 table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
 
+fm_sum <- summary(fit_time_gam)
 intercept <- paste0(
-  round(fit_time_gam_inter_summary[1, 1], 3),
+  round(exp(fm_sum$p.coeff[1]), 3),
   " (",
-  round(fit_time_gam_inter_summary[1, 2], 2),
+  round(exp(fm_sum$p.coeff[1] - qnorm(0.975) * fm_sum$se[1]), 2),
   ",",
-  round(fit_time_gam_inter_summary[1, 3], 2),
+  round(exp(fm_sum$p.coeff[1] + qnorm(0.975) * fm_sum$se[1]), 2),
   ")"
 )
 
@@ -906,11 +894,97 @@ kable(
 ```
 
 
-```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
-fit_time_gam_inter_plot +
-  ylab("Odds Ratio of testing COVID positive") +
-  xlab("")
+```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+groups <- c(
+  rep("Age [ref: 0-4]", 12), 
+  "Sex [ref: Female]", 
+  rep("Race [ref: White]", 7),
+  rep("POP with Bachelors", 3),
+  rep("POP with Insurance", 3),
+  " "
+)
+fm_results <- data.frame(fit_time_gam_inter_summary, groups)
+
+
+ggplot(fm_results, aes(x = param_names, y = odds), size = 5, colour = "red") +
+  ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Odds ratio for testing positive for COVID-19") +
+  coord_flip() +
+  theme_bw() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black"),
+    axis.ticks = element_blank(),
+    panel.grid.major = element_line(colour = "gray"),
+  ) +
+  scale_x_discrete(limits = rev(parameter_names)) 
 ```
+
+
+```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+groups <- c(
+  rep("Age [ref: 0-4]", 12), 
+  "Sex [ref: Female]", 
+  rep("Race [ref: White]", 7),
+  rep("POP with Bachelors", 3),
+  rep("POP with Insurance", 3),
+  " "
+)
+
+fm_results <- data.frame(
+  fit_time_gam_inter_summary, 
+  groups, 
+  orders = 1:nrow(fit_time_gam_inter_summary)
+)
+
+fm_results <- fm_results %>% 
+  mutate(groups = factor(groups, levels = 
+    c(
+      "Age [ref: 0-4]", 
+      "Sex [ref: Female]",
+      "Race [ref: White]",
+      "POP with Bachelors",
+      "POP with Insurance",
+      " "
+    )
+  )) %>% 
+  mutate(param_names = factor(param_names, levels = 
+    c(
+      "80+", "70-79", "60-69", "50-59", "40-49", "35-39",
+      "30-34", "25-29", "20-24", "15-19", "10-14", "5-9",
+      "Male",
+      "Unknown", "Other", "Pacific Islander", "Native American", "Hispanic", "Black", "Asian",
+      "4th Quartile", "3rd Quartile", "2nd Quartile",
+      "4th Quartile ", "3rd Quartile ", "2nd Quartile ",
+      "Population Density"
+    )
+  ))
+
+ggplot(fm_results, aes(x = param_names, y = odds), size = 5, colour = "red") +
+  ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Odds ratio of testing positive for COVID-19") +
+  coord_flip() +
+  theme_bw() +
+  facet_grid(groups ~ ., scales = "free", space = "free", switch = "both") +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black"),
+    axis.ticks = element_blank(),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.spacing = unit(0, "lines"),
+    strip.text.y.left = element_text(angle = 0),
+    strip.background=element_rect(fill="gray")
+  )
+```
+
 
 
 ```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase."}
