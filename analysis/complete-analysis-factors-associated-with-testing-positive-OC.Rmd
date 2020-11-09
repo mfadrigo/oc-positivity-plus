@@ -507,17 +507,17 @@ rownames(tab_obs) <- c(
   "Unmodified",
   "Nonresponse[note]",
   "Inconsistent",
-  "Consecutive testing[note]",
-  "Invalid zip code"
+  "Consecutive Testing[note]",
+  "Invalid Zip Code"
 )
 
 kable(
   tab_obs,
   col.names = c(
-    "With issue", 
-    "After removal",
-    "With issue ", 
-    "After removal "
+    "With Issue", 
+    "After Removal",
+    "With Issue ", 
+    "After Removal "
   ),
   format = "latex",
   caption = paste(
