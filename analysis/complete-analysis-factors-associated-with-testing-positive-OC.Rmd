@@ -498,14 +498,14 @@ usable_ids <- c(
 )
 
 tab_obs <- data.frame(
-  all_missing[, "missing_counts"], 
+  c(NA, all_missing[2:5, "missing_counts"]), 
   usable_counts, 
-  all_missing[, "missing_ids"], 
+  c(NA, all_missing[2:5, "missing_ids"]), 
   usable_ids
 )
 rownames(tab_obs) <- c(
   "Unmodified",
-  "Nonresponse[note]",
+  "Missing or Inconclusive[note]",
   "Inconsistent",
   "Consecutive Testing[note]",
   "Invalid Zip Code"
