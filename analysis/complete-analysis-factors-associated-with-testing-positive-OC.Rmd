@@ -928,7 +928,7 @@ kable(
 ```
 
 
-```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time.", eval=FALSE}
 groups <- c(
   rep("Age [ref: 0-4]", 12), 
   "Sex [ref: Female]", 
