@@ -140,6 +140,12 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
     nrow()
   
+  full_num_id_cases <- pcr_results_original %>% 
+    filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
+    select(PersonId) %>% 
+    unique() %>% 
+    nrow()
+
   pcr_results_original$Race[is.na(pcr_results_original$Race)] <- "Unknown"
   pcr_results_original$Ethnicity[is.na(pcr_results_original$Ethnicity)] <- "Unknown"
 
@@ -267,7 +273,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     group_by(id) %>%
     summarise(first_pos = min(posted_date))
   
-  pcr_results_reduced <- left_join(pcr_results_adjusted, first_pos) %>%
+  pcr_results_reduced <- left_join(pcr_results_consistent, first_pos) %>%
     mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
@@ -350,19 +356,27 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   
   missing_counts <- c(
-    full_num_data_cases , 
+    full_num_data_cases, 
     full_num_data_cases - nrow(pcr_results_adjusted), 
     nrow(pcr_results_adjusted) - nrow(pcr_results_consistent),
     nrow(pcr_results_consistent) - nrow(pcr_results_reduced),
     nrow(pcr_results_reduced) - nrow(pcr_results_merged)
     )
-  names(missing_counts) <- c(
+  missing_ids <- c(
+    full_num_id_cases,
+    full_num_id_cases - length(unique(pcr_results_adjusted$id)),
+    length(unique(pcr_results_adjusted$id)) - length(unique(pcr_results_consistent$id)),
+    length(unique(pcr_results_consistent$id)) - length(unique(pcr_results_reduced$id)),
+    length(unique(pcr_results_reduced$id)) - length(unique(pcr_results_merged$id))
+  )
+  missing_tab <- data.frame("missing_counts" = missing_counts, "missing_ids" = missing_ids)
+  rownames(missing_tab) <- c(
     "full_num_data_cases", 
     "num_na_cases_removed", 
     "num_inconsistent_cases_removed",
     "num_consecutive_cases_removed",
     "num_bad_zip_cases_removed"
-    )
+  )
   
   
   # Group and scale variables 
@@ -435,7 +449,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   list(
     "pcr_results_merged" = pcr_results_merged, 
     "zip_data_merged" = zip_data_merged, 
-    "counts" = missing_counts,
+    "missing" = missing_tab,
     "inconsistencies" = inconsistent_counts
     )
 }
@@ -452,51 +466,71 @@ if (params$reclean_data) {
   
   all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
   all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
-  all_counts <- all_pcr_and_zip[["counts"]]
+  all_missing <- all_pcr_and_zip[["missing"]]
   all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+  
   save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
 } else {
   load(file = here("data", "cleaned_process_pcr_data.Rdata"))
   
   all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
   all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
-  all_counts <- all_pcr_and_zip[["counts"]]
+  all_missing <- all_pcr_and_zip[["missing"]]
   all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 }
 ```
 
 
 ```{r missing-data-table}
-tab_obs <- data.frame(matrix( data = NA, ncol = 2, nrow = 5,))
+usable_counts <- c(
+  all_missing[1, "missing_counts"],
+  all_missing[1, "missing_counts"] - all_missing[2, "missing_counts"],
+  all_missing[1, "missing_counts"] - sum(all_missing[2:3, "missing_counts"]),
+  all_missing[1, "missing_counts"] - sum(all_missing[2:4, "missing_counts"]),
+  all_missing[1, "missing_counts"] - sum(all_missing[2:5, "missing_counts"])
+)
+usable_ids <- c(
+  all_missing[1, "missing_ids"],
+  all_missing[1, "missing_ids"] - all_missing[2, "missing_ids"],
+  all_missing[1, "missing_ids"] - sum(all_missing[2:3, "missing_ids"]),
+  all_missing[1, "missing_ids"] - sum(all_missing[2:4, "missing_ids"]),
+  all_missing[1, "missing_ids"] - sum(all_missing[2:5, "missing_ids"])
+)
+
+tab_obs <- data.frame(
+  all_missing[, "missing_counts"], 
+  usable_counts, 
+  all_missing[, "missing_ids"], 
+  usable_ids
+)
 rownames(tab_obs) <- c(
   "Unmodified",
   "Nonresponse[note]",
   "Inconsistent",
   "Consecutive testing[note]",
   "Invalid zip code"
-  )
-tab_obs[1, 1] <- all_counts["full_num_data_cases"]
-tab_obs[1, 2] <- NA
-tab_obs[2:5, 1] <- all_counts[-1]
-tab_obs[2, 2] <- tab_obs[1, 1] - tab_obs[2, 1]
-tab_obs[3, 2] <- tab_obs[2, 2] - tab_obs[3, 1]
-tab_obs[4, 2] <- tab_obs[3, 2] - tab_obs[4, 1]
-tab_obs[5, 2] <- tab_obs[4, 2] - tab_obs[5, 1]
+)
 
 kable(
   tab_obs,
-  col.names = c("Number of tests", "Number of usable tests after removal"),
+  col.names = c(
+    "With issue", 
+    "After removal",
+    "With issue ", 
+    "After removal "
+  ),
   format = "latex",
   caption = paste(
-    "Number of COVID-19 tests in Orange County from ", 
+    "Number of COVID-19 tests and unique individuals who tested in Orange County from ", 
       params$first_test_date, " to ", params$last_test_date, 
-      ". Includes number of removed tests from data by type of issue for this analysis.", 
+      ". Includes number removed from data by type of issue for this analysis.", 
     sep = "")
   ) %>%
   kable_styling(latex_options = c("HOLD_position")) %>% 
+  add_header_above(c(" " = 1, "Number of Tests" = 2, "Number of Indiviuals" = 2), line = FALSE) %>% 
   add_footnote(
     c(
-      "Number of tests without test result or complete demographic information",
+      "Number without conclusive test result or complete demographic information",
       "Kept an indivdual's tests up to and including their first positive"
       ),
     notation = "symbol"
@@ -987,7 +1021,7 @@ ggplot(fm_results, aes(x = param_names, y = odds), size = 5, colour = "red") +
 
 
 
-```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase."}
+```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
 plot(fit_time_gam_inter, scheme = 1, select = 2, 
      xlab = "Time (days)",
      ylab = "Adjusted median income",
