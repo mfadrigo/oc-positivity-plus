@@ -37,7 +37,7 @@ library(kableExtra)
 library(tictoc)
 library(lme4)
 library(BRRR)
-library(car) # I dont think I need this anymore
+library(car) # I don't think I need this anymore
 library(mgcv)
 
 library(ggplot2)
@@ -125,7 +125,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     file_path,
     col_types = cols(
       .default = col_skip(),
-      PersonId = col_character(),
+      unique_num = col_character(),
       Age = col_integer(),
       Sex = col_character(),
       Ethnicity = col_character(),
@@ -142,7 +142,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   full_num_id_cases <- pcr_results_original %>% 
     filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
-    select(PersonId) %>% 
+    select(unique_num) %>% 
     unique() %>% 
     nrow()
 
@@ -207,7 +207,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
         )))
       ) %>%
     select(
-      id = PersonId, 
+      id = unique_num, 
       posted_date = Specimen.Collected.Date, 
       time_days,
       test_result, 
@@ -459,7 +459,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   all_pcr_and_zip <- read_all_pcr(
-    file_path = here("data", "all-elr-pcr-tests-updated-2020-10-05.csv"),
+    file_path = here("data", "all-elr-pcr-tests-updated-2020-11-09.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
     )
