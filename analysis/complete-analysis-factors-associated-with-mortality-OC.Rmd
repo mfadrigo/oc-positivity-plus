@@ -35,6 +35,7 @@ library(data.table)
 # missing-data-table chunk
 library(knitr)
 library(kableExtra)
+usepackage_latex("threeparttable")
 # fit-model1 chunk
 library(tictoc)
 library(lme4)
@@ -369,18 +370,20 @@ kable(
   ),
   format = "latex",
   caption = paste(
-    "Number of COVID-19 tests and unique individuals who tested in Orange County from ",
+    "Number of positive COVID-19 tests in Orange County from ",
       params$first_test_date, " to ", params$last_test_date,
       ". Includes number removed from data by type of issue for this analysis.",
     sep = "")
   ) %>%
   kable_styling(latex_options = c("HOLD_position")) %>% 
-  add_header_above(c(" " = 1, "Number of Tests" = 2), line = FALSE) %>% 
+  add_header_above(c(" " = 1, "Number of Tests" = 2), line = TRUE) %>% 
+  column_spec(column = 2:3, width = "5.5cm") %>% 
   add_footnote(
     c(
       "Number without conclusive test result or complete demographic information"
       ),
-    notation = "symbol"
+    notation = "symbol",
+    threeparttable = TRUE
     )
 ```
 
