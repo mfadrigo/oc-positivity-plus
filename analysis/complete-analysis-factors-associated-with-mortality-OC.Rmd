@@ -50,21 +50,23 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     file_path,
     col_types = cols(
       .default = col_skip(),
-      SpCollDt = col_date("%m/%d/%Y"),
-      DtDeath = col_date("%m/%d/%Y"),
-      DeathDueCOVID = col_character(),
-      Zip = col_character(),
-      Age = col_integer(),
+      Age = col_double(),
       Gender = col_character(),
       Ethnicity = col_character(),
-      Race = col_character()
+      Race = col_character(),
+      ReportedCity = col_character(),
+      Zip = col_double(),
+      SpCollDt = col_date(),
+      DeathDueCOVID = col_character(),
+      DtDeath = col_date(),
+      unique_num = col_double()
     )
   ) 
   
   full_num_data_cases <- pos_results_original %>% 
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
     nrow()
-  
+
   
   pos_results_original$Race[is.na(pos_results_original$Race)] <- "Unknown"
   pos_results_original$Ethnicity[is.na(pos_results_original$Ethnicity)] <- "Unknown"
@@ -129,6 +131,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
         "unknown"
       ),
     )) %>% 
+    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>% 
     mutate(           # time_days = days from start date to date they tested positive
       time_days = as.integer(round(difftime(
         SpCollDt, 
@@ -137,14 +140,16 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       )))
     ) %>%
     select(
+      unique_num,
       test_date = SpCollDt,
-      death_date = DtDeath,
+      death_date,
       death_due_to_covid,
       zip = Zip,
       time_days,
       age = Age,
       sex,
-      race
+      race,
+      reported_city = ReportedCity
     ) %>% 
     filter((test_date >= ymd(start_date)) & (test_date <= ymd(end_date))) %>% 
     filter(sex != "unknown") %>% 
@@ -152,7 +157,6 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     filter(zip != "unknown") %>% 
     mutate(zip = str_sub(zip, end = 5)) %>% 
     arrange(test_date) 
-  # make time variable for time since start date to ?
   
   
   # Add zip code level data and merge with pcr results
@@ -221,7 +225,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
 
-    #23 rows in 92678 zipcode we don't have area data for
+  
+  #3 rows in 92678 zipcode we don't have area data for
   pos_results_adjusted$old_zip <- pos_results_adjusted$zip
   pos_results_adjusted$zip[pos_results_adjusted$old_zip == "92678"] <- "92679"
   pos_results_merged <- merge(x = pos_results_adjusted, y = zip_data_merged, by = "zip")
@@ -229,12 +234,12 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   pos_results_merged$zip <- factor(pos_results_merged$zip)
   
   
-  pos_missing_counts <- c(
+  missing_vec <- c(
     full_num_data_cases , # number of observations with test date between start date and end date
     full_num_data_cases - nrow(pos_results_adjusted),  # number of NA for age, sex and zip
     nrow(pos_results_adjusted) - nrow(pos_results_merged) # number of invalid or non Orange County zip codes
   )
-  names(pos_missing_counts) <- c(
+  names(missing_vec) <- c(
     "full_num_data_cases", 
     "num_na_cases_removed", 
     "num_bad_zip_cases_removed"
@@ -310,7 +315,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   list(
     "pos_results_merged" = pos_results_merged, 
     "zip_data_merged" = zip_data_merged, 
-    "counts" = pos_missing_counts
+    "missing" = missing_vec
   )
 }
 
@@ -320,7 +325,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data", "all-positive-tests-update-11-2-20.csv"),
+    file_path = here("data", "all-positive-tests-update-2020-11-09.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
   )
@@ -334,7 +339,7 @@ if (params$reclean_data) {
   
   pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
-  pos_counts <- pos_pcr_and_zip[["counts"]]
+  pos_missing <- pos_pcr_and_zip[["missing"]]
 }
 ```
 
@@ -343,14 +348,7 @@ if (params$reclean_data) {
 usable_counts <- c(
   all_missing[1, "missing_counts"],
   all_missing[1, "missing_counts"] - all_missing[2, "missing_counts"],
-  all_missing[1, "missing_counts"] - sum(all_missing[2:3, "missing_counts"]),
-  all_missing[1, "missing_counts"] - sum(all_missing[2:4, "missing_counts"])
-)
-usable_ids <- c(
-  all_missing[1, "missing_ids"],
-  all_missing[1, "missing_ids"] - all_missing[2, "missing_ids"],
-  all_missing[1, "missing_ids"] - sum(all_missing[2:3, "missing_ids"]),
-  all_missing[1, "missing_ids"] - sum(all_missing[2:4, "missing_ids"])
+  all_missing[1, "missing_counts"] - sum(all_missing[2:3, "missing_counts"])
 )
 
 tab_obs <- data.frame(
