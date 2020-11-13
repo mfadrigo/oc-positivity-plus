@@ -783,12 +783,12 @@ if (params$refit_model5) {
 }
  
 parameter_names <- c(
-  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "Age [ref: 0-4yrs]   5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "2nd Quartile", "3rd Quartile", "4th Quartile",
-  "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Sex [ref: Female]   Male",
+  "Race [ref: White]   Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "POP with Bachelors [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
+  "POP with Insurance [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density"
   )
 
@@ -799,6 +799,12 @@ fit_time_gam_inter_summary <- compute_ci_gam_logistic(
 
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
+
+
+```{r final-model-diagnostics, eval = FALSE}
+gam.check(fit_time_gam_inter)
+```
+
 
 
 ```{r bic-table}
@@ -935,38 +941,66 @@ kable(
 ```
 
 
-```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time.", eval=FALSE}
-groups <- c(
-  rep("Age [ref: 0-4]", 12), 
-  "Sex [ref: Female]", 
-  rep("Race [ref: White]", 7),
-  rep("POP with Bachelors", 3),
-  rep("POP with Insurance", 3),
-  " "
-)
-fm_results <- data.frame(fit_time_gam_inter_summary, groups)
+```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
 
-
-ggplot(fm_results, aes(x = param_names, y = odds), size = 5, colour = "red") +
+ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, colour = "red") +
   ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
   geom_point() +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Odds ratio for testing positive for COVID-19") +
+  ylab("Odds ratio of testing positive for COVID-19") +
   coord_flip() +
-  theme_bw() +
   theme(
     axis.title.y = element_blank(),
     axis.text.x=element_text(size = 12, colour="black"),
     axis.text.y=element_text(colour="black"),
-    axis.ticks = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank()
+  ) +
+  scale_x_discrete(limits = rev(parameter_names)) 
+```
+
+```{r final-model-results-plot1_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. "}
+parameter_names <- c(
+  "Age [ref: 0-4yrs]                                          5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Sex [ref: Female]                                     Male",
+  "Race [ref: White]                                    Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "POP with Bachelors [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
+  "POP with Insurance [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Population Density"
+  )
+
+fit_time_gam_inter_summary <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  param_names = parameter_names
+)
+
+ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, colour = "red") +
+  ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
+  geom_point() +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Odds ratio of testing positive for COVID-19") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black"),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank()
   ) +
   scale_x_discrete(limits = rev(parameter_names)) 
 ```
 
 
-```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+
+
+```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time.", eval=FALSE}
 groups <- c(
   rep("Age [ref: 0-4]", 12), 
   "Sex [ref: Female]", 
