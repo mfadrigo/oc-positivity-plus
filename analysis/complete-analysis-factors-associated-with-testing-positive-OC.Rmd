@@ -80,7 +80,8 @@ positive_test_synonyms <- c(
   "presumptive positive (qualifier value)",
   "presumptive detected",
   "reactive",
-  "sars-cov-2"
+  "sars-cov-2",
+  "not detected in pooled specimen (qualifier value)"
   )
 
 other_test_synonyms <- c(
@@ -116,7 +117,15 @@ other_test_synonyms <- c(
   "presumptive result to be confirmed",
   "indeterminate (qualifier value)", 
   "invalid result", 
-  "specimen unsatisfactory for evaluation"
+  "specimen unsatisfactory for evaluation",
+  "acinetobacter baumannii (organism)",
+  "carbapenem resistant pseudomonas aeruginosa",
+  "enterobacter cloacae complex (organism)",
+  "enterococcus faecalis",
+  "genus enterococcus",
+  "interpretive information: 2019 novel coronavirus sars-cov-2 by pcr",
+  "multiple drug-resistant serratia marcescens",
+  "specimen received mislabeled"
   )
 
 
@@ -125,7 +134,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     file_path,
     col_types = cols(
       .default = col_skip(),
-      unique_num = col_character(),
+      PersonId = col_character(),
       Age = col_integer(),
       Sex = col_character(),
       Ethnicity = col_character(),
@@ -142,7 +151,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   full_num_id_cases <- pcr_results_original %>% 
     filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
-    select(unique_num) %>% 
+    select(PersonId) %>% 
     unique() %>% 
     nrow()
 
@@ -207,7 +216,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
         )))
       ) %>%
     select(
-      id = unique_num, 
+      id = PersonId, 
       posted_date = Specimen.Collected.Date, 
       time_days,
       test_result, 
@@ -521,9 +530,9 @@ kable(
   ),
   format = "latex",
   caption = paste(
-    "Number of COVID-19 tests and unique individuals who tested in Orange County from ", 
-      params$first_test_date, " to ", params$last_test_date, 
-      ". Includes number removed from data by type of issue for this analysis.", 
+    "Number of COVID-19 tests and unique individuals who tested in Orange County from ",
+      params$first_test_date, " to ", params$last_test_date,
+      ". Includes number removed from data by type of issue for this analysis.",
     sep = "")
   ) %>%
   kable_styling(latex_options = c("HOLD_position")) %>% 
