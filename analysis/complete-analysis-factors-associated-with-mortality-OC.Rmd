@@ -41,8 +41,6 @@ library(lme4)
 library(BRRR)
 library(car) # I dont think I need this anymore
 library(mgcv)
-
-library(ggplot2)
 ```
 
 
@@ -342,37 +340,56 @@ if (params$reclean_data) {
 
 
 ```{r missing-data-table}
-tab_obs <- data.frame(matrix( data = NA, ncol = 2, nrow = 3,))
+usable_counts <- c(
+  all_missing[1, "missing_counts"],
+  all_missing[1, "missing_counts"] - all_missing[2, "missing_counts"],
+  all_missing[1, "missing_counts"] - sum(all_missing[2:3, "missing_counts"]),
+  all_missing[1, "missing_counts"] - sum(all_missing[2:4, "missing_counts"])
+)
+usable_ids <- c(
+  all_missing[1, "missing_ids"],
+  all_missing[1, "missing_ids"] - all_missing[2, "missing_ids"],
+  all_missing[1, "missing_ids"] - sum(all_missing[2:3, "missing_ids"]),
+  all_missing[1, "missing_ids"] - sum(all_missing[2:4, "missing_ids"])
+)
+
+tab_obs <- data.frame(
+  c(NA, all_missing[2:4, "missing_counts"]), 
+  usable_counts, 
+  c(NA, all_missing[2:4, "missing_ids"]), 
+  usable_ids
+)
 rownames(tab_obs) <- c(
   "Unmodified",
-  "Nonresponse[note]",
-  "Invalid zip code[note]"
+  "Missing or Inconclusive[note]",
+  "Consecutive Testing[note]",
+  "Invalid Zip Code"
 )
-tab_obs[1, 1] <- pos_counts["full_num_data_cases"]
-tab_obs[1, 2] <- NA
-tab_obs[2:3, 1] <- pos_counts[-1]
-tab_obs[2, 2] <- tab_obs[1, 1] - tab_obs[2, 1]
-tab_obs[3, 2] <- tab_obs[2, 2] - tab_obs[3, 1]
-
 
 kable(
   tab_obs,
-  col.names = c("Number of tests", "Number of usable tests after removal"),
+  col.names = c(
+    "With Issue", 
+    "After Removal",
+    "With Issue ", 
+    "After Removal "
+  ),
   format = "latex",
   caption = paste(
-    "Number of COVID-19 tests in Orange County from ", 
-    params$first_test_date, " to ", params$last_test_date, 
-    ". Includes number of removed tests from data by type of issue for this analysis.", 
-    sep = ""
-  )) %>%
+    "Number of COVID-19 tests and unique individuals who tested in Orange County from ",
+      params$first_test_date, " to ", params$last_test_date,
+      ". Includes number removed from data by type of issue for this analysis.",
+    sep = "")
+  ) %>%
   kable_styling(latex_options = c("HOLD_position")) %>% 
+  add_header_above(c(" " = 1, "Number of Tests" = 2, "Number of Indiviuals" = 2), line = FALSE) %>% 
   add_footnote(
     c(
-      "Number of tests without complete demographic (sex, age, zip) information",
-      "Number of invalid zip codes and non Orange County zip codes"
-    ),
+      "Number without conclusive test result or complete demographic information",
+      "Kept an indivdual's tests up to and including their first positive"
+      ),
     notation = "symbol"
-  )
+    )
 ```
 
 

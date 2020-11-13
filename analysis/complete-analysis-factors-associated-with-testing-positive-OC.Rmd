@@ -39,8 +39,6 @@ library(lme4)
 library(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
-
-library(ggplot2)
 ```
 
 ```{r data-wrangling-function}
