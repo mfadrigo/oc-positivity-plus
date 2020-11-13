@@ -112,7 +112,11 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   
   pos_results_adjusted <- pos_results_original_new_race %>% 
-    mutate(death_due_to_covid = str_to_lower(DeathDueCOVID)) %>% 
+    mutate(death_due_to_covid = factor(
+      str_to_lower(DeathDueCOVID), 
+      levels = c("y", "unknown")
+      )     
+    ) %>% 
     mutate(sex = fct_collapse(
       str_to_lower(Gender),
       male = "m",
@@ -386,6 +390,55 @@ kable(
     threeparttable = TRUE
     )
 ```
+
+
+For simplicity let  
+$p_{i}$ being the probability of testing positive for COVID-19 in Orange County  
+$\overrightarrow{\beta}^{T}_{(1-12)} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
+$\overrightarrow{\beta}_{(14-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
+$\overrightarrow{\beta}_{(24-26)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
+
+
+Model 1:
+\begin{equation}
+  \label{eq:Model1}
+  \begin{split}
+    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
+    &+ \beta_{28}\text{MedianIncome}_i\\ 
+    &+ \beta_{29}\text{Days}_i,
+  \end{split}
+\end{equation}
+with a random intercept for zip code.
+
+```{r fit-model1}
+if (params$refit_model1) {
+  tic()
+  fit_time_lin_m <- glmer(
+    formula = death_due_to_covid  ~ age_group + sex + race + 
+              adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days +
+              (1 | zip),              
+    family = binomial, 
+    data = pos_pcr,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  skrrrahh("drummaboy")
+
+  tic()
+  fit_time_lin_m2 <- allFit(fit_time_lin_m)
+  toc()
+  skrrrahh("drummaboy")
+  
+  save(fit_time_lin_m, file = here("analysis/mortality-regression-results", "fit_time_lin_m.Rdata"))
+} else {
+  load(file = here("analysis/mortality-regression-results", "fit_time_lin_m.Rdata"))
+}
+```
+
 
 
 
