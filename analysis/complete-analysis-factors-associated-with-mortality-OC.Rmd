@@ -330,14 +330,14 @@ if (params$reclean_data) {
     end_date = params$last_test_date
   )
   
-  pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
+  pos_pcr <- data.frame(pos_pcr_and_zip[["pos_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
   pos_counts <- pos_pcr_and_zip[["counts"]]
   save(pos_pcr_and_zip, file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
 } else {
   load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
   
-  pos_pcr <- data.frame(pos_pcr_and_zip[["pcr_results_merged"]])
+  pos_pcr <- data.frame(pos_pcr_and_zip[["pos_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
   pos_missing <- pos_pcr_and_zip[["missing"]]
 }
@@ -346,21 +346,18 @@ if (params$reclean_data) {
 
 ```{r missing-data-table}
 usable_counts <- c(
-  all_missing[1, "missing_counts"],
-  all_missing[1, "missing_counts"] - all_missing[2, "missing_counts"],
-  all_missing[1, "missing_counts"] - sum(all_missing[2:3, "missing_counts"])
+  pos_missing[1],
+  pos_missing[1] - pos_missing[2],
+  pos_missing[1] - sum(pos_missing[2:3])
 )
 
 tab_obs <- data.frame(
-  c(NA, all_missing[2:4, "missing_counts"]), 
-  usable_counts, 
-  c(NA, all_missing[2:4, "missing_ids"]), 
-  usable_ids
+  c(NA, pos_missing[2:3]), 
+  usable_counts
 )
 rownames(tab_obs) <- c(
   "Unmodified",
   "Missing or Inconclusive[note]",
-  "Consecutive Testing[note]",
   "Invalid Zip Code"
 )
 
@@ -368,9 +365,7 @@ kable(
   tab_obs,
   col.names = c(
     "With Issue", 
-    "After Removal",
-    "With Issue ", 
-    "After Removal "
+    "After Removal"
   ),
   format = "latex",
   caption = paste(
@@ -380,11 +375,10 @@ kable(
     sep = "")
   ) %>%
   kable_styling(latex_options = c("HOLD_position")) %>% 
-  add_header_above(c(" " = 1, "Number of Tests" = 2, "Number of Indiviuals" = 2), line = FALSE) %>% 
+  add_header_above(c(" " = 1, "Number of Tests" = 2), line = FALSE) %>% 
   add_footnote(
     c(
-      "Number without conclusive test result or complete demographic information",
-      "Kept an indivdual's tests up to and including their first positive"
+      "Number without conclusive test result or complete demographic information"
       ),
     notation = "symbol"
     )
