@@ -787,8 +787,8 @@ parameter_names <- c(
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Sex [ref: Female]   Male",
   "Race [ref: White]   Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "POP with Bachelors [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
-  "POP with Insurance [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "% College Degree [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
+  "% Insured [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density"
   )
 
@@ -799,12 +799,6 @@ fit_time_gam_inter_summary <- compute_ci_gam_logistic(
 
 gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
-
-
-```{r final-model-diagnostics, eval = FALSE}
-gam.check(fit_time_gam_inter)
-```
-
 
 
 ```{r bic-table}
@@ -925,30 +919,32 @@ kable(
   pack_rows("Age", 1, 13, bold = FALSE) %>%
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 23, bold = FALSE) %>%
-  pack_rows("Zip Code POP with Bachelors", 24, 27, bold = FALSE) %>%
-  pack_rows("Zip Code POP with Medical Insurance", 28, 31, bold = FALSE) %>% 
+  pack_rows("% College Degree[note]", 24, 27, bold = FALSE) %>%
+  pack_rows("% Insured[note]", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
       paste0(
-        "Adjusted for all covariates listed plus zip code median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of bachelors and insured with the average population density. The odds of this individual testing positive for COVID-19 is estimated to be ",
+        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing positive for COVID-19 is estimated to be ",
         intercept
       ), 
-      "Abreviations: CI = confidence interval, POP = percentage of population"
+      "95% Confidence Interval",
+      "Esimated percent of people with a bachelor's degree in an individual's zip code ",
+      "Esimated percent of people with medical insurance in an individual's zip code "
       ),
     notation = "symbol"
   )  
 ```
 
 
-```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time."}
+```{r final-model-results-plot1, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
 ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, colour = "red") +
-  ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
+  ylim(min(fit_time_gam_inter_summary$lower_bound), max(fit_time_gam_inter_summary$upper_bound)) +
   geom_point() +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Odds ratio of testing positive for COVID-19") +
+  ylab("Adjusted Odds Ratio") +
   coord_flip() +
   theme(
     axis.title.y = element_blank(),
@@ -962,14 +958,14 @@ ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, col
   scale_x_discrete(limits = rev(parameter_names)) 
 ```
 
-```{r final-model-results-plot1_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. "}
+```{r final-model-results-plot1_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 parameter_names <- c(
-  "Age [ref: 0-4yrs]                                          5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "Age [ref: 0-4yrs]                                   5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Sex [ref: Female]                                     Male",
-  "Race [ref: White]                                    Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "POP with Bachelors [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
-  "POP with Insurance [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Sex [ref: Female]                                 Male",
+  "Race [ref: White]                                Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "% College Degree [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
+  "% Insured [ref: Q1]               2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density"
   )
 
@@ -979,7 +975,7 @@ fit_time_gam_inter_summary <- compute_ci_gam_logistic(
 )
 
 ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, colour = "red") +
-  ylim(min(fm_results$lower_bound), max(fm_results$upper_bound)) +
+  ylim(min(fit_time_gam_inter_summary$lower_bound), max(fit_time_gam_inter_summary$upper_bound)) +
   geom_point() +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
@@ -1000,7 +996,7 @@ ggplot(fit_time_gam_inter_summary, aes(x = param_names, y = odds), size = 5, col
 
 
 
-```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time.", eval=FALSE}
+```{r final-model-results-plot, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined.", eval=FALSE}
 groups <- c(
   rep("Age [ref: 0-4]", 12), 
   "Sex [ref: Female]", 
@@ -1022,8 +1018,8 @@ fm_results <- fm_results %>%
       "Age [ref: 0-4]", 
       "Sex [ref: Female]",
       "Race [ref: White]",
-      "POP with Bachelors",
-      "POP with Insurance",
+      "% College Degree",
+      "% Insurance",
       " "
     )
   )) %>% 
