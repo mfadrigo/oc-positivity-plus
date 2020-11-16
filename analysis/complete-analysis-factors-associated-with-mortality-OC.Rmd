@@ -424,7 +424,7 @@ Model 0:
   \label{eq:Model0}
   \begin{split}
     \log(O_i) &= \beta_0 + \beta_{1}\text{Age}_i + \beta_{2}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance}}_i \\
+		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{16}\text{Population Density}_i + \beta_{17}\text{Median Income}_i\\ 
 		&+ \beta_{18}\text{Days}_i\\
 		&+ \beta_{19}\text{Available Hospital Beds}_i,
@@ -458,7 +458,7 @@ Model 1:
   \label{eq:Model1}
   \begin{split}
     \log(O_i) &= \beta_0 + \beta_{1}\text{Age}_i + \beta_{2}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance}}_i \\
+		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{16}\text{Population Density}_i + \beta_{17}\text{Median Income}_i\\ 
 		&+ \beta_{18}\text{Days}_i\\
 		&+ \beta_{19}\text{Available Hospital Beds}_i,
