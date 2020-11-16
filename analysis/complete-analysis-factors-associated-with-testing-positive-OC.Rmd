@@ -788,7 +788,7 @@ parameter_names <- c(
   "Male",
   "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
   "2nd Quartile", "3rd Quartile", "4th Quartile",
-  "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density"
   )
 
@@ -939,27 +939,18 @@ kable(
 
 ```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
-indent_levels <- function(name) {
-  indent <- paste0(rep(" ", 7), collapse = "")
-  paste0(indent, name, collapse = "")
-}
-
-fit_time_gam_inter_summary1$ind_param_names <- c(
-  map_chr(fit_time_gam_inter_summary1$param_names[-27], indent_levels),
-  fit_time_gam_inter_summary1$param_names[27]
-)
-
 fm_results_with_ref <- rbind(
-  c(1, 0.99, 1.01, 0, " ", "Age [ref: 0-4yrs]"),
+  c(1, 0.99, 1.01, 0, paste0(c("Age [ref: 0-4yrs]", rep(" ", 38)), collapse = "")),
   fit_time_gam_inter_summary1[1:12, ],
-  c(1, 0.99, 1.01, 0, " ", "Sex [ref: Female]"),
+  c(1, 0.99, 1.01, 0, paste0(c("Sex [ref: Female]", rep(" ", 37)), collapse = "")),
   fit_time_gam_inter_summary1[13, ],
-  c(1, 0.99, 1.01, 0, " ", "Race/Ethnicity [ref: White]"),
+  c(1, 0.99, 1.01, 0, paste0(c("Race/Ethnicity [ref: White]", rep(" ", 23)), collapse = "")),
   fit_time_gam_inter_summary1[14:20, ],
-  c(1, 0.99, 1.01, 0, " ", "% with College Degree [ref: 1st Quartile]"),
+  c(1, 0.99, 1.01, 0, "% with College Degree [ref: 1st Quartile]"),
   fit_time_gam_inter_summary1[21:23, ],
-  c(1, 0.99, 1.01, 0, " ", "% with Insurance [ref: 1st Quartile]"),
-  fit_time_gam_inter_summary1[24:27, ]
+  c(1, 0.99, 1.01, 0, paste0(c("% with Insurance [ref: 1st Quartile]", rep(" ", 9)), collapse = "")),
+  fit_time_gam_inter_summary1[24:26, ],
+  c(as.character(fit_time_gam_inter_summary1[27, -5]), paste0(c("Population Density", rep(" ", 35)), collapse = ""))
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -980,7 +971,7 @@ variable_colors <- c(
 )
 
 
-ggplot(fm_results_with_ref, aes(x = ind_param_names, y = odds), size = 5) +
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
   geom_point(color = variable_colors) +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
@@ -990,13 +981,13 @@ ggplot(fm_results_with_ref, aes(x = ind_param_names, y = odds), size = 5) +
   theme(
     axis.title.y = element_blank(),
     axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black", hjust = 0),
+    axis.text.y=element_text(colour="black", hjust = 1),
     axis.ticks.y = element_blank(),
     axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
     panel.background = element_blank()
   ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$ind_param_names)) 
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) 
 ```
 
 ```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
