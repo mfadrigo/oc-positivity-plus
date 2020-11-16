@@ -449,20 +449,6 @@ compute_ci_logistic <- function(model, alpha = 0.05, param_names) {
   return("model_sum" = model_sum)
 }
 
-parameter_names <- c(
-  "Age [ref: 0-4yrs]   5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
-  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Sex [ref: Female]   Male",
-  "Race [ref: White]   Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "POP with Bachelors [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
-  "POP with Insurance [ref: Q1]   2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Population Density"
-  )
-
-fit_time_gam_inter_summary <- compute_ci_gam_logistic(
-  model = fit0,
-  param_names = parameter_names
-)
 
 ```
 
@@ -495,7 +481,9 @@ if (params$refit_model1) {
     )
   toc()
   skrrrahh("drummaboy")
-
+ #  Model failed to converge with max|grad| = 0.078488 (tol = 0.002, component 1)Model is nearly unidentifiable: very large eigenvalue
+ # - Rescale variables?
+ #  2042.06 sec elapsed
   tic()
   fit_time_lin_m2 <- allFit(fit_time_lin_m)
   toc()
