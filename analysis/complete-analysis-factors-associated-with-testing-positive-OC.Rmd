@@ -940,15 +940,15 @@ kable(
 ```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
 fm_results_with_ref <- rbind(
-  c(1, 0.99, 1.01, 0, paste0(c("Age [ref: 0-4yrs]", rep(" ", 38)), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
   fit_time_gam_inter_summary1[1:12, ],
-  c(1, 0.99, 1.01, 0, paste0(c("Sex [ref: Female]", rep(" ", 37)), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
   fit_time_gam_inter_summary1[13, ],
-  c(1, 0.99, 1.01, 0, paste0(c("Race/Ethnicity [ref: White]", rep(" ", 23)), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
   fit_time_gam_inter_summary1[14:20, ],
   c(1, 0.99, 1.01, 0, "% with College Degree [ref: 1st Quartile]"),
   fit_time_gam_inter_summary1[21:23, ],
-  c(1, 0.99, 1.01, 0, paste0(c("% with Insurance [ref: 1st Quartile]", rep(" ", 9)), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
   fit_time_gam_inter_summary1[24:26, ],
   c(as.character(fit_time_gam_inter_summary1[27, -5]), paste0(c("Population Density", rep(" ", 35)), collapse = ""))
 )
