@@ -788,7 +788,7 @@ parameter_names <- c(
   "Male",
   "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
   "2nd Quartile", "3rd Quartile", "4th Quartile",
-  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density"
   )
 
@@ -919,8 +919,8 @@ kable(
   pack_rows("Age", 1, 13, bold = FALSE) %>%
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 23, bold = FALSE) %>%
-  pack_rows("% College Degree[note]", 24, 27, bold = FALSE) %>%
-  pack_rows("% Insured[note]", 28, 31, bold = FALSE) %>% 
+  pack_rows("% with College Degree[note]", 24, 27, bold = FALSE) %>%
+  pack_rows("% with Insurance[note]", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
@@ -937,54 +937,28 @@ kable(
 ```
 
 
-```{r final-model-results-plot1_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
-parameter_names <- c(
-  "Age [ref: 0-4yrs]                                  5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
-  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Sex [ref: Female]                               Male",
-  "Race [ref: White]                              Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "% College Degree [ref: Q1]   2nd Quartile", "3rd Quartile", "4th Quartile",
-  "% Insured [ref: Q1]               2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Population Density"
-  )
-
-fit_time_gam_inter_summary2 <- compute_ci_gam_logistic(
-  model = fit_time_gam_inter,
-  param_names = parameter_names
-)
-
-ggplot(fit_time_gam_inter_summary2, aes(x = param_names, y = odds), size = 5, colour = "red") +
-  ylim(min(fit_time_gam_inter_summary2$lower_bound), max(fit_time_gam_inter_summary2$upper_bound)) +
-  geom_point() +
-  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), colour = "black") +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio") +
-  coord_flip() +
-  theme(
-    axis.title.y = element_blank(),
-    axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black"),
-    axis.ticks.y = element_blank(),
-    axis.line.x = element_line(color = "black"),
-    panel.grid.major = element_line(colour = "gray"),
-    panel.background = element_blank()
-  ) +
-  scale_x_discrete(limits = rev(parameter_names)) 
-```
-
-
 ```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
+indent_levels <- function(name) {
+  indent <- paste0(rep(" ", 7), collapse = "")
+  paste0(indent, name, collapse = "")
+}
+
+fit_time_gam_inter_summary1$ind_param_names <- c(
+  map_chr(fit_time_gam_inter_summary1$param_names[-27], indent_levels),
+  fit_time_gam_inter_summary1$param_names[27]
+)
+
 fm_results_with_ref <- rbind(
-  c(1, 0.99, 1.01, 0, "Age [ref: 0-4yrs]"),
+  c(1, 0.99, 1.01, 0, " ", "Age [ref: 0-4yrs]"),
   fit_time_gam_inter_summary1[1:12, ],
-  c(1, 0.99, 1.01, 0, "Sex [ref: Female]"),
+  c(1, 0.99, 1.01, 0, " ", "Sex [ref: Female]"),
   fit_time_gam_inter_summary1[13, ],
-  c(1, 0.99, 1.01, 0, "Race [ref: White]"),
+  c(1, 0.99, 1.01, 0, " ", "Race/Ethnicity [ref: White]"),
   fit_time_gam_inter_summary1[14:20, ],
-  c(1, 0.99, 1.01, 0, "% College Degree [ref: 1st Quartile]"),
+  c(1, 0.99, 1.01, 0, " ", "% with College Degree [ref: 1st Quartile]"),
   fit_time_gam_inter_summary1[21:23, ],
-  c(1, 0.99, 1.01, 0, "% Insured [ref: 1st Quartile]"),
+  c(1, 0.99, 1.01, 0, " ", "% with Insurance [ref: 1st Quartile]"),
   fit_time_gam_inter_summary1[24:27, ]
 )
 
@@ -1006,7 +980,7 @@ variable_colors <- c(
 )
 
 
-ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
+ggplot(fm_results_with_ref, aes(x = ind_param_names, y = odds), size = 5) +
   ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
   geom_point(color = variable_colors) +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
@@ -1016,13 +990,13 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   theme(
     axis.title.y = element_blank(),
     axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 0),
     axis.ticks.y = element_blank(),
     axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
     panel.background = element_blank()
   ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) 
+  scale_x_discrete(limits = rev(fm_results_with_ref$ind_param_names)) 
 ```
 
 ```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
