@@ -355,7 +355,13 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       is.na(all_hospital_beds - hospitalized_covid_patients), 
       params$daniel_est_beds,
       all_hospital_beds - hospitalized_covid_patients
-    ))
+    )) %>% 
+    select(
+      test_date = todays_date,
+      avail_beds
+    )
+  
+  pos_results_merged <- merge(pos_results_merged, hos_bed_gov, by = "test_date")
   
   
   list(
