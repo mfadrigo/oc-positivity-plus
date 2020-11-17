@@ -563,7 +563,7 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
 ```
 
 For simplicity let  
-$p_{i}$ being the probability of testing positive for COVID-19 in Orange County  
+$O_i$ be the odds of testing positive for COVID-19 in Orange County  
 $\overrightarrow{\beta}^{T}_{(1-12)} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
 $\overrightarrow{\beta}_{(14-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
 $\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
@@ -574,7 +574,7 @@ Model 1:
 \begin{equation}
   \label{eq:Model1}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}\text{Days}_i,
@@ -623,7 +623,7 @@ Model 2:
 \begin{equation}
   \label{eq:Model2}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2,
@@ -658,7 +658,7 @@ Model 3:
 \begin{equation}
   \label{eq:Model3}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\
     &+ \beta_{29}\text{Days}_i + \beta_{30}(\text{Days}_i)^2\\ 
@@ -712,7 +712,7 @@ Generalized additive model
 \begin{equation}
   \label{eq:Model4}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}f(\text{Days}_i),
@@ -749,7 +749,7 @@ Generalized additive model
 \begin{equation}
   \label{eq:Model5}
   \begin{split}
-    \log(\frac{p_i}{1 + p_i}) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \overrightarrow{\beta}^{T}_{(1-12)}\overrightarrow{\text{Age Group}}_i + \overrightarrow{\beta}_{13}\text{Male}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
     &+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{Education Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{Insured}}_i + \beta_{27}\text{PopDensity}_i\\
     &+ \beta_{28}\text{MedianIncome}_i\\ 
     &+ \beta_{29}f(\text{Days}_i)\\
@@ -977,6 +977,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
   ylab("Adjusted Odds Ratio") +
+  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
   coord_flip() +
   theme(
     axis.title.y = element_blank(),
@@ -985,9 +986,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
     axis.ticks.y = element_blank(),
     axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
-    panel.background = element_blank()
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
   ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) 
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.25))
 ```
 
 ```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
