@@ -336,12 +336,25 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   ) %>% 
     filter(county == "Orange") 
   
+  
+  if(month(params$first_test_date) == month(first_date) & day(params$first_test_date) < day(first_date)) {
+    first_date <- sort(hos_bed_gov$todays_date)[1]
+    dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
+    dates_missing <- dates_missing[-length(dates_missing)]
+    num_dm <- length(dates_missing)
+    missing_rows <- data.frame(rep("Orange", num_dm), dates_missing, rep(NA, num_dm), rep(NA, num_dm))
+    colnames(missing_rows) <- colnames(hos_bed_gov)
+    hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
+  } else {
+    print("Error: fix hospital data dates")
+  }
+
   # Beds were not recorded before 2020-04-20. Daniel has estimated
-  hos_bed_gov <- avail_beds %>% 
+  hos_bed_gov <- hos_bed_gov %>% 
     mutate(avail_beds = ifelse(
-      is.numeric(all_hospital_beds - hospitalized_covid_patients), 
-      all_hospital_beds - hospitalized_covid_patients,
-      params$
+      is.na(all_hospital_beds - hospitalized_covid_patients), 
+      params$daniel_est_beds,
+      all_hospital_beds - hospitalized_covid_patients
     ))
   
   
