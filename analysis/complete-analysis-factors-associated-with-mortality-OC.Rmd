@@ -40,13 +40,14 @@ usepackage_latex("threeparttable")
 library(tictoc)
 library(lme4)
 library(BRRR)
-library(car) # I dont think I need this anymore
+library(car) # I don't think I need this anymore
 library(mgcv)
 ```
 
 
 ```{r data-wrangling-function}
 read_pos_pcr <- function(file_path, start_date, end_date) {
+  # Read in data --------------------------------------------------------------------
   pos_results_original <- read_csv(
     file_path,
     col_types = cols(
@@ -64,6 +65,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     )
   ) 
   
+  # Mutate and save desired variables ------------------------------------------------------
   full_num_data_cases <- pos_results_original %>% 
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
     nrow()
@@ -164,7 +166,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     arrange(test_date) 
   
   
-  # Add zip code level data and merge with pcr results
+  # Add zip code level data and merge with pcr results ----------------------------------
   zip_area_oc <- read_csv(
     here("data", "zip-area2.csv"),
     col_types = cols(
@@ -252,7 +254,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   )
   
   
-  # Group and scale variables 
+  # Group and scale variables -------------------------------------------------------------------------
   age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
   age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                   "40-49","50-59","60-69","70-79","80+")
@@ -316,6 +318,23 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       labels = c("Q1", "Q2", "Q3", "Q4")
       )
     )
+  
+  
+  # Read and filter hospital bed data -----------------------------------------------------------
+  # OC data
+  hos_bed_gov <- read_csv(
+    here("data", "covid19-hospital-data-gov.csv"),
+    na = c("", " "),
+    col_types = cols(
+      .default = col_skip(),
+      county = col_character(),
+      todays_date = col_date("%Y-%m-%d T %H:%M:%S"),
+      hospitalized_covid_patients = col_double(),
+      all_hospital_beds = col_double()
+    )
+  ) %>% 
+    filter(county == "Orange") %>% 
+    mutate(avail_beds = all_hospital_beds - hospitalized_covid_patients)
   
   
   list(
