@@ -14,6 +14,7 @@ params:
   refit_model3: FALSE
   refit_model4: FALSE
   refit_model5: FALSE
+  daniel_est_beds: 4879
 ---
 
 ```{r setup, include=FALSE}
@@ -333,8 +334,15 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       all_hospital_beds = col_double()
     )
   ) %>% 
-    filter(county == "Orange") %>% 
-    mutate(avail_beds = all_hospital_beds - hospitalized_covid_patients)
+    filter(county == "Orange") 
+  
+  # Beds were not recorded before 2020-04-20. Daniel has estimated
+  hos_bed_gov <- avail_beds %>% 
+    mutate(avail_beds = ifelse(
+      is.numeric(all_hospital_beds - hospitalized_covid_patients), 
+      all_hospital_beds - hospitalized_covid_patients,
+      params$
+    ))
   
   
   list(
