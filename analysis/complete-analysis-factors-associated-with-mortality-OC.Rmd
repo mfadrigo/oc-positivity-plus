@@ -76,6 +76,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   pos_results_original$Race[is.na(pos_results_original$Race)] <- "Unknown"
   pos_results_original$Ethnicity[is.na(pos_results_original$Ethnicity)] <- "Unknown"
 
+  # All classified as Hispanic or Latino
   hispanic_race_unknown <- (
     (pos_results_original$Race == "Other" & 
      pos_results_original$Ethnicity == "Hispanic or Latino") |
@@ -85,10 +86,13 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
      pos_results_original$Ethnicity == "Hispanic or Latino") 
   )
   
+  # All classified as Unknown
   non_hispanic_unknown <- (
     (pos_results_original$Race == "Unknown" & 
      pos_results_original$Ethnicity != "Hispanic or Latino") |
     (pos_results_original$Race == "Multiple Races" & 
+     pos_results_original$Ethnicity != "Hispanic or Latino") |
+    (pos_results_original$Race == "Other" & 
      pos_results_original$Ethnicity != "Hispanic or Latino")
   )
   
@@ -99,11 +103,10 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   pos_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
   pos_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
-  # pos_results_original_new_race$race1[pos_results_original_new_race$race1 == "other"] <- "unknown"
-  
+
   pos_results_original_new_race$DeathDueCOVID <- replace_na(
     pos_results_original_new_race$DeathDueCOVID,
-    "unknown"
+    "n"
   )
   pos_results_original_new_race$Age <- replace_na(
     pos_results_original_new_race$Age,
@@ -120,7 +123,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   pos_results_adjusted <- pos_results_original_new_race %>% 
     mutate(death_due_to_covid = factor(
       str_to_lower(DeathDueCOVID), 
-      levels = c("y", "unknown")
+      levels = c("y", "n")
       )     
     ) %>% 
     mutate(sex = fct_collapse(
@@ -138,7 +141,6 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
         "hispanic or latino",
         "american indian or alaska native",
         "native hawaiian or other pacific islander",
-        "other",
         "unknown"
       ),
     )) %>% 
@@ -473,22 +475,21 @@ Model 0:
 \begin{equation}
   \label{eq:Model0}
   \begin{split}
-    \log(O_i) &= \beta_0 + \beta_{1}\text{Age}_i + \beta_{2}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \beta_{Age}\text{Age}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
-		&+ \beta_{16}\text{Population Density}_i + \beta_{17}\text{Median Income}_i\\ 
-		&+ \beta_{18}\text{Days}_i\\
-		&+ \beta_{19}\text{Available Hospital Beds}_i,
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
+		&+ \beta_{Time}\text{Time}_i\\
+		&+ \beta_{Available Hospital Beds}\text{Available Hospital Beds}_i,
   \end{split}
 \end{equation}
 without a random intercept for zip code.
 
-```{r fit-model0, eval = FALSE}
+```{r fit-model0}
 if (params$refit_model1) {
   tic()
   fit0 <- glm(
     formula = death_due_to_covid  ~ adj_age + sex + race + 
-              adj_perc_bach_quar + 
-              adj_perc_insured_quar +
+              adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
               adj_time_days + adj_avail_beds,
     family = binomial, 
@@ -506,7 +507,7 @@ parameter_names <- c(
   "Age",
   "Male",
   "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
-  #"2nd Quartile", "3rd Quartile", "4th Quartile",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density", 
   "Median Income",
@@ -522,11 +523,11 @@ Model 1:
 \begin{equation}
   \label{eq:Model1}
   \begin{split}
-    \log(O_i) &= \beta_0 + \beta_{1}\text{Age}_i + \beta_{2}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \beta_{Age}\text{Age}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(3-9)}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
-		&+ \beta_{16}\text{Population Density}_i + \beta_{17}\text{Median Income}_i\\ 
-		&+ \beta_{18}\text{Days}_i\\
-		&+ \beta_{19}\text{Available Hospital Beds}_i,
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
+		&+ \beta_{Time}\text{Time}_i\\
+		&+ \beta_{Available Hospital Beds}\text{Available Hospital Beds}_i,
   \end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -581,7 +582,7 @@ model.data %>%
 ```
 
 
-```{r final-model-results-table, eval = FALSE}
+```{r final-model-results-table}
 # Not ready yet!
 fit_final_model <- summary_fit0
 fm_sum <- summary(fit0)
@@ -605,11 +606,11 @@ reference_group <- c(
   )
 
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
-colnames(table_fm) <- c("COVID19+", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("COVID-19 Deaths", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "Age",
   "Female", "Male",
-  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Zip Code Pop Density (1000ppl/km^2)",
@@ -636,29 +637,24 @@ for(i in 1:nrow(table_fm)) {
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
 dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == "y", ]
-quant_vars <- c("pop_density")
-order_quant_vars <- c(nrow(table_fm))
+quant_vars <- c("adj_age", "adj_pop_density", "adj_med_income", "adj_time_days", "adj_avail_beds")
+order_quant_vars <- c(1, 19:22)
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
-qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+qual_vars <- c("sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
 order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
 
 qual_vars_ordered <- c(
-  "adj_age",
   "sex.female", "sex.male", 
   "race.white", "race.asian",
   "race.black or african american", "race.hispanic or latino",
   "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
-  "race.other", "race.unknown",
+  "race.unknown",
   "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
   "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
   "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
-  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4",
-  "adj_pop_density",
-  "adj_med_income",
-  "adj_time_days",
-  "adj_avail_beds"
-  )
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+)
  
 calc_freq <- function(df, order_vars) {
   qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
@@ -668,7 +664,7 @@ calc_freq <- function(df, order_vars) {
   paste(qual_count, " (", qual_freq, "%)", sep = "")
 }
 
-variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 2] <- calc_freq(pos_pcr[, qual_vars], qual_vars_ordered)
 variable_counts[order_qual_vars, 1] <- calc_freq(dead_pcr[, qual_vars], qual_vars_ordered)
 
 table_fm[, 2] <- variable_counts[, 2]
@@ -676,11 +672,11 @@ table_fm[, 1] <- variable_counts[, 1]
 
 
 intercept <- paste0(
-  round(exp(fm_sum$coefficients[, 1]), 3),
+  round(exp(fm_sum$coefficients[1, 1]), 3),
   " (",
-  round(exp(fm_sum$coefficients[, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 2),
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 2),
   ",",
-  round(exp(fm_sum$coefficients[, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 2),
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 2),
   ")"
 )
 
@@ -695,15 +691,16 @@ kable(
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Sex", 2, 3, bold = FALSE) %>%
-  pack_rows("Race", 16, 23, bold = FALSE) %>%
-  pack_rows("% with College Degree[note]", 24, 27, bold = FALSE) %>%
-  pack_rows("% with Insurance[note]", 28, 31, bold = FALSE) %>% 
+  pack_rows("Race", 4, 10, bold = FALSE) %>%
+  pack_rows("% with College Degree[note]", 11, 14, bold = FALSE) %>%
+  pack_rows("% with Insurance[note]", 15, 18, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
       paste0(
-        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing positive for COVID-19 is estimated to be ",
-        intercept
+        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing dying is estimated to be ",
+        intercept,
+        collapse = ""
       ), 
       "95% Confidence Interval",
       "Esimated percent of people with a bachelor's degree in an individual's zip code ",
