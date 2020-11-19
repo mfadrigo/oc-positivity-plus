@@ -1,5 +1,5 @@
 ---
-title: "Complete analysis: Factors associated with mortalit among people diagnosed
+title: "Complete analysis: Factors associated with mortality among people diagnosed
   with COVID-19"
 output: 
   pdf_document:
