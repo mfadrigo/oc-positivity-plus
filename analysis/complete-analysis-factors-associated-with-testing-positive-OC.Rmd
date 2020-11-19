@@ -41,6 +41,7 @@ library(car) # I don't think I need this anymore
 library(mgcv)
 ```
 
+
 ```{r data-wrangling-function}
 # Test results need to be categorized ------------------------------------------------------
 negative_test_synonyms <- c(
@@ -352,9 +353,53 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     select(zip = Zip, percent_insured = PercentInsured)
   
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
-
   
-  #23 rows in 92678 zipcode we don't have area data for
+  
+  # Scale zip code level variables
+  zip_data_merged$adj_pop_density <- scale(
+    zip_data_merged$pop_density , 
+    center = TRUE, 
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_med_income <- scale(
+    zip_data_merged$med_income, 
+    center = TRUE, 
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_bach <- scale(
+    zip_data_merged$percent_bachelors,
+    center = TRUE,
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_bach_quar <- with(
+    zip_data_merged,
+    cut(adj_perc_bach,
+        breaks = quantile(adj_perc_bach, 
+        probs = seq(0, 1, by = 0.25)),
+        include.lowest = TRUE,
+        labels = c("Q1", "Q2", "Q3", "Q4"))
+    )
+  
+  zip_data_merged$adj_perc_insured <- scale(
+    zip_data_merged$percent_insured,
+    center = TRUE,
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_insured_quar <- with(
+    zip_data_merged,
+    cut(
+      adj_perc_insured,
+      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
+      include.lowest = TRUE,
+      labels = c("Q1", "Q2", "Q3", "Q4")
+      )
+    )
+  
+    #23 rows in 92678 zipcode we don't have area data for
   pcr_results_reduced$old_zip <- pcr_results_reduced$zip
   pcr_results_reduced$zip[pcr_results_reduced$old_zip == "92678"] <- "92679"
   pcr_results_merged <- merge(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
@@ -362,6 +407,30 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   
   
+  # Group ages 
+  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                  "40-49","50-59","60-69","70-79","80+")
+  setDT(pcr_results_merged)[, age_group := cut(
+    age, 
+    breaks = age_breaks, 
+    right = FALSE, 
+    labels = age_labels
+    )]
+  
+  pcr_results_merged$age_group <- factor(
+    pcr_results_merged$age_group,
+    levels = age_labels
+    )
+  
+  #technically we would want to do this differently for days but we don't used scaled in final model
+   pcr_results_merged$adj_time_days <- scale( 
+    pcr_results_merged$time_days,
+    center = TRUE,
+    scale = TRUE
+    )
+ 
+  # Count missingness by type
   missing_counts <- c(
     full_num_data_cases, 
     full_num_data_cases - nrow(pcr_results_adjusted), 
@@ -384,73 +453,6 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     "num_consecutive_cases_removed",
     "num_bad_zip_cases_removed"
   )
-  
-  
-  # Group and scale variables 
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  setDT(pcr_results_merged)[, age_group := cut(
-    age, 
-    breaks = age_breaks, 
-    right = FALSE, 
-    labels = age_labels
-    )]
-  
-  pcr_results_merged$age_group <- factor(
-    pcr_results_merged$age_group,
-    levels = age_labels
-    )
-  
-  pcr_results_merged$adj_time_days <- scale(
-    pcr_results_merged$time_days,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  pcr_results_merged$adj_pop_density <- scale(
-    pcr_results_merged$pop_density, 
-    center = TRUE, 
-    scale = TRUE
-    )
-  
-  pcr_results_merged$adj_med_income <- scale(
-    pcr_results_merged$med_income, 
-    center = TRUE, 
-    scale = TRUE
-    )
-  
-  pcr_results_merged$adj_perc_bach <- scale(
-    pcr_results_merged$percent_bachelors,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  pcr_results_merged$adj_perc_bach_quar <- with(
-    pcr_results_merged,
-    cut(adj_perc_bach,
-        breaks = quantile(adj_perc_bach, 
-        probs = seq(0, 1, by = 0.25)),
-        include.lowest = TRUE,
-        labels = c("Q1", "Q2", "Q3", "Q4"))
-    )
-  
-  pcr_results_merged$adj_perc_insured <- scale(
-    pcr_results_merged$percent_insured,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  pcr_results_merged$adj_perc_insured_quar <- with(
-    pcr_results_merged,
-    cut(
-      adj_perc_insured,
-      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
-      include.lowest = TRUE,
-      labels = c("Q1", "Q2", "Q3", "Q4")
-      )
-    )
-  
 
   
   list(
@@ -471,12 +473,8 @@ if (params$reclean_data) {
     end_date = params$last_test_date
     )
   
-  all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
-  all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
-  all_missing <- all_pcr_and_zip[["missing"]]
-  all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
-  
   save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
+  
 } else {
   load(file = here("data", "cleaned_process_pcr_data.Rdata"))
   
