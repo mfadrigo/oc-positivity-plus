@@ -1,5 +1,5 @@
 ---
-title: "Complete analysis: Factors associated with morality among people diagnosed
+title: "Complete analysis: Factors associated with mortalit among people diagnosed
   with COVID-19"
 output: 
   pdf_document:
@@ -12,6 +12,7 @@ params:
   refit_model0: FALSE
   refit_model1: FALSE
   daniel_est_beds: 4879
+  oc_est_beds: 131
 ---
 
 ```{r setup, include=FALSE}
@@ -256,7 +257,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       county = col_character(),
       todays_date = col_date("%Y-%m-%d T %H:%M:%S"),
       hospitalized_covid_patients = col_double(),
-      all_hospital_beds = col_double()
+      all_hospital_beds = col_double(),
+      icu_available_beds = col_double()
     )
   ) %>% 
     filter(county == "Orange") 
@@ -266,7 +268,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
     dates_missing <- dates_missing[-length(dates_missing)]
     num_dm <- length(dates_missing)
-    missing_rows <- data.frame(rep("Orange", num_dm), dates_missing, rep(NA, num_dm), rep(NA, num_dm))
+    missing_rows <- data.frame(rep("Orange", num_dm), dates_missing, rep(NA, num_dm), rep(NA, num_dm), rep(NA, num_dm))
     colnames(missing_rows) <- colnames(hos_bed_gov)
     hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
   } else {
@@ -276,9 +278,9 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   # Beds were not recorded before 2020-04-20. Daniel has estimated
   hos_bed_gov <- hos_bed_gov %>% 
     mutate(avail_beds = ifelse(
-      is.na(all_hospital_beds - hospitalized_covid_patients), 
-      params$daniel_est_beds,
-      all_hospital_beds - hospitalized_covid_patients
+      is.na(icu_available_beds), 
+      params$oc_est_beds,
+      icu_available_beds
     )) %>% 
     select(
       test_date = todays_date,
@@ -706,3 +708,95 @@ kable(
   )  
 ```
 
+
+```{r final-model-results-plot, fig.align="center", fig.cap="."}
+
+fm_results_with_ref <- rbind(
+  summary_fit0[1, ],
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  summary_fit0[2, ],
+  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  summary_fit0[3:6, ],
+  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
+  summary_fit0[7:9, ],
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  summary_fit0[10:nrow(summary_fit0), ]
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  "white",
+  rep("black", 12),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 7),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 4)
+)
+
+# will need to add colors again to make reference groups white
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point() +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound)) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
+  ) +
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+```
+
+
+
+
+
+```{r}
+fit2 <- glm(
+    formula = death_due_to_covid  ~ decades_old + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days,
+    family = binomial, 
+    data = pos_pcr
+    )
+fit2_sum <- summary(fit2)
+exp(fit2_sum$coefficients[, 1])
+```
+
+
+```{r}
+fit3 <- glm(
+    formula = death_due_to_covid  ~ decades_old + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + adj_avail_beds,
+    family = binomial, 
+    data = pos_pcr
+    )
+fit3_sum <- summary(fit3)
+data.frame(
+(exp(fit3_sum$coefficients[, 1])),
+(exp(fit3_sum$coefficients[, 1] - qnorm(0.975) * fit3_sum$coefficients[, 2])),
+(exp(fit3_sum$coefficients[, 1] + qnorm(0.975) * fit3_sum$coefficients[, 2])),
+)
+
+
+plot(hos_bed_gov$test_date, hos_bed_gov$avail_beds)
+```
