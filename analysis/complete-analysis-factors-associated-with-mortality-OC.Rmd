@@ -1,18 +1,20 @@
 ---
 title: "Complete analysis: Factors associated with mortality among people diagnosed
-  with COVID-19"
+  with SARS-CoV2"
 output: 
   pdf_document:
     extra_dependencies:
       amsmath 
 params:
-  reclean_data: FALSE
+  reclean_data: TRUE
   first_test_date: "2020-03-01"
   last_test_date: "2020-08-16"
-  refit_model0: FALSE
-  refit_model1: FALSE
+  refit_model0: TRUE
+  refit_model1: TRUE
   daniel_est_beds: 4879
-  oc_est_beds: 131
+  oc_icu_avail_beds_earliest_val: 131
+  oc_hos_covid_pateients_earliest_val: 308
+  oc_all_hos_bed_earliest_val: 4213
 ---
 
 ```{r setup, include=FALSE}
@@ -238,11 +240,59 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
 
   
+  # Scale zip code level variables
+  zip_data_merged$adj_pop_density <- scale(
+    zip_data_merged$pop_density, 
+    center = TRUE, 
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_med_income <- scale(
+    zip_data_merged$med_income, 
+    center = TRUE, 
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_bach <- scale(
+    zip_data_merged$percent_bachelors,
+    center = TRUE,
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_bach_quar <- with(
+    zip_data_merged,
+    cut(adj_perc_bach,
+        breaks = quantile(adj_perc_bach, 
+        probs = seq(0, 1, by = 0.25)),
+        include.lowest = TRUE,
+        labels = c("Q1", "Q2", "Q3", "Q4"))
+    )
+  
+  zip_data_merged$adj_perc_insured <- scale(
+    zip_data_merged$percent_insured,
+    center = TRUE,
+    scale = TRUE
+    )
+  
+  zip_data_merged$adj_perc_insured_quar <- with(
+    zip_data_merged,
+    cut(
+      adj_perc_insured,
+      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
+      include.lowest = TRUE,
+      labels = c("Q1", "Q2", "Q3", "Q4")
+      )
+    )
+  
+  
   #3 rows in 92678 zipcode we don't have area data for
   pos_results_adjusted$old_zip <- pos_results_adjusted$zip
+  
   pos_results_adjusted$zip[pos_results_adjusted$old_zip == "92678"] <- "92679"
-  pos_results_adjusted$zip[pos_results_adjusted$old_zip == "90743"] <- "90742" #############################
+  pos_results_adjusted$zip[pos_results_adjusted$old_zip == "90743"] <- "90742" 
+  
   pos_results_merged <- merge(x = pos_results_adjusted, y = zip_data_merged, by = "zip")
+  
   pos_results_merged$old_zip <- factor(pos_results_merged$old_zip)
   pos_results_merged$zip <- factor(pos_results_merged$zip)
   
@@ -275,88 +325,49 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     print("Error: fix hospital data dates")
   }
 
-  # Beds were not recorded before 2020-04-20. Daniel has estimated
+  # Beds were not recorded before 2020-04-20. To fill in missing:
+  # For ICU available beds the earliest value is used
+  # For percent of beds not used by COVID-19 patients the earliest value was used
   hos_bed_gov <- hos_bed_gov %>% 
-    mutate(avail_beds = ifelse(
+    mutate(avail_icu_beds = ifelse(
       is.na(icu_available_beds), 
-      params$oc_est_beds,
+      params$oc_icu_avail_beds_earliest_val,
       icu_available_beds
+    )) %>% 
+    mutate(perc_avail_beds = ifelse(
+      is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
+      1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val,
+      1 - hospitalized_covid_patients / all_hospital_beds
     )) %>% 
     select(
       test_date = todays_date,
-      avail_beds
+      avail_icu_beds,
+      perc_avail_beds
     )
   
   pos_results_merged <- merge(pos_results_merged, hos_bed_gov, by = "test_date")
   
+  pos_results_merged$adj_avail_icu_beds <- scale(
+    pos_results_merged$avail_icu_beds, 
+    center = TRUE, 
+    scale = TRUE
+  )
   
-  # Group and scale variables -------------------------------------------------------------------------
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  setDT(pos_results_merged)[, age_group := cut(
-    age, 
-    breaks = age_breaks, 
-    right = FALSE, 
-    labels = age_labels
-    )]
   
-  pos_results_merged$age_group <- factor(
-    pos_results_merged$age_group,
-    levels = age_labels
-    )
-  
-  pos_results_merged$adj_time_days <- scale(
+  # Scale time ----------------------------------------------------------------------------------------------
+    pos_results_merged$adj_time_days <- scale(
     pos_results_merged$time_days,
     center = TRUE,
     scale = TRUE
     )
   
-  pos_results_merged$adj_pop_density <- scale(
-    pos_results_merged$pop_density, 
+  
+  # Scale age ----------------------------------------------------------------------------------------------
+  pos_results_merged$adj_age <- scale(
+    pos_results_merged$age, 
     center = TRUE, 
     scale = TRUE
-    )
-  
-  pos_results_merged$adj_med_income <- scale(
-    pos_results_merged$med_income, 
-    center = TRUE, 
-    scale = TRUE
-    )
-  
-  pos_results_merged$adj_perc_bach <- scale(
-    pos_results_merged$percent_bachelors,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  pos_results_merged$adj_perc_bach_quar <- with(
-    pos_results_merged,
-    cut(adj_perc_bach,
-        breaks = quantile(adj_perc_bach, 
-        probs = seq(0, 1, by = 0.25)),
-        include.lowest = TRUE,
-        labels = c("Q1", "Q2", "Q3", "Q4"))
-    )
-  
-  pos_results_merged$adj_perc_insured <- scale(
-    pos_results_merged$percent_insured,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  pos_results_merged$adj_perc_insured_quar <- with(
-    pos_results_merged,
-    cut(
-      adj_perc_insured,
-      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
-      include.lowest = TRUE,
-      labels = c("Q1", "Q2", "Q3", "Q4")
-      )
-    )
-  
-  pos_results_merged$adj_age <- scale(pos_results_merged$age, center = TRUE, scale = TRUE)
-  pos_results_merged$adj_avail_beds <- scale(pos_results_merged$avail_beds, center = TRUE, scale = TRUE)
+  )
   
   
   # Count missing values ------------------------------------------------------------------------------------
@@ -491,7 +502,7 @@ if (params$refit_model0) {
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + adj_avail_beds,
+              adj_time_days + perc_avail_beds,
     family = binomial, 
     data = pos_pcr
     )
@@ -538,7 +549,7 @@ if (params$refit_model1) {
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + adj_avail_beds +
+              adj_time_days + perc_avail_beds +
               (1 | zip),              
     family = binomial, 
     data = pos_pcr,
