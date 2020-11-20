@@ -6,11 +6,11 @@ output:
     extra_dependencies:
       amsmath 
 params:
-  reclean_data: TRUE
+  reclean_data: FALSE
   first_test_date: "2020-03-01"
   last_test_date: "2020-08-16"
-  refit_model0: TRUE
-  refit_model1: TRUE
+  refit_model0: FALSE
+  refit_model1: FALSE
   daniel_est_beds: 4879
   oc_icu_avail_beds_earliest_val: 131
   oc_hos_covid_pateients_earliest_val: 308
@@ -401,13 +401,13 @@ if (params$reclean_data) {
     end_date = params$last_test_date
   )
   save(pos_pcr_and_zip, file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
-} else {
+}
   load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
   
   pos_pcr <- data.frame(pos_pcr_and_zip[["pos_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
   pos_missing <- pos_pcr_and_zip[["missing"]]
-}
+
 ```
 
 
@@ -455,7 +455,7 @@ kable(
 
 
 ```{r fit0-results-function} 
-compute_ci_logistic <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
+compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
   #does not include intercept or median income
   model_summary <- summary(model)
   coeffs <- model_summary$coefficients[-1, 1]
@@ -472,6 +472,22 @@ compute_ci_logistic <- function(model, alpha = 0.05, param_names, include_pvalue
   }
 }
 
+compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
+  #does not include intercept or median income
+  model_summary <- summary(model)
+  coeffs <- model_summary$coefficients[-1, 1]
+  se_robust <- model_summary$coefficients[-1,2]
+  model_sum <- data.frame("odds" = exp(coeffs),
+                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se_robust),
+                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se_robust),
+                          "p-value" =  model_summary$coefficients[-1, 4],
+                          "param_names" = param_names)
+  if(include_pvalues){
+    return("model_sum" = model_sum)
+  } else {
+    return("model_sum" = model_sum[, -4])
+  }
+}
 
 ```
 
@@ -497,16 +513,14 @@ without a random intercept for zip code.
 
 ```{r fit-model0}
 if (params$refit_model0) {
-  tic()
   fit0 <- glm(
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + perc_avail_beds,
+              adj_time_days + I(perc_avail_beds*100),
     family = binomial, 
     data = pos_pcr
     )
-  toc()
 
   save(fit0, file = here("analysis/mortality-regression-results", "fit0.Rdata"))
 } else {
@@ -522,9 +536,9 @@ parameter_names <- c(
   "Population Density", 
   "Median Income (sd. dev)",
   "Time (Days)",
-  "Available Beds (sd. dev)"
+  "% Available Beds"
   )
-summary_fit0 <- compute_ci_logistic(fit0, param_names = parameter_names)
+summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
 
 ```
 
@@ -557,18 +571,24 @@ if (params$refit_model1) {
     )
   toc()
   skrrrahh("drummaboy")
- #  Model failed to converge with max|grad| = 0.078488 (tol = 0.002, component 1)Model is nearly unidentifiable: very large eigenvalue
- # - Rescale variables?
- #  2042.06 sec elapsed
-  tic()
-  fit1 <- allFit(fit1a)
-  toc()
-  skrrrahh("drummaboy")
   
   save(fit1, file = here("analysis/mortality-regression-results", "fit1.Rdata"))
 } else {
   load(file = here("analysis/mortality-regression-results", "fit1.Rdata"))
 }
+
+parameter_names <- c(
+  "Age (Decades)",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density", 
+  "Median Income (sd. dev)",
+  "Time (Days)",
+  "% Available Beds"
+  )
+summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
@@ -577,17 +597,17 @@ std_res0 <- rstandard(fit0)
 plot(fit0, which = 4, id.n = 3)
 
 
-model.data <- augment(fit0) %>% 
-  mutate(index = 1:n()) 
-
-model.data %>% top_n(3, .cooksd)
-
-ggplot(model.data, aes(index, .std.resid)) + 
-  geom_point(aes(color = death_due_to_covid), alpha = .5) +
-  theme_bw()
-
-model.data %>% 
-  filter(abs(.std.resid) > 4)
+# model.data <- augment(fit0) %>% 
+#   mutate(index = 1:n()) 
+# 
+# model.data %>% top_n(3, .cooksd)
+# 
+# ggplot(model.data, aes(index, .std.resid)) + 
+#   geom_point(aes(color = death_due_to_covid), alpha = .5) +
+#   theme_bw()
+# 
+# model.data %>% 
+#   filter(abs(.std.resid) > 4)
 ```
 
 
@@ -605,7 +625,7 @@ ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
 reference_group <- c(
   FALSE,
   TRUE, FALSE,
-  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
   TRUE, FALSE, FALSE, FALSE,
   TRUE, FALSE, FALSE, FALSE,
   FALSE,
@@ -646,7 +666,7 @@ for(i in 1:nrow(table_fm)) {
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
 dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == "y", ]
-quant_vars <- c("decades_old", "adj_pop_density", "adj_med_income", "adj_time_days", "adj_avail_beds")
+quant_vars <- c("decades_old", "adj_pop_density", "adj_med_income", "adj_time_days", "adj_avail_icu_beds")
 order_quant_vars <- c(1, 19:22)
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
@@ -694,7 +714,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 0 regression estimation of adjusted odds ratio of mortality given tested positive for COVID-19 in Orange County.", 
+    "Model 0 regression estimation of adjusted odds ratio of mortality given tested positive for SARS-CoV2 in Orange County.", 
     sep = ""
     )
   ) %>%
@@ -727,11 +747,11 @@ fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit0[2, ],
   c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
-  summary_fit0[3:6, ],
+  summary_fit0[3:8, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
-  summary_fit0[7:9, ],
+  summary_fit0[9:11, ],
   c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  summary_fit0[10:nrow(summary_fit0), ]
+  summary_fit0[12:nrow(summary_fit0), ]
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -739,15 +759,15 @@ fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
 fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
 
 variable_colors <- c(
-  "white",
-  rep("black", 12),
+  rep("black", 1),
   "white",
   rep("black", 1),
   "white",
-  rep("black", 7),
+  rep("black", 6),
   "white",
   rep("black", 3),
   "white",
+  rep("black", 3),
   rep("black", 4)
 )
 
@@ -778,36 +798,5 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
 
 
 
-```{r}
-fit2 <- glm(
-    formula = death_due_to_covid  ~ decades_old + sex + race + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              adj_time_days,
-    family = binomial, 
-    data = pos_pcr
-    )
-fit2_sum <- summary(fit2)
-exp(fit2_sum$coefficients[, 1])
-```
 
 
-```{r}
-fit3 <- glm(
-    formula = death_due_to_covid  ~ decades_old + sex + race + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              adj_time_days + adj_avail_beds,
-    family = binomial, 
-    data = pos_pcr
-    )
-fit3_sum <- summary(fit3)
-data.frame(
-(exp(fit3_sum$coefficients[, 1])),
-(exp(fit3_sum$coefficients[, 1] - qnorm(0.975) * fit3_sum$coefficients[, 2])),
-(exp(fit3_sum$coefficients[, 1] + qnorm(0.975) * fit3_sum$coefficients[, 2])),
-)
-
-
-plot(hos_bed_gov$test_date, hos_bed_gov$avail_beds)
-```
