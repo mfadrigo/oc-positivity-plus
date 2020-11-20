@@ -396,7 +396,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data", "all-positive-tests-update-2020-11-09.csv"),
+    file_path = here("data", "all-positive-tests-updated-2020-11-16.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
   )
