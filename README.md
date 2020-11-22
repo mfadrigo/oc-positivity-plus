@@ -8,8 +8,9 @@
 ## Content  
 This project includes the following analyses:  
 
-- [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
-- [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
+- [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-testing-positive-oc-analysis.Rmd)  
+- [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-mortality-oc-analysis.Rmd)  
+- [Factors associated with seroprevelance of SARS-CoV2 in Orange County](analysis/factors-associated-with-seroprevelance-oc-analysis.Rmd)  
 
 ## Data  
 
