@@ -1,6 +1,5 @@
 ---
-title: "Complete analysis: Factors associated with mortality among people diagnosed
-  with SARS-CoV2"
+title: "Complete analysis: Factors associated with mortality among individuals who tested positive for SARS-CoV2 in Orange County"
 output: 
   pdf_document:
     extra_dependencies:
@@ -509,7 +508,7 @@ compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_
 
 
 For simplicity let  
-$O_{i}$ be the odds of mortality among individuals who tested positive for COVID-19 in Orange County.  
+$O_{i}$ be the odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County.  
 $\overrightarrow{\beta}_{(3-9)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{Native American}}, \beta_{\text{Pacific Islander}}, \beta_{\text{Other Race}}, \beta_{\text{Unknown}})$  
 $\overrightarrow{\beta}_{(10-12)} = (\beta_{\text{\% with College Degree Quartile2}}, \beta_{\text{\% with College Degree Quartile 3}}, \beta_{\text{\% with College Degree Quartile 4}})$  
 $\overrightarrow{\beta}_{(13-15)} = (\beta_{\text{\% with Insurance Quartile 2}}, \beta_{\text{\% with Insurance Quartile 3}}, \beta_{\text{\% with Insurance Quartile 4}})$
@@ -522,7 +521,7 @@ Model 0:
 		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
 		&+ \beta_{Time}\text{Time}_i\\
-		&+ \beta_{Available Hospital Beds}\text{Available Hospital Beds}_i,
+		&+ \beta_{\% Hospital Beds Available}\text{\% Hospital Beds Available}_i,
   \end{split}
 \end{equation}
 without a random intercept for zip code.
@@ -542,20 +541,6 @@ if (params$refit_model0) {
 } else {
   load(file = here("analysis/mortality-regression-results", "fit0.Rdata"))
 }
-
-parameter_names <- c(
-  "Age (Decades)",
-  "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
-  "2nd Quartile", "3rd Quartile", "4th Quartile",
-  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
-  "Population Density", 
-  "Median Income (sd. dev)",
-  "Time (Days)",
-  "% Available Beds"
-  )
-summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
-
 ```
 
 
@@ -567,7 +552,7 @@ Model 1:
 		&+ \overrightarrow{\beta}_{(10-12)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(13-15)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
 		&+ \beta_{Time}\text{Time}_i\\
-		&+ \beta_{Available Hospital Beds}\text{Available Hospital Beds}_i,
+		&+ \beta_{\% Hospital Beds Available}\text{\% Hospital Beds Available}_i,
   \end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -593,18 +578,6 @@ if (params$refit_model1) {
   load(file = here("analysis/mortality-regression-results", "fit1.Rdata"))
 }
 
-parameter_names <- c(
-  "Age (Decades)",
-  "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
-  "2nd Quartile", "3rd Quartile", "4th Quartile",
-  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
-  "Population Density", 
-  "Median Income (sd. dev)",
-  "Time (Days)",
-  "% Available Beds"
-  )
-summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
@@ -639,65 +612,39 @@ plot(fit0, which = 4, id.n = 3)
 ```
 
 
-```{r fit0-model-results-plot, fig.align="center", fig.cap="."}
-
-fm_results_with_ref <- rbind(
-  summary_fit0[1, ],
-  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
-  summary_fit0[2, ],
-  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
-  summary_fit0[3:8, ],
-  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
-  summary_fit0[9:11, ],
-  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  summary_fit0[12:nrow(summary_fit0), ]
+```{r computes-model-odds-cis}
+parameter_names <- c(
+  "Age (decades)",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density (1000ppl/km^2)", 
+  "Median Income (std. dev.)",
+  "Time (std. dev.)",
+  "% Hospital Beds Available (std. dev.)"
 )
 
-fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
-fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
-fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
 
-variable_colors <- c(
-  rep("black", 1),
-  "white",
-  rep("black", 1),
-  "white",
-  rep("black", 6),
-  "white",
-  rep("black", 3),
-  "white",
-  rep("black", 3),
-  rep("black", 4)
-)
-
-# will need to add colors again to make reference groups white
-ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
-  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
-  geom_point(color = variable_colors) +
-  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio") +
-  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
-  coord_flip() +
-  theme(
-    axis.title.y = element_blank(),
-    axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black", hjust = 1),
-    axis.ticks.y = element_blank(),
-    axis.line.x = element_line(color = "black"),
-    panel.grid.major = element_line(colour = "gray"),
-    panel.background = element_blank(),
-    plot.title = element_text(hjust=5)
-  ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
-  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
 ```{r fit0-model-results-table}
-# Not ready yet!
-fit_final_model <- summary_fit0
 fm_sum <- summary(fit0)
+
+intercept <- paste0(
+  round(exp(fm_sum$coefficients[1, 1]), 3),
+  " (",
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
+  ",",
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
+  ")"
+)
+
+
+fit_final_model <- summary_fit0
 
 rr_fm <- round(fit_final_model[, "odds"], 3)
 ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
@@ -720,15 +667,15 @@ reference_group <- c(
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
 colnames(table_fm) <- c("COVID-19 Deaths", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
-  "Age (Decades)",
+  "Age (decades)",
   "Female", "Male",
   "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Zip Code Pop Density (1000ppl/km^2)",
-  "Adjusted Median Income (std dev.)",
-  "Adjusted Time (Days)",
-  "Available Beds (std dev.)"
+  "Population Density (1000ppl/km^2)",
+  "Median Income (std. dev.)",
+  "Time (std. dev.)",
+  "% Hospital Beds Available[note] (std. dev.)"
   )
 
           
@@ -783,16 +730,6 @@ table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
 
 
-intercept <- paste0(
-  round(exp(fm_sum$coefficients[1, 1]), 3),
-  " (",
-  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
-  ",",
-  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
-  ")"
-)
-
-
 kable(
   table_fm, 
   format = "latex", 
@@ -805,36 +742,36 @@ kable(
   pack_rows("Sex", 2, 3, bold = FALSE) %>%
   pack_rows("Race", 4, 10, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 11, 14, bold = FALSE) %>%
-  pack_rows("% with Insurance[note]", 15, 18, bold = FALSE) %>% 
+  pack_rows("% with Insurance", 15, 18, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
       paste0(
-        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing dying is estimated to be ",
+        "Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density in Orange County. The odds of this individual testing dying is estimated to be ",
         intercept,
         collapse = ""
       ), 
       "95% Confidence Interval",
-      "Esimated percent of people with a bachelor's degree in an individual's zip code ",
-      "Esimated percent of people with medical insurance in an individual's zip code "
+      "Esimated percent of people with a bachelor's degree and with medical insurance in an individual's zip code",
+      "Percent of hospital beds not being used by COVID-19 patients in Orange County"
       ),
     notation = "symbol"
   )  
 ```
 
 
-```{r fit1-model-results-plot, fig.align="center", fig.cap="."}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County."}
 
 fm_results_with_ref <- rbind(
-  summary_fit1[1, ],
+  summary_fit0[1, ],
   c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
-  summary_fit1[2, ],
+  summary_fit0[2, ],
   c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
-  summary_fit1[3:8, ],
+  summary_fit0[3:8, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
-  summary_fit1[9:11, ],
+  summary_fit0[9:11, ],
   c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  summary_fit1[12:nrow(summary_fit1), ]
+  summary_fit0[12:nrow(summary_fit0), ]
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -861,7 +798,6 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
   ylab("Adjusted Odds Ratio") +
-  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
   coord_flip() +
   theme(
     axis.title.y = element_blank(),
@@ -879,9 +815,19 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 
 
 ```{r fit1-model-results-table}
-# Not ready yet!
-fit_final_model <- summary_fit1
 fm_sum <- summary(fit1)
+
+intercept <- paste0(
+  round(exp(fm_sum$coefficients[1, 1]), 3),
+  " (",
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
+  ",",
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
+  ")"
+)
+
+
+fit_final_model <- summary_fit1
 
 rr_fm <- round(fit_final_model[, "odds"], 3)
 ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
@@ -904,15 +850,15 @@ reference_group <- c(
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
 colnames(table_fm) <- c("COVID-19 Deaths", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
-  "Age (Decades)",
+  "Age (decades)",
   "Female", "Male",
   "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Zip Code Pop Density (1000ppl/km^2)",
-  "Adjusted Median Income (std dev.)",
-  "Adjusted Time (Days)",
-  "Available Beds (std dev.)"
+  "Population Density (1000ppl/km^2)",
+  "Median Income (std. dev.)",
+  "Time (std. dev.)",
+  "% Hospital Beds Available (std. dev.)"
   )
 
           
@@ -967,16 +913,6 @@ table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
 
 
-intercept <- paste0(
-  round(exp(fm_sum$coefficients[1, 1]), 3),
-  " (",
-  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
-  ",",
-  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
-  ")"
-)
-
-
 kable(
   table_fm, 
   format = "latex", 
@@ -999,10 +935,65 @@ kable(
         collapse = ""
       ), 
       "95% Confidence Interval",
-      "Esimated percent of people with a bachelor's degree in an individual's zip code ",
-      "Esimated percent of people with medical insurance in an individual's zip code "
+      "Esimated percent of people with a bachelor's degree and with medical insurance in an individual's zip code",
+      "Percent of hospital beds not being used by COVID-19 patients in Orange County"
       ),
     notation = "symbol"
   )  
 ```
+
+
+```{r fit1-model-results-plot, fig.align="center", fig.cap="Logistic model 1 results for odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County."}
+fm_results_with_ref <- rbind(
+  summary_fit1[1, ],
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  summary_fit1[2, ],
+  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  summary_fit1[3:8, ],
+  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
+  summary_fit1[9:11, ],
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  summary_fit1[12:nrow(summary_fit1), ]
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  rep("black", 1),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 6),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 3),
+  rep("black", 4)
+)
+
+# will need to add colors again to make reference groups white
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
+  ) +
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+```
+
+
 
