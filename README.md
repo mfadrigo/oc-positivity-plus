@@ -7,10 +7,9 @@
 
 ## Content
 This project includes the following analyses:
-- [Factors associated with testing positive for COIVD-19 in Orange County](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
-- [Factors associated with mortality among those who tested positive for COVID-19 in Orange County](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
+- [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/complete-analysis-factors-associated-with-testing-positive-OC.Rmd)  
+- [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/complete-analysis-factors-associated-with-mortality-OC.Rmd)  
 
 ## Data  
 The data for these investigations came from Orange County Public Health Department and may be available upon request.  
-Estimates for zip code level variable such as median income are available under the "data" folder.  
-All fitted models for testing positive investigation are available under "analysis/testing-positive-regression-results" folder.
+Estimates for zip code level variables such as median income are available under the "data/zip-code-data" folder.  
