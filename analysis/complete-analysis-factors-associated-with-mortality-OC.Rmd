@@ -752,7 +752,7 @@ kable(
         collapse = ""
       ), 
       "95% Confidence Interval",
-      "Esimated percent of people with a bachelor's degree and with medical insurance in an individual's zip code",
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code",
       "Percent of hospital beds not being used by COVID-19 patients in Orange County"
       ),
     notation = "symbol"
@@ -935,7 +935,7 @@ kable(
         collapse = ""
       ), 
       "95% Confidence Interval",
-      "Esimated percent of people with a bachelor's degree and with medical insurance in an individual's zip code",
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code",
       "Percent of hospital beds not being used by COVID-19 patients in Orange County"
       ),
     notation = "symbol"
