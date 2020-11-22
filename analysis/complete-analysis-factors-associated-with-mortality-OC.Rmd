@@ -417,7 +417,7 @@ if (params$reclean_data) {
   )
   save(pos_pcr_and_zip, file = here("data/mortality-data", "cleaned_process_pos_pcr_data.Rdata"))
 }
-  load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
+  load(file = here("data/mortality-data", "cleaned_process_pos_pcr_data.Rdata"))
   
   pos_pcr <- data.frame(pos_pcr_and_zip[["pos_results_merged"]])
   pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])

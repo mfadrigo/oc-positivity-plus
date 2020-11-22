@@ -289,7 +289,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   # Add zip code level data and merge with pcr results
   zip_area_oc <- read_csv(
-    here("data", "zip-area2.csv"),
+    here("data/zip-code-data", "zip-area2.csv"),
     col_types = cols(
       .default = col_skip(),
       NAME = col_character(),
@@ -300,7 +300,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     select(name = NAME, zip = Zip, area_km = AreaKm)
   
   zip_pop_oc <- read_csv(
-    here("data", "zip-pop.csv"),
+    here("data/zip-code-data", "zip-pop.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -315,7 +315,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
   
   zip_income_oc <- read_csv(
-    here("data", "income-by-zip2.csv"),
+    here("data/zip-code-data", "income-by-zip2.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -330,7 +330,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
 
   zip_education_oc <- read_csv(
-    here("data", "education-by-zip.csv"),
+    here("data/zip-code-data", "education-by-zip.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -342,7 +342,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
 
   zip_insurance_oc <- read_csv(
-    here("data", "insurance-by-zip.csv"),
+    here("data/zip-code-data", "insurance-by-zip.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -467,16 +467,16 @@ read_all_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   all_pcr_and_zip <- read_all_pcr(
-    file_path = here("data", "all-elr-pcr-tests-updated-2020-11-09.csv"),
+    file_path = here("data/positivity-data", "all-elr-pcr-tests-updated-2020-11-09.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
     )
   
-  save(all_pcr_and_zip, file = here("data", "cleaned_process_pcr_data.Rdata"))
+  save(all_pcr_and_zip, file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
   
 } 
 
-load(file = here("data", "cleaned_process_pcr_data.Rdata"))
+load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
   
 all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]])
