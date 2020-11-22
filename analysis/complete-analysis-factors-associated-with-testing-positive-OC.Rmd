@@ -1,6 +1,5 @@
 ---
-title: "Factors associated with testing positive for COVID-19 in Orange County"
-date: "11/4/2020"
+title: "Factors associated with testing positive for SARS-CoV2 in Orange County"
 output: 
   pdf_document:
     extra_dependencies:
@@ -527,7 +526,7 @@ kable(
   ),
   format = "latex",
   caption = paste(
-    "Number of COVID-19 tests and unique individuals who tested in Orange County from ",
+    "Number of SARS-CoV2 tests and unique individuals who tested in Orange County from ",
       params$first_test_date, " to ", params$last_test_date,
       ". Includes number removed from data by type of issue for this analysis.",
     sep = "")
@@ -562,7 +561,7 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
 ```
 
 For simplicity let  
-$O_i$ be the odds of testing positive for COVID-19 in Orange County  
+$O_i$ be the odds of testing positive for COVID-19 in Orange County.  
 $\overrightarrow{\beta}_{(1-12)} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
 $\overrightarrow{\beta}_{(14-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
 $\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
@@ -829,7 +828,7 @@ rownames(table_fm) <- c(
   "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Zip Code Pop Density (1000ppl/km^2)"
+  "Population Density (1000ppl/km^2)"
   )
 reference_group <- c(
   TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
@@ -909,7 +908,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 5 regression estimation of fixed effects for of odds of testing positive for COVID-19 in Orange County. Model includes a smooth term for time and an interaction between median income and time.", 
+    "Model 5 logistic regression results for linear fixed effects of odds of testing positive for SARS-CoV2 in Orange County. This table excludes the coefficient for median income due to the interaction between median income and time.", 
     sep = ""
     )
   ) %>%
@@ -918,7 +917,7 @@ kable(
   pack_rows("Sex", 14,15, bold = FALSE) %>%
   pack_rows("Race", 16, 23, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 24, 27, bold = FALSE) %>%
-  pack_rows("% with Insurance[note]", 28, 31, bold = FALSE) %>% 
+  pack_rows("% with Insurance", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
@@ -927,15 +926,14 @@ kable(
         intercept
       ), 
       "95% Confidence Interval",
-      "Esimated percent of people with a bachelor's degree in an individual's zip code ",
-      "Esimated percent of people with medical insurance in an individual's zip code "
+      "Esimated: percent of people with a bachelor's degree, percent of people with medical insurance, and population density in an individual's zip code "
       ),
     notation = "symbol"
   )  
 ```
 
 
-```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 regression results for linear fixed effects. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for COVID-19 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in the 2nd quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
+```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 logistic regression results for linear fixed effects of odds of testing positive for SARS-CoV2 in Orange County. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for SARS-CoV2 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in a given quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
@@ -948,7 +946,7 @@ fm_results_with_ref <- rbind(
   fit_time_gam_inter_summary1[21:23, ],
   c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
   fit_time_gam_inter_summary1[24:26, ],
-  c(as.character(fit_time_gam_inter_summary1[27, -5]), paste0(c("Population Density", rep(" ", 35)), collapse = ""))
+  c(as.character(fit_time_gam_inter_summary1[27, -5]), paste0(c("Population Density (1000ppl/km^2)", rep(" ", 9)), collapse = ""))
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -974,7 +972,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   geom_point(color = variable_colors) +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio")
+  ylab("Adjusted Odds Ratio") +
   coord_flip() +
   theme(
     axis.title.y = element_blank(),
@@ -990,10 +988,10 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
 ```
 
-```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time (days) and adjusted median income (sample sd) from logistic model 5. COVID-19 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
+```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 5. SARS-CoV2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
 plot(fit_time_gam_inter, scheme = 1, select = 2, 
-     xlab = "Time (days)",
-     ylab = "Adjusted median income",
+     xlab = "Time (std. dev.)",
+     ylab = "Median Income (std. dev.)",
      main = "Interaction") 
 ```
 
