@@ -1,5 +1,5 @@
 ---
-title: "Complete analysis: Factors associated with mortality among individuals who tested positive for SARS-CoV2 in Orange County"
+title: "Factors associated with mortality among individuals who tested positive for SARS-CoV2 in Orange County"
 output: 
   pdf_document:
     extra_dependencies:
