@@ -1,0 +1,42 @@
+---
+title: "Factors associated with seroprevelance of SARS-CoV2 in Orange County"
+output: 
+  pdf_document:
+    extra_dependencies:
+      amsmath 
+params:
+  reclean_data: FALSE
+  first_test_date: "2020-03-01"
+  last_test_date: "2020-08-16"
+  refit_model1: FALSE
+  refit_model2: FALSE
+  refit_model3: FALSE
+  refit_model4: FALSE
+  refit_model5: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      error = FALSE,
+                      fig.pos = "H")
+```
+
+
+```{r loading-libraries}
+# data-wrangling-function chunk
+library(tidyverse)
+library(here)
+library(lubridate)
+library(data.table)
+# missing-data-table chunk
+library(knitr)
+library(kableExtra)
+# fit-model1 chunk
+library(tictoc)
+library(lme4)
+library(BRRR)
+library(car) # I don't think I need this anymore
+library(mgcv)
+```
+
