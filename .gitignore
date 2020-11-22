@@ -12,8 +12,9 @@ positive-tests-release-to-uci-team-2020-10-05.csv
 *.csv
 *.html
 *.docx
-!fit_time_lin.Rdata
-!fit_time_quad.Rdata
-!fit_time_quad_inter.Rdata
-!fit_time_gam.Rdata
-!fit_time_gam_inter.Rdata
+
+!education-by-zip.csv
+!income-by-zip2.csv
+!insurance-by-zip.csv
+!zip-area2.csv
+!zip-pop.csv
