@@ -40,3 +40,24 @@ library(car) # I don't think I need this anymore
 library(mgcv)
 ```
 
+
+```{r load-clean-data}
+if (params$reclean_data) {
+  all_sero_and_zip <- read_all_pcr(
+    file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv"),
+    start_date = params$first_test_date,
+    end_date = params$last_test_date
+    )
+  
+  save(all_sero_and_zip, file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
+  
+} 
+
+load(file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
+  
+all_sero <- data.frame(all_sero_and_zip[["pcr_results_merged"]])
+all_zip <- data.frame(all_sero_and_zip[["zip_data_merged"]])
+all_missing <- all_sero_and_zip[["missing"]]
+all_inconsist_ids <- all_sero_and_zip[["inconsistencies"]]
+
+```
