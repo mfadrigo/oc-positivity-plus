@@ -627,7 +627,62 @@ plot(fit0, which = 4, id.n = 3)
 ```
 
 
-```{r final-model-results-table}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="."}
+
+fm_results_with_ref <- rbind(
+  summary_fit0[1, ],
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  summary_fit0[2, ],
+  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  summary_fit0[3:8, ],
+  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
+  summary_fit0[9:11, ],
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  summary_fit0[12:nrow(summary_fit0), ]
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  rep("black", 1),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 6),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 3),
+  rep("black", 4)
+)
+
+# will need to add colors again to make reference groups white
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
+  ) +
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+```
+
+
+```{r fit0-model-results-table}
 # Not ready yet!
 fit_final_model <- summary_fit0
 fm_sum <- summary(fit0)
@@ -756,61 +811,6 @@ kable(
 ```
 
 
-```{r fit0-model-results-plot, fig.align="center", fig.cap="."}
-
-fm_results_with_ref <- rbind(
-  summary_fit0[1, ],
-  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
-  summary_fit0[2, ],
-  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
-  summary_fit0[3:8, ],
-  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
-  summary_fit0[9:11, ],
-  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  summary_fit0[12:nrow(summary_fit0), ]
-)
-
-fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
-fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
-fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
-
-variable_colors <- c(
-  rep("black", 1),
-  "white",
-  rep("black", 1),
-  "white",
-  rep("black", 6),
-  "white",
-  rep("black", 3),
-  "white",
-  rep("black", 3),
-  rep("black", 4)
-)
-
-# will need to add colors again to make reference groups white
-ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
-  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
-  geom_point(color = variable_colors) +
-  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio") +
-  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
-  coord_flip() +
-  theme(
-    axis.title.y = element_blank(),
-    axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black", hjust = 1),
-    axis.ticks.y = element_blank(),
-    axis.line.x = element_line(color = "black"),
-    panel.grid.major = element_line(colour = "gray"),
-    panel.background = element_blank(),
-    plot.title = element_text(hjust=5)
-  ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
-  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
-```
-
-
 ```{r fit1-model-results-plot, fig.align="center", fig.cap="."}
 
 fm_results_with_ref <- rbind(
@@ -866,5 +866,131 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
+```{r fit1-model-results-table}
+# Not ready yet!
+fit_final_model <- summary_fit1
+fm_sum <- summary(fit1)
 
+rr_fm <- round(fit_final_model[, "odds"], 3)
+ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
+ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
+#p_values_fm <- fit_final_model$p.value
+#p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
+
+reference_group <- c(
+  FALSE,
+  TRUE, FALSE,
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  FALSE,
+  FALSE,
+  FALSE,
+  FALSE
+  )
+
+table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
+colnames(table_fm) <- c("COVID-19 Deaths", "Total", "with (95% CI[note])")
+rownames(table_fm) <- c(
+  "Age (Decades)",
+  "Female", "Male",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Zip Code Pop Density (1000ppl/km^2)",
+  "Adjusted Median Income (std dev.)",
+  "Adjusted Time (Days)",
+  "Available Beds (std dev.)"
+  )
+
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_fm)) {
+  if (reference_group[i]) {
+    #table_fm[i, 1] <- "Reference"
+    table_fm[i, 3] <- "Reference"
+  } else {
+    table_fm[i, 3] <- paste(rr_fm[non_ref_counter], " (", 
+                          ci_lb_fm[non_ref_counter], ", ", 
+                          ci_ub_fm[non_ref_counter], ")", 
+                          sep = "")
+    #table_fm[i, 2] <- p_values_fm[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
+
+variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
+dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == "y", ]
+quant_vars <- c("decades_old", "adj_pop_density", "adj_med_income", "adj_time_days", "adj_perc_avail_beds")
+order_quant_vars <- c(1, 19:22)
+variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
+
+qual_vars <- c("sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "sex.female", "sex.male", 
+  "race.white", "race.asian",
+  "race.black or african american", "race.hispanic or latino",
+  "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
+  "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+)
+ 
+calc_freq <- function(df, order_vars) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+
+  qual_count <- qual_count[order_vars]
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
+}
+
+variable_counts[order_qual_vars, 2] <- calc_freq(pos_pcr[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(dead_pcr[, qual_vars], qual_vars_ordered)
+
+table_fm[, 2] <- variable_counts[, 2]
+table_fm[, 1] <- variable_counts[, 1]
+
+
+intercept <- paste0(
+  round(exp(fm_sum$coefficients[1, 1]), 3),
+  " (",
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
+  ",",
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * fm_sum$coefficients[1, 2]), 3),
+  ")"
+)
+
+
+kable(
+  table_fm, 
+  format = "latex", 
+  caption = paste(
+    "Model 1 regression estimation of adjusted odds ratio of mortality given tested positive for SARS-CoV2 in Orange County.", 
+    sep = ""
+    )
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
+  pack_rows("Sex", 2, 3, bold = FALSE) %>%
+  pack_rows("Race", 4, 10, bold = FALSE) %>%
+  pack_rows("% with College Degree[note]", 11, 14, bold = FALSE) %>%
+  pack_rows("% with Insurance[note]", 15, 18, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
+  add_footnote(
+    c(
+      paste0(
+        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing dying is estimated to be ",
+        intercept,
+        collapse = ""
+      ), 
+      "95% Confidence Interval",
+      "Esimated percent of people with a bachelor's degree in an individual's zip code ",
+      "Esimated percent of people with medical insurance in an individual's zip code "
+      ),
+    notation = "symbol"
+  )  
+```
 
