@@ -608,6 +608,18 @@ summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
+```{r bic-table}
+compare_bic <- BIC(fit0, fit1) 
+row.names(compare_bic) <- c("Model 0", "Model 1")
+
+kable(compare_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex",
+      caption = "Model comparison using BIC slightly prefers model 1 for odds of mortality given tested positive for SARS-CoV2 in Orange County.") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+
 ```{r fit0-model-diagnostics, eval = FALSE}
 std_res0 <- rstandard(fit0)
 plot(fit0, which = 4, id.n = 3)
