@@ -174,7 +174,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   # Add zip code level data and merge with pcr results ----------------------------------
   zip_area_oc <- read_csv(
-    here("data", "zip-area2.csv"),
+    here("data/zip-code-data", "zip-area2.csv"),
     col_types = cols(
       .default = col_skip(),
       NAME = col_character(),
@@ -185,7 +185,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     select(name = NAME, zip = Zip, area_km = AreaKm)
   
   zip_pop_oc <- read_csv(
-    here("data", "zip-pop.csv"),
+    here("data/zip-code-data", "zip-pop.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -200,7 +200,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
   
   zip_income_oc <- read_csv(
-    here("data", "income-by-zip2.csv"),
+    here("data/zip-code-data", "income-by-zip2.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -215,7 +215,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
 
   zip_education_oc <- read_csv(
-    here("data", "education-by-zip.csv"),
+    here("data/zip-code-data", "education-by-zip.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -227,7 +227,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
 
   zip_insurance_oc <- read_csv(
-    here("data", "insurance-by-zip.csv"),
+    here("data/zip-code-data", "insurance-by-zip.csv"),
     col_types = cols(
       .default = col_skip(),
       Zip = col_character(),
@@ -299,7 +299,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   # Read and filter hospital bed data -----------------------------------------------------------
   # OC data
   hos_bed_gov <- read_csv(
-    here("data", "covid19-hospital-data-gov.csv"),
+    here("data/mortality-data", "covid19-hospital-data-gov.csv"),
     na = c("", " "),
     col_types = cols(
       .default = col_skip(),
@@ -411,11 +411,11 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data", "all-positive-tests-updated-2020-11-16.csv"),
+    file_path = here("data/mortality-data", "all-positive-tests-updated-2020-11-16.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
   )
-  save(pos_pcr_and_zip, file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
+  save(pos_pcr_and_zip, file = here("data/mortality-data", "cleaned_process_pos_pcr_data.Rdata"))
 }
   load(file = here("data", "cleaned_process_pos_pcr_data.Rdata"))
   
