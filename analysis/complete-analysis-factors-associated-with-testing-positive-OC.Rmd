@@ -946,7 +946,7 @@ fm_results_with_ref <- rbind(
   fit_time_gam_inter_summary1[21:23, ],
   c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
   fit_time_gam_inter_summary1[24:26, ],
-  c(as.character(fit_time_gam_inter_summary1[27, -5]), paste0(c("Population Density (1000ppl/km^2)", rep(" ", 9)), collapse = ""))
+  c(as.character(fit_time_gam_inter_summary1[27, -5]), "Population Density (1000ppl/km^2)")
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
