@@ -336,8 +336,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     )) %>% 
     mutate(perc_avail_beds = ifelse(
       is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
-      1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val,
-      1 - hospitalized_covid_patients / all_hospital_beds
+      100 * (1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val),
+      100 * (1 - hospitalized_covid_patients / all_hospital_beds)
     )) %>% 
     select(
       test_date = todays_date,
@@ -345,29 +345,45 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       perc_avail_beds
     )
   
-  pos_results_merged <- merge(pos_results_merged, hos_bed_gov, by = "test_date")
-  
-  pos_results_merged$adj_avail_icu_beds <- scale(
-    pos_results_merged$avail_icu_beds, 
+  hos_bed_gov$adj_perc_avail_beds <- scale(
+    hos_bed_gov$perc_avail_beds, 
     center = TRUE, 
     scale = TRUE
   )
   
+  hos_bed_gov$adj_avail_icu_beds <- scale(
+    hos_bed_gov$avail_icu_beds, 
+    center = TRUE, 
+    scale = TRUE
+  )
+  
+  pos_results_merged <- merge(pos_results_merged, hos_bed_gov, by = "test_date")
+
   
   # Scale time ----------------------------------------------------------------------------------------------
-    pos_results_merged$adj_time_days <- scale(
-    pos_results_merged$time_days,
+  time_range <- 1:as.integer(difftime(as.Date(end_date), as.Date(start_date), units = "days"))
+  adj_time_range <- scale(
+    time_range,
     center = TRUE,
     scale = TRUE
-    )
+  )
+  time_data <- data.frame("time_days" = time_range, "adj_time_days" = adj_time_range)
+  pos_results_merged <- merge(pos_results_merged, time_data, by = "time_days")
+
   
   
   # Scale age ----------------------------------------------------------------------------------------------
-  pos_results_merged$adj_age <- scale(
-    pos_results_merged$age, 
-    center = TRUE, 
+  pos_results_merged <- pos_results_merged %>% 
+    filter(age != 119)
+  age_range <- min(pos_results_merged$age):max(pos_results_merged$age)
+  adj_age_range <- scale(
+    age_range,
+    center = TRUE,
     scale = TRUE
   )
+  age_data <- data.frame("age" = age_range, "adj_age" = adj_age_range)
+  
+  pos_results_merged <- merge(pos_results_merged, age_data, by = "age")
   
   
   # Count missing values ------------------------------------------------------------------------------------
@@ -454,7 +470,7 @@ kable(
 ```
 
 
-```{r fit0-results-function} 
+```{r results-functions} 
 compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
   #does not include intercept or median income
   model_summary <- summary(model)
@@ -517,7 +533,7 @@ if (params$refit_model0) {
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + I(perc_avail_beds*100),
+              adj_time_days + adj_perc_avail_beds,
     family = binomial, 
     data = pos_pcr
     )
@@ -556,14 +572,14 @@ Model 1:
 \end{equation}
 with a random intercept for zip code.
 
-```{r fit-model1, eval = FALSE}
+```{r fit-model1}
 if (params$refit_model1) {
   tic()
-  fit1a <- glmer(
+  fit1 <- glmer(
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + perc_avail_beds +
+              adj_time_days + adj_perc_avail_beds +
               (1 | zip),              
     family = binomial, 
     data = pos_pcr,
@@ -740,7 +756,7 @@ kable(
 ```
 
 
-```{r final-model-results-plot, fig.align="center", fig.cap="."}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="."}
 
 fm_results_with_ref <- rbind(
   summary_fit0[1, ],
@@ -772,10 +788,10 @@ variable_colors <- c(
 )
 
 # will need to add colors again to make reference groups white
-ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
   ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
-  geom_point() +
-  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
   ylab("Adjusted Odds Ratio") +
   ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
@@ -795,7 +811,59 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
 ```
 
 
+```{r fit1-model-results-plot, fig.align="center", fig.cap="."}
 
+fm_results_with_ref <- rbind(
+  summary_fit1[1, ],
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  summary_fit1[2, ],
+  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  summary_fit1[3:8, ],
+  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
+  summary_fit1[9:11, ],
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  summary_fit1[12:nrow(summary_fit1), ]
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  rep("black", 1),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 6),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 3),
+  rep("black", 4)
+)
+
+# will need to add colors again to make reference groups white
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
+  ) +
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+```
 
 
 
