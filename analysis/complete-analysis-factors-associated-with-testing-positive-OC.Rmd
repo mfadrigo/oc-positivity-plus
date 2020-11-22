@@ -974,8 +974,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   geom_point(color = variable_colors) +
   geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio") +
-  ggtitle("Results of SARS-CoV-2 Posivity Logistic Regression") +
+  ylab("Adjusted Odds Ratio")
   coord_flip() +
   theme(
     axis.title.y = element_blank(),
