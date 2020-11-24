@@ -588,7 +588,7 @@ row.names(compare_bic) <- c("Model 0", "Model 1")
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
       format = "latex",
-      caption = "Model comparison using BIC shows do real difference in modeling odds of mortality given tested positive for SARS-CoV2 in Orange County. Therefore the simpler model, Model 1, was chosen.") %>%
+      caption = "Model comparison using BIC shows do real difference in modeling odds of mortality given tested positive for SARS-CoV2 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
@@ -747,11 +747,11 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density in Orange County. The odds of this individual testing dying is estimated to be ",
+        "Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density and average percent of available hospital beds in Orange County. The odds of this individual testing dying is estimated to be ",
         intercept,
         collapse = ""
       ), 
-      "95% Confidence Interval",
+      "95% confidence interval computed with robust standard errors",
       "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code",
       "Percent of hospital beds not being used by COVID-19 patients in Orange County"
       ),
