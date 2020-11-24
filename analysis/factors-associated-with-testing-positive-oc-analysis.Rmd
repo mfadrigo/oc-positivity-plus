@@ -821,7 +821,7 @@ ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
 #p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
 # The 5 accounts for the reference groups
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + 5, ncol = 3))
-colnames(table_fm) <- c("COVID19+", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
