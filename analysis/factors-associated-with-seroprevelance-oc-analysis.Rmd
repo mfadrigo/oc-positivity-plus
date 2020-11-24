@@ -110,12 +110,12 @@ read_sero <- function(file_path){
     )) %>% 
     mutate(race = factor(
       case_when(
-        ((Q6r1 == 1) & (Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r6 + Q6r7 + Q6r8 == 0)) ~ "white",
-        ((Q6r2 == 2) & (Q6r1 + Q6r3 + Q6r4 + Q6r5 + Q6r6 + Q6r7 + Q6r8 == 0)) ~ "black",
-        ((Q6r3 == 3) & (Q6r1 + Q6r2 + Q6r4 + Q6r5 + Q6r6 + Q6r7 + Q6r8 == 0)) ~ "hispanic",
-        ((Q6r4 == 4) & (Q6r1 + Q6r2 + Q6r3 + Q6r5 + Q6r6 + Q6r7 + Q6r8 == 0)) ~ "native",
-        ((Q6r5 == 5) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r6 + Q6r7 + Q6r8 == 0)) ~ "asian",
-        ((Q6r6 == 6) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r7 + Q6r8 == 0)) ~ "islander",
+        ((Q6r1 == 1) & (Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "white",
+        ((Q6r2 == 2) & (Q6r1 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "black",
+        ((Q6r3 == 3) & (Q6r1 + Q6r2 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "hispanic",
+        ((Q6r4 == 4) & (Q6r1 + Q6r2 + Q6r3 + Q6r5 + Q6r6 == 0)) ~ "native",
+        ((Q6r5 == 5) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r6 == 0)) ~ "asian",
+        ((Q6r6 == 6) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r5 == 0)) ~ "islander",
         TRUE ~ "unknown"
       ),
       levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
@@ -560,6 +560,8 @@ variable_counts[order_qual_vars, 1] <- calc_freq(sero_pos[, qual_vars], qual_var
 
 table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
+# No sero-positive native americans or native alaskans
+table_fm["Native American", 1] <- paste(0, " (", 0, "%)", sep = "")
 
 
 kable(
