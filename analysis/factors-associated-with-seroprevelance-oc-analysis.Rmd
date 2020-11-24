@@ -273,10 +273,9 @@ read_sero <- function(file_path, start_date, end_date){
 ```
 
 
-
 ```{r load-clean-data}
 if (params$reclean_data) {
-  all_sero_and_zip <- read_all_pcr(
+  all_sero_and_zip <- read_sero(
     file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
@@ -290,7 +289,51 @@ load(file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
   
 all_sero <- data.frame(all_sero_and_zip[["pcr_results_merged"]])
 all_zip <- data.frame(all_sero_and_zip[["zip_data_merged"]])
-all_missing <- all_sero_and_zip[["missing"]]
-all_inconsist_ids <- all_sero_and_zip[["inconsistencies"]]
-
+sero_missing <- all_sero_and_zip[["missing"]]
 ```
+
+
+```{r missing-data-table}
+usable_counts <- c(
+  sero_missing[1],
+  sero_missing[1] - sero_missing[2],
+  sero_missing[1] - sum(sero_missing[2:3])
+)
+
+tab_obs <- data.frame(
+  c(NA, sero_missing[2:3]), 
+  usable_counts
+)
+rownames(tab_obs) <- c(
+  "Unmodified",
+  "Missing or Inconclusive[note]",
+  "Invalid Zip Code"
+)
+
+kable(
+  tab_obs,
+  col.names = c(
+    "With Issue", 
+    "After Removal"
+  ),
+  format = "latex",
+  caption = paste(
+    "Number of sero-positive COVID-19 tests in Orange County from ",
+      params$first_test_date, " to ", params$last_test_date,
+      ". Includes number removed from data by type of issue for this analysis.",
+    sep = "")
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position")) %>% 
+  add_header_above(c(" " = 1, "Number of Tests" = 2), line = TRUE) %>% 
+  column_spec(column = 2:3, width = "5.5cm") %>% 
+  add_footnote(
+    c(
+      "Number without conclusive test result or complete demographic information"
+      ),
+    notation = "symbol",
+    threeparttable = TRUE
+    )
+```
+
+
+
