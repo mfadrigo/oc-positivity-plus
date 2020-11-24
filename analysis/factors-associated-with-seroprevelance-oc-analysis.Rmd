@@ -6,13 +6,8 @@ output:
       amsmath 
 params:
   reclean_data: FALSE
-  first_test_date: "2020-03-01"
-  last_test_date: "2020-08-16"
+  refit_model0: FALSE
   refit_model1: FALSE
-  refit_model2: FALSE
-  refit_model3: FALSE
-  refit_model4: FALSE
-  refit_model5: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -32,6 +27,7 @@ library(data.table)
 # missing-data-table chunk
 library(knitr)
 library(kableExtra)
+usepackage_latex("threeparttable")
 # fit-model1 chunk
 library(sandwich)
 library(tictoc)
@@ -43,7 +39,7 @@ library(mgcv)
 
 
 ```{r data-wrangling-function}
-read_sero <- function(file_path, start_date, end_date){
+read_sero <- function(file_path){
   # Read in and select data of interest-----------------------------------------
 
   sero_results_original <- read_csv(
@@ -277,9 +273,7 @@ read_sero <- function(file_path, start_date, end_date){
 ```{r load-clean-data}
 if (params$reclean_data) {
   all_sero_and_zip <- read_sero(
-    file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv"),
-    start_date = params$first_test_date,
-    end_date = params$last_test_date
+    file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv")
   )
   
   save(all_sero_and_zip, file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
@@ -353,24 +347,6 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
     return("model_sum" = model_sum[, -4])
   }
 }
-
-compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
-  #does not include intercept or median income
-  model_summary <- summary(model)
-  coeffs <- model_summary$coefficients[-1, 1]
-  se <- model_summary$coefficients[-1,2]
-  model_sum <- data.frame("odds" = exp(coeffs),
-                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
-                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
-                          "p-value" =  model_summary$coefficients[-1, 4],
-                          "param_names" = param_names)
-  if(include_pvalues){
-    return("model_sum" = model_sum)
-  } else {
-    return("model_sum" = model_sum[, -4])
-  }
-}
-
 ```
 
 
@@ -460,7 +436,7 @@ if (params$refit_model1) {
 ```
 
 
-```{r computes-model-odds-cis}
+```{r compute-model-odds-cis}
 parameter_names <- c(
   "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59",
   "60-64", "65-69", "70-74", "75-79", "80-84", "85+", 
@@ -473,8 +449,6 @@ parameter_names <- c(
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
-
-summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
@@ -597,7 +571,7 @@ kable(
     )
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
-  pack_rows("Age", 1, 14, cold = FALSE) %>% 
+  pack_rows("Age", 1, 14, bold = FALSE) %>% 
   pack_rows("Sex", 15, 16, bold = FALSE) %>%
   pack_rows("Race", 17, 23, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 24, 26, bold = FALSE) %>%
@@ -618,9 +592,10 @@ kable(
 ```
 
 
-```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County."}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of testing sero-positive for SARS-CoV2 in Orange County.", eval = FALSE}
 
 fm_results_with_ref <- rbind(
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit0[1, ],
   c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit0[2, ],
