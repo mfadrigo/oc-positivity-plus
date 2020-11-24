@@ -282,12 +282,11 @@ if (params$reclean_data) {
   )
   
   save(all_sero_and_zip, file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
-  
-} 
+} else {
+  load(file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
+}
 
-load(file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
-  
-all_sero <- data.frame(all_sero_and_zip[["pcr_results_merged"]])
+all_sero <- data.frame(all_sero_and_zip[["sero_results_merged"]])
 all_zip <- data.frame(all_sero_and_zip[["zip_data_merged"]])
 sero_missing <- all_sero_and_zip[["missing"]]
 ```
@@ -336,4 +335,124 @@ kable(
 ```
 
 
+```{r results-functions} 
+compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
+  #does not include intercept or median income
+  model_summary <- summary(model)
+  coeffs <- model_summary$coefficients[-1, 1]
+  se_robust <- sqrt(diag(sandwich(model)))[-1]
+  model_sum <- data.frame("odds" = exp(coeffs),
+                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se_robust),
+                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se_robust),
+                          "p-value" =  model_summary$coefficients[-1, 4],
+                          "param_names" = param_names)
+  if(include_pvalues){
+    return("model_sum" = model_sum)
+  } else {
+    return("model_sum" = model_sum[, -4])
+  }
+}
+
+compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
+  #does not include intercept or median income
+  model_summary <- summary(model)
+  coeffs <- model_summary$coefficients[-1, 1]
+  se <- model_summary$coefficients[-1,2]
+  model_sum <- data.frame("odds" = exp(coeffs),
+                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
+                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
+                          "p-value" =  model_summary$coefficients[-1, 4],
+                          "param_names" = param_names)
+  if(include_pvalues){
+    return("model_sum" = model_sum)
+  } else {
+    return("model_sum" = model_sum[, -4])
+  }
+}
+
+```
+
+
+For simplicity let  
+$O_i$ be the odds of testing positive for COVID-19 in Orange County.  
+$\overrightarrow{\beta}_{(1-14)} = (\beta_{\text{Age[18-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}, \beta_{\text{Age[40-44]}}, \beta_{\text{Age[45-49]}}, \beta_{\text{Age[50-54]}}, \\ \beta_{\text{Age[55-59]}}, \beta_{\text{Age[60-64]}}, \beta_{\text{Age[65-69]}}, \beta_{\text{Age[70-74]}}, \beta_{\text{Age[75-79]}}, \beta_{\text{Age[80-84]}}, \beta_{\text{Age[85+]}})$  
+$\overrightarrow{\beta}_{(16-21)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{(22-24)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
+$\overrightarrow{\beta}_{(25-27)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
+
+
+Model 0:
+\begin{equation}
+\label{eq:Model0}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-21)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(22-24)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(25-27)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
+
+
+```{r fit-model0}
+if (params$refit_model0) {
+  fit0 <- glm(
+    formula = covid_pos ~ age_grp + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income,
+    family = binomial, 
+    data = all_sero
+    )
+
+  save(fit0, file = here("analysis/testing-seropositive-regression-results", "fit0.Rdata"))
+} else {
+  load(file = here("analysis/testing-seropositive-regression-results", "fit0.Rdata"))
+}
+```
+
+
+Model 1:
+\begin{equation}
+\label{eq:Model1}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-21)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(22-24)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(25-27)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
+	\end{split}
+\end{equation}
+with a random intercept for zip code.
+
+
+```{r fit-model1}
+if (params$refit_model1) {
+  tic()
+  fit1a <- glmer(
+    formula = covid_pos ~ age_grp + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              (1 | zip),              
+    family = binomial, 
+    data = all_sero,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+
+  tic()
+  ss <- getME(fit1a, c("theta","fixef"))
+  fit1b <- update(
+    fit_time_lin1,
+    start = ss,
+    control = glmerControl(
+      optimizer = "bobyqa",
+      optCtrl = list(maxfun = 2e6)
+    )
+  )
+  toc()
+  fit1 <- fit1b
+  skrrrahh("drummaboy")
+
+  save(fit1, file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
+} else {
+  load(file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
+}
+```
 
