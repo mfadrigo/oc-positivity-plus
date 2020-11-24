@@ -594,6 +594,7 @@ if (params$refit_model1) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
+  skrrrahh("drummaboy")
   # 4423.84 sec elapsed
   # Model failed to converge with max|grad| = 0.00298652 (tol = 0.002, component 1)
   tic()
