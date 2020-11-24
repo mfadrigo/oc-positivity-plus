@@ -491,10 +491,10 @@ compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_
   #does not include intercept or median income
   model_summary <- summary(model)
   coeffs <- model_summary$coefficients[-1, 1]
-  se_robust <- model_summary$coefficients[-1,2]
+  se <- model_summary$coefficients[-1,2]
   model_sum <- data.frame("odds" = exp(coeffs),
-                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se_robust),
-                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se_robust),
+                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
+                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
                           "p-value" =  model_summary$coefficients[-1, 4],
                           "param_names" = param_names)
   if(include_pvalues){
