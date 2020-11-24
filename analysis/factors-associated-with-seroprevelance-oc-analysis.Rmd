@@ -33,6 +33,7 @@ library(data.table)
 library(knitr)
 library(kableExtra)
 # fit-model1 chunk
+library(sandwich)
 library(tictoc)
 library(lme4)
 library(BRRR)
@@ -121,7 +122,7 @@ read_sero <- function(file_path, start_date, end_date){
         ((Q6r6 == 6) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r7 + Q6r8 == 0)) ~ "islander",
         TRUE ~ "unknown"
       ),
-      levels = c("white", "black", "hispanic", "native", "asian", "islander", "unknown")
+      levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
     )) %>% 
     select(
       zip = Q3,
@@ -435,24 +436,237 @@ if (params$refit_model1) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
+  skrrrahh("drummaboy")
 
   tic()
   ss <- getME(fit1a, c("theta","fixef"))
   fit1b <- update(
-    fit_time_lin1,
+    fit1a,
     start = ss,
-    control = glmerControl(
-      optimizer = "bobyqa",
-      optCtrl = list(maxfun = 2e6)
-    )
+    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
   )
   toc()
   fit1 <- fit1b
   skrrrahh("drummaboy")
-
+  # Message:
+  # variance-covariance matrix computed from finite-difference Hessian is 
+  # not positive definite or contains NA values: 
+  # falling back to var-cov estimated from RXvariance-covariance
+  
   save(fit1, file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
 } else {
   load(file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
 }
 ```
 
+
+```{r computes-model-odds-cis}
+parameter_names <- c(
+  "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59",
+  "60-64", "65-69", "70-74", "75-79", "80-84", "85+", 
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density (1000ppl/km^2)", 
+  "Median Income (std. dev.)"
+)
+
+summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
+
+summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
+```
+
+
+```{r bic-table}
+compare_bic <- BIC(fit0, fit1) 
+row.names(compare_bic) <- c("Model 0", "Model 1")
+
+kable(compare_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex",
+      caption = "Model comparison using BIC shows do real difference in modeling odds of testing sero-positive for COVID-19 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+
+```{r fit0-model-results-table}
+fm_sum <- summary(fit0)
+
+intercept <- paste0(
+  round(exp(fm_sum$coefficients[1, 1]), 3),
+  " (",
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
+  ",",
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit0)))[1]), 3),
+  ")"
+)
+
+
+fit_final_model <- summary_fit0
+
+rr_fm <- round(fit_final_model[, "odds"], 3)
+ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
+ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
+#p_values_fm <- fit_final_model$p.value
+#p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
+
+reference_group <- c(
+  TRUE, rep(FALSE, 13),
+  TRUE, FALSE,
+  TRUE, rep(FALSE, 6),
+  TRUE, rep(FALSE, 3),
+  TRUE, rep(FALSE, 3),
+  FALSE,
+  FALSE
+)
+
+table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
+colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
+rownames(table_fm) <- c(
+  "18-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59",
+  "60-64", "65-69", "70-74", "75-79", "80-84", "85+",
+  "Female", "Male",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Population Density (1000ppl/km^2)",
+  "Median Income (std. dev.)"
+)
+
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_fm)) {
+  if (reference_group[i]) {
+    #table_fm[i, 1] <- "Reference"
+    table_fm[i, 3] <- "Reference"
+  } else {
+    table_fm[i, 3] <- paste(rr_fm[non_ref_counter], " (", 
+                          ci_lb_fm[non_ref_counter], ", ", 
+                          ci_ub_fm[non_ref_counter], ")", 
+                          sep = "")
+    #table_fm[i, 2] <- p_values_fm[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
+
+variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
+sero_pos <- all_sero[all_sero$covid_pos == "yes", ]
+quant_vars <- c("adj_pop_density", "adj_med_income")
+order_quant_vars <- c(32, 33)
+variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
+
+qual_vars <- c("age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "age_grp.18-24", "age_grp.25-29", "age_grp.30-34", "age_grp.35-39", 
+  "age_grp.40-44", "age_grp.45-49", "age_grp.50-54", "age_grp.55-59",
+  "age_grp.60-64", "age_grp.65-69", "age_grp.70-74", "age_grp.75-79",
+  "age_grp.80-84", "age_grp.85+",
+  "sex.female", "sex.male", 
+  "race.white", "race.asian", "race.black", "race.hispanic", 
+  "race.native", "race.islander", "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+)
+ 
+calc_freq <- function(df, order_vars) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+
+  qual_count <- qual_count[order_vars]
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
+}
+
+variable_counts[order_qual_vars, 2] <- calc_freq(all_sero[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(sero_pos[, qual_vars], qual_vars_ordered)
+
+table_fm[, 2] <- variable_counts[, 2]
+table_fm[, 1] <- variable_counts[, 1]
+
+
+kable(
+  table_fm, 
+  format = "latex", 
+  caption = paste(
+    "Model 0 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV2 in Orange County.", 
+    sep = ""
+    )
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
+  pack_rows("Age", 1, 14, cold = FALSE) %>% 
+  pack_rows("Sex", 15, 16, bold = FALSE) %>%
+  pack_rows("Race", 17, 23, bold = FALSE) %>%
+  pack_rows("% with College Degree[note]", 24, 26, bold = FALSE) %>%
+  pack_rows("% with Insurance", 27, 29, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
+  add_footnote(
+    c(
+      paste0(
+        "Model intercept represents odds of testing sero-positive for SARS-CoV2 for a white female diagnosed with SARS-CoV-2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density in Orange County. The odds of this individual testing dying is estimated to be ",
+        intercept,
+        collapse = ""
+      ), 
+      "95% confidence interval computed with robust standard errors",
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
+    ),
+    notation = "symbol"
+  )  
+```
+
+
+```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County."}
+
+fm_results_with_ref <- rbind(
+  summary_fit0[1, ],
+  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  summary_fit0[2, ],
+  c(1, 0.99, 1.01, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  summary_fit0[3:8, ],
+  c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
+  summary_fit0[9:11, ],
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  summary_fit0[12:nrow(summary_fit0), ]
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  rep("black", 1),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 6),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 3),
+  rep("black", 4)
+)
+
+# will need to add colors again to make reference groups white
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=5)
+  ) +
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+```
