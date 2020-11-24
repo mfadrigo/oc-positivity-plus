@@ -41,13 +41,142 @@ library(mgcv)
 ```
 
 
+```{r data-wrangling-function}
+read_sero <- function(file_path, start_date, end_date){
+  # Read in and select data of interest-----------------------------------------
+  sero_results_original <- read_csv(
+    file_path,
+    col_types = cols(
+      .default = col_skip(),
+      E4 = col_integer(),
+      DV_PANEL = col_character(),
+      DV_IMPORT_TEST_RESULTresult = col_character(),
+      Q1 = col_integer(),
+      Q2 = col_integer(),
+      Q3 = col_character(),
+      Q6r1 = col_integer(),
+      Q6r2 = col_integer(),
+      Q6r3 = col_integer(),
+      Q6r4 = col_integer(),
+      Q6r5 = col_integer(),
+      Q6r6 = col_integer(),
+      Q6r7 = col_integer(),
+      Q6r8 = col_integer(),
+      Q7 = col_integer()
+    ) 
+  )
+  
+  
+  sero_results_filtered <- sero_results_original %>% 
+    filter(E4 == 1) %>% # Only individuals who had a blood test completed
+    filter(DV_PANEL != 7) # Only individuals who are not home recruits
+  
+  
+  # tidy seroprevelance data----------------------------------------------------
+  race_num <- sero_results_filtered[, c("Q6r1", "Q6r2", "Q6r3", "Q6r4", "Q6r5", "Q6r6", "Q6r7", "Q6r8")] 
+  
+  
+  sero_results_adjusted <- sero_results_filtered %>% 
+    filter(
+      DV_IMPORT_TEST_RESULTresult == "Reactive" |
+      DV_IMPORT_TEST_RESULTresult == "Non-Reactive"
+    ) %>% 
+    mutate(covid_pos = factor(
+      DV_IMPORT_TEST_RESULTresult,
+      levels = c("Non-Reactive", "Reactive"),
+      labels = c("no", "yes")
+    )) %>% 
+    mutate(age_grp = factor(
+      Q2,
+      levels = 2:15,
+      labels = c(
+        "18-24",
+        "25-29",
+        "30-34",
+        "35-39",
+        "40-44",
+        "45-49",
+        "50-54",
+        "55-59",
+        "60-64",
+        "65-69",
+        "70-74",
+        "75-79",
+        "80-84",
+        "85+"
+      )
+    )) %>% 
+    filter(Q1 == 1 | Q1 == 2) %>% 
+    mutate(sex = factor(
+      Q1,
+      levels = c(2, 1),
+      labels = c("female", "male")
+    )) %>% 
+    mutate(race = case_when(
+      Q6r1 == 1 & sum(Q6r2, Q6r3, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) == 0 ~ "white",
+      Q6r2 == 2 & sum(Q6r1, Q6r3, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) == 0 ~ "black",
+      Q6r3 == 2 & sum(Q6r1, Q6r2, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) ~ "hispanic",
+      Q6r4 == 4 & sum(Q6r1, Q6r2, Q6r3, Q6r5, Q6r6, Q6r7, Q6r8) == 0 ~ "native",
+      Q6r5 == 5 & sum(Q6r1, Q6r2, Q6r3, Q6r4, Q6r6, Q6r7, Q6r8) == 0 ~ "asian",
+      Q6r6 == 6 & sum(Q6r1, Q6r2, Q6r3, Q6r4, Q6r5, Q6r7, Q6r8) == 0 ~ "islander",
+      TRUE ~ "unknown"
+    )) %>% 
+    select(
+      zip = Q3,
+      covid_pos,
+      age_grp,
+      sex,
+      race
+    )
+    
+  ############DELETE##############
+  check_data <- sero_results_filtered %>% 
+    mutate(race = case_when(
+      ((Q6r1 == 1) & (sum(Q6r2, Q6r3, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) == 0)) ~ "white",
+      ((Q6r2 == 2) & (sum(Q6r1, Q6r3, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) == 0)) ~ "black",
+      ((Q6r3 == 2) & (sum(Q6r1, Q6r2, Q6r4, Q6r5, Q6r6, Q6r7, Q6r8) == 0)) ~ "hispanic",
+      ((Q6r4 == 4) & (sum(Q6r1, Q6r2, Q6r3, Q6r5, Q6r6, Q6r7, Q6r8) == 0)) ~ "native",
+      ((Q6r5 == 5) & (sum(Q6r1, Q6r2, Q6r3, Q6r4, Q6r6, Q6r7, Q6r8) == 0)) ~ "asian",
+      ((Q6r6 == 6) & (sum(Q6r1, Q6r2, Q6r3, Q6r4, Q6r5, Q6r7, Q6r8) == 0)) ~ "islander",
+      TRUE ~ "unknown"
+    ))
+  
+  
+    
+  # Need to fix age groups by labeling levels  
+    
+  
+  
+  # Count missing values--------------------------------------------------------
+  missing_vec <- c(
+    nrow(sero_results_filtered) , # number of observations with test date between start date and end date
+    nrow(sero_results_filtered) - nrow(sero_results_adjusted),  # number of NA for age, sex and zip
+    nrow(sero_results_adjusted) - nrow(pos_results_merged) # number of invalid or non Orange County zip codes
+  )
+  names(missing_vec) <- c(
+    "full_num_data_cases", 
+    "num_na_cases_removed", 
+    "num_bad_zip_cases_removed"
+  )
+  
+  
+  list(
+    "sero_results_merged" = sero_results_merged, 
+    "zip_data_merged" = zip_data_merged, 
+    "missing" = missing_vec
+  )
+}
+```
+
+
+
 ```{r load-clean-data}
 if (params$reclean_data) {
   all_sero_and_zip <- read_all_pcr(
     file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
-    )
+  )
   
   save(all_sero_and_zip, file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
   
