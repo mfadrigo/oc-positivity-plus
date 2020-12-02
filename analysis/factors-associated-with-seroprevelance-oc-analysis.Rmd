@@ -8,6 +8,7 @@ params:
   reclean_data: FALSE
   refit_model0: FALSE
   refit_model1: FALSE
+  refit_model_a: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -642,5 +643,66 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.5))
 ```
+
+
+
+
+```{r prep-seropos-modeled-by-num-cases-data}
+# load in cleaned positivity data
+load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
+  
+all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
+all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]]) %>% 
+  mutate(zip = factor(zip))
+all_missing <- all_pcr_and_zip[["missing"]]
+all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+
+# Tabulate cumulative number of cases in each zip code
+cases_in_zip <- all_pcr %>% 
+  filter(covid_positive == 1) %>% 
+  group_by(zip) %>% 
+  summarise(num_cases_in_zip = n())
+
+# Make df of zip code, population, num_cases_in_zip, perc_zip_covid_pos 
+case_by_zip_pop <- merge(all_zip, cases_in_zip, by = "zip") %>% 
+  select(zip, num_cases_in_zip, population) %>% 
+  mutate(perc_zip_covid_pos = num_cases_in_zip/population)
+
+all_sero <- merge(all_sero, case_by_zip_pop, by = "zip")
+``` 
+
+
+```{r fit-seropos-modeled-by-num-cases}
+if (params$refit_model_a) {
+  fita <- glm(
+    formula = covid_pos ~ age_grp + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              perc_zip_covid_pos,
+    family = binomial, 
+    data = all_sero
+    )
+
+  save(fita, file = here("analysis/testing-seropositive-regression-results", "fita.Rdata"))
+} else {
+  load(file = here("analysis/testing-seropositive-regression-results", "fita.Rdata"))
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
