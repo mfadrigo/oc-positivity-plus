@@ -14,6 +14,7 @@ params:
   oc_icu_avail_beds_earliest_val: 131
   oc_hos_covid_pateients_earliest_val: 308
   oc_all_hos_bed_earliest_val: 4213
+  oc_icu_full_beds_earliest_val: 71
 ---
 
 ```{r setup, include=FALSE}
@@ -40,7 +41,7 @@ usepackage_latex("threeparttable")
 library(sandwich)
 library(tictoc)
 library(lme4)
-library(BRRR)
+#library(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
 ```
@@ -304,9 +305,11 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     col_types = cols(
       .default = col_skip(),
       county = col_character(),
-      todays_date = col_date("%Y-%m-%d T %H:%M:%S"),
+      todays_date = col_date(),
       hospitalized_covid_patients = col_double(),
       all_hospital_beds = col_double(),
+      icu_covid_confirmed_patients = col_double(),
+      icu_suspected_covid_patients = col_double(),
       icu_available_beds = col_double()
     )
   ) %>% 
@@ -317,7 +320,15 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
     dates_missing <- dates_missing[-length(dates_missing)]
     num_dm <- length(dates_missing)
-    missing_rows <- data.frame(rep("Orange", num_dm), dates_missing, rep(NA, num_dm), rep(NA, num_dm), rep(NA, num_dm))
+    missing_rows <- data.frame(
+      rep("Orange", num_dm), 
+      dates_missing, 
+      rep(NA, num_dm), 
+      rep(NA, num_dm), 
+      rep(NA, num_dm),
+      rep(NA, num_dm),
+      rep(NA, num_dm)
+    )
     colnames(missing_rows) <- colnames(hos_bed_gov)
     hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
   } else {
@@ -338,10 +349,16 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       100 * (1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val),
       100 * (1 - hospitalized_covid_patients / all_hospital_beds)
     )) %>% 
+    mutate(covid_icu_beds = ifelse(
+      is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
+      params$oc_icu_full_beds_earliest_val,
+      icu_covid_confirmed_patients + icu_suspected_covid_patients
+    )) %>% 
     select(
       test_date = todays_date,
       avail_icu_beds,
-      perc_avail_beds
+      perc_avail_beds,
+      covid_icu_beds
     )
   
   hos_bed_gov$adj_perc_avail_beds <- scale(
@@ -353,6 +370,12 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   hos_bed_gov$adj_avail_icu_beds <- scale(
     hos_bed_gov$avail_icu_beds, 
     center = TRUE, 
+    scale = TRUE
+  )
+  
+  hos_bed_gov$adj_covid_icu_beds <- scale(
+    hos_bed_gov$covid_icu_beds,
+    center = TRUE,
     scale = TRUE
   )
   
@@ -532,7 +555,7 @@ if (params$refit_model0) {
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + adj_perc_avail_beds,
+              adj_time_days + adj_covid_icu_beds,
     family = binomial, 
     data = pos_pcr
     )
@@ -564,14 +587,14 @@ if (params$refit_model1) {
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + adj_perc_avail_beds +
+              adj_time_days + adj_covid_icu_beds +
               (1 | zip),              
     family = binomial, 
     data = pos_pcr,
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  skrrrahh("drummaboy")
+  #skrrrahh("drummaboy")
   
   save(fit1, file = here("analysis/mortality-regression-results", "fit1.Rdata"))
 } else {
@@ -622,7 +645,7 @@ parameter_names <- c(
   "Population Density (1000ppl/km^2)", 
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "% Hospital Beds Available (std. dev.)"
+  "ICU beds with COVID patients[note] (std. dev.)"
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
@@ -675,7 +698,7 @@ rownames(table_fm) <- c(
   "Population Density (1000ppl/km^2)",
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "% Hospital Beds Available[note] (std. dev.)"
+  "ICU beds with COVID patients (std. dev.)"
   )
 
           
@@ -747,13 +770,12 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density and average percent of available hospital beds in Orange County. The odds of this individual testing dying is estimated to be ",
+        "Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density and average number of ICU beds filled with COVID patients in Orange County. The odds of this individual testing dying is estimated to be ",
         intercept,
         collapse = ""
       ), 
       "95% confidence interval computed with robust standard errors",
-      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code",
-      "Percent of hospital beds not being used by COVID-19 patients in Orange County"
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
       ),
     notation = "symbol"
   )  
