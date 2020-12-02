@@ -13,6 +13,7 @@ params:
   refit_model3: FALSE
   refit_model4: FALSE
   refit_model5: FALSE
+  refit_model6: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -799,9 +800,64 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
 
 
+Model 6:  
+Generalized additive model
+\begin{equation}
+	\label{eq:Model5}
+		\begin{split}
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
+		&+ \beta_{Time}f(\text{Time}_i) + \beta_{\text{Interaction}}\text{Median Income}_i\times f(\text{Time}_i),
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
+
+```{r fit-model6, results="hide"}
+if (params$refit_model6) {
+  tic()
+  fit6 <- gam(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density  + adj_med_income +
+              s(time_days) +
+              ti(time_days, adj_med_income, bs = "ts"),
+    family = binomial, 
+    data = all_pcr,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+  skrrrahh("drummaboy")
+# 4714.62 sec elapsed
+# updated and saved 11-2-2020
+  save(fit6, file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
+}
+ 
+parameter_names <- c(
+  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density"
+  )
+
+fit_time_gam_inter_summary1 <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  param_names = parameter_names
+)
+
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
+```
+
+
 ```{r bic-table}
-compare_bic <- BIC(fit_time_lin, fit_time_quad, fit_time_quad_inter, fit_time_gam, fit_time_gam_inter) 
-row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5")
+compare_bic <- BIC(fit_time_lin, fit_time_quad, fit_time_quad_inter, fit_time_gam, fit_time_gam_inter, fit6) 
+row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "Model 6")
 
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
