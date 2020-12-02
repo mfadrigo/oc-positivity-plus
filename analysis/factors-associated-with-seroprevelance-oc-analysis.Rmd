@@ -33,7 +33,7 @@ usepackage_latex("threeparttable")
 library(sandwich)
 library(tictoc)
 library(lme4)
-library(BRRR)
+#(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
 ```
@@ -69,7 +69,7 @@ read_sero <- function(file_path){
   sero_results_filtered <- sero_results_original %>% 
     filter(E4 == 1) %>% # Only individuals who had a blood test completed
     filter(DV_PANEL != 7) # Only individuals who are not home recruits
-  
+
   
   # tidy seroprevelance data----------------------------------------------------
   
@@ -123,7 +123,10 @@ read_sero <- function(file_path){
       age_grp,
       sex,
       race
-    )
+    ) %>% 
+    filter(race != "native")
+  
+  sero_results_adjusted$race <- droplevels(sero_results_adjusted$race, exclude = "native")
 
   
   # Add zip code level data and merge with pcr results--------------------------
@@ -270,7 +273,7 @@ read_sero <- function(file_path){
 ```{r load-clean-data}
 if (params$reclean_data) {
   all_sero_and_zip <- read_sero(
-    file_path = here("data/seroprevelance-data", "oc-seroprevelence-data-2020-08-01.csv")
+    file_path = here("data/seroprevelance-data", "oc-seroprevelance-data-2020-08-01.csv")
   )
   
   save(all_sero_and_zip, file = here("data/seroprevelance-data", "cleaned_process_sero_data.Rdata"))
@@ -350,17 +353,17 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
 For simplicity let  
 $O_i$ be the odds of testing positive for COVID-19 in Orange County.  
 $\overrightarrow{\beta}_{(1-14)} = (\beta_{\text{Age[18-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}, \beta_{\text{Age[40-44]}}, \beta_{\text{Age[45-49]}}, \beta_{\text{Age[50-54]}}, \\ \beta_{\text{Age[55-59]}}, \beta_{\text{Age[60-64]}}, \beta_{\text{Age[65-69]}}, \beta_{\text{Age[70-74]}}, \beta_{\text{Age[75-79]}}, \beta_{\text{Age[80-84]}}, \beta_{\text{Age[85+]}})$  
-$\overrightarrow{\beta}_{(16-21)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
-$\overrightarrow{\beta}_{(22-24)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
-$\overrightarrow{\beta}_{(25-27)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
+$\overrightarrow{\beta}_{(16-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
+$\overrightarrow{\beta}_{(24-26)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
 
 
 Model 0:
 \begin{equation}
 \label{eq:Model0}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-21)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(22-24)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(25-27)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
@@ -388,8 +391,8 @@ Model 1:
 \begin{equation}
 \label{eq:Model1}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-21)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(22-24)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(25-27)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
@@ -435,7 +438,7 @@ if (params$refit_model1) {
 parameter_names <- c(
   "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+", 
   "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "Asian", "Black", "Hispanic", "Pacific Islander", "Unknown",
   "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density (1000ppl/km^2)", 
@@ -482,7 +485,7 @@ ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
 reference_group <- c(
   TRUE, rep(FALSE, 8),
   TRUE, FALSE,
-  TRUE, rep(FALSE, 6),
+  TRUE, rep(FALSE, 5),
   TRUE, rep(FALSE, 3),
   TRUE, rep(FALSE, 3),
   FALSE,
@@ -494,7 +497,7 @@ colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Female", "Male",
-  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "White", "Asian", "Black", "Hispanic", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)",
@@ -531,7 +534,7 @@ qual_vars_ordered <- c(
   "age_grp.40-49", "age_grp.50-59","age_grp.60-69", "age_grp.70-79", "age_grp.80+",
   "sex.female", "sex.male", 
   "race.white", "race.asian", "race.black", "race.hispanic", 
-  "race.native", "race.islander", "race.unknown",
+  "race.islander", "race.unknown",
   "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
   "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
   "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
@@ -551,9 +554,6 @@ variable_counts[order_qual_vars, 1] <- calc_freq(sero_pos[, qual_vars], qual_var
 
 table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
-# No sero-positive native americans or native alaskans
-table_fm["Native American", 1] <- paste(0, " (", 0, "%)", sep = "")
-
 
 kable(
   table_fm, 
@@ -566,7 +566,7 @@ kable(
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Age", 1, 9, bold = FALSE) %>% 
   pack_rows("Sex", 10, 11, bold = FALSE) %>%
-  pack_rows("Race", 12, 18, bold = FALSE) %>%
+  pack_rows("Race[note]", 12, 18, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 19, 22, bold = FALSE) %>%
   pack_rows("% with Insurance", 23, 25, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
@@ -578,6 +578,7 @@ kable(
         collapse = ""
       ), 
       "95% confidence interval computed with robust standard errors",
+      "Native American/Native Alaskan race group not included in analysis due to lack of data, no individual of this race group tested seropositive.",
       "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
     ),
     notation = "symbol"
@@ -593,11 +594,11 @@ fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit0[9, ],
   c(1, 0.99, 1.01, paste0(c("Race", rep(" ", 24), "[ref: White]"), collapse = "")),
-  summary_fit0[10:15, ],
+  summary_fit0[10:14, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
-  summary_fit0[16:18, ],
+  summary_fit0[15:17, ],
   c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  summary_fit0[19:nrow(summary_fit0), ]
+  summary_fit0[18:nrow(summary_fit0), ]
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -610,7 +611,7 @@ variable_colors <- c(
   "white",
   rep("black", 1),
   "white",
-  rep("black", 6),
+  rep("black", 5),
   "white",
   rep("black", 3),
   "white",
@@ -638,39 +639,4 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 1))
-
-
-fm_results_with_ref$upper_bound[17] <- max(fm_results_with_ref$upper_bound[-17])
-
-ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = variable_colors) +
-  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
-  geom_point(color = variable_colors) +
-  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
-  geom_segment(
-    aes(
-      x = param_names[17], 
-      y = lower_bound[17], 
-      xend = param_names[17],
-      yend = upper_bound[17]
-    ), 
-    arrow = arrow(length=unit(0.30,"cm")),
-    size = 0.25
-  ) +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-  ylab("Adjusted Odds Ratio") +
-  coord_flip() +
-  theme(
-    axis.title.y = element_blank(),
-    axis.text.x=element_text(size = 12, colour="black"),
-    axis.text.y=element_text(colour="black", hjust = 1),
-    axis.ticks.y = element_blank(),
-    axis.line.x = element_line(color = "black"),
-    panel.grid.major = element_line(colour = "gray"),
-    panel.background = element_blank()
-  ) +
-  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
-  scale_y_continuous(
-    breaks = seq(0, 4.5, by = 0.5), 
-    limits = c(min(fm_results_with_ref$lower_bound[-17]), max(fm_results_with_ref$upper_bound[-17]))
-  )
 ```
