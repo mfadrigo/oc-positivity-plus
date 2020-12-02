@@ -562,21 +562,22 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
 ```
 
 For simplicity let  
-$O_i$ be the odds of testing positive for COVID-19 in Orange County.  
-$\overrightarrow{\beta}_{(1-12)} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
-$\overrightarrow{\beta}_{(14-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
-$\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
-$\overrightarrow{\beta}_{(24-26)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
+$O_i$ be the odds of testing positive for SARS-CoV2 in Orange County.  
+$\overrightarrow{\beta}_{\text{Age Group}} = (\beta_{\text{Age[5-9]}}, \beta_{\text{Age[10-14]}}, \beta_{\text{Age[15-19]}}, \beta_{\text{Age[20-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}\\ \beta_{\text{Age[40-49]}},  \beta_{\text{Age[50-59]}}, \beta_{\text{Age[60-69]}}, \beta_{\text{Age[70-79]}}, \beta_{\text{Age[80+]}})$  
+$\overrightarrow{\beta}_{\text{Race}} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{NativeAmerican}}, \beta_{\text{PacificIslander}}, \beta_{\text{OtherRace}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{\text{College}} = (\beta_{\text{\% with College Degree Quartile 2}}, \beta_{\text{\% with College Degree Quartile 3}}, \beta_{\text{\% with College Degree Quartile 4}})$  
+$\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Quartile 2}}, \beta_{\text{\% with Insurance Quartile 3}}, \beta_{\text{\% with Insurance Quartile 4}})$
 
 
 Model 1:
 \begin{equation}
 \label{eq:Model1}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{Time}\text{Time}_i,
+		&+ \beta_{\text{Time}}\text{Time}_i,
 	\end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -623,10 +624,11 @@ Model 2:
 \begin{equation}
 \label{eq:Model2}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{Time}\text{Time}_i + \beta_{Time2}\text{Time}^2_i,
+		&+ \beta_{\text{Time}}\text{Time}_i + \beta_{\text{Time2}}\text{Time}^2_i,
 	\end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -658,8 +660,9 @@ Model 3:
 \begin{equation}
 \label{eq:Model3}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
 		&+ \beta_{\text{Time}}\text{Time}_i + \beta_{\text{Time2}}\text{Time}^2_i, \\
 		&+ \beta_{\text{Interaction1}}\text{Median Income}_i\times\text{Time}_i + \beta_{\text{Interaction2}}\text{Median Income}_i\times\text{Time}^2_i,
@@ -712,10 +715,11 @@ Generalized additive model
 \begin{equation}
 \label{eq:Model4}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{Time}f(\text{Time}_i),
+		&+ \beta_{\text{Time}}f(\text{Time}_i),
 	\end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -749,10 +753,11 @@ Generalized additive model
 \begin{equation}
 	\label{eq:Model5}
 		\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{Time}f(\text{Time}_i) + \beta_{\text{Interaction}}\text{Median Income}_i\times f(\text{Time}_i),
+		&+ \beta_{\text{Time}}f(\text{Time}_i) + \beta_{\text{Interaction}}\text{Median Income}_i\times f(\text{Time}_i),
 	\end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -805,10 +810,11 @@ Generalized additive model
 \begin{equation}
 	\label{eq:Model5}
 		\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-12)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(14-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{Time}f(\text{Time}_i) + \beta_{\text{Interaction}}\text{Median Income}_i\times f(\text{Time}_i),
+		&+ \beta_{\text{Time}}f(\text{Time}_i) + \beta_{\text{Interaction}}\text{Median Income}_i\times f(\text{Time}_i),
 	\end{split}
 \end{equation}
 without a random intercept for zip code.

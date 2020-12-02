@@ -353,18 +353,19 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
 
 For simplicity let  
 $O_i$ be the odds of testing positive for COVID-19 in Orange County.  
-$\overrightarrow{\beta}_{(1-14)} = (\beta_{\text{Age[18-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}, \beta_{\text{Age[40-44]}}, \beta_{\text{Age[45-49]}}, \beta_{\text{Age[50-54]}}, \\ \beta_{\text{Age[55-59]}}, \beta_{\text{Age[60-64]}}, \beta_{\text{Age[65-69]}}, \beta_{\text{Age[70-74]}}, \beta_{\text{Age[75-79]}}, \beta_{\text{Age[80-84]}}, \beta_{\text{Age[85+]}})$  
-$\overrightarrow{\beta}_{(16-20)} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
-$\overrightarrow{\beta}_{(21-23)} = (\beta_{\text{EducationQ2}}, \beta_{\text{EducationQ3}}, \beta_{\text{EducationQ4}})$  
-$\overrightarrow{\beta}_{(24-26)} = (\beta_{\text{InsuredQ2}}, \beta_{\text{InsuredQ3}}, \beta_{\text{InsuredQ4}})$
+$\overrightarrow{\beta}_{\text{Age Group}} = (\beta_{\text{Age[18-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}, \beta_{\text{Age[40-44]}}, \beta_{\text{Age[45-49]}}, \beta_{\text{Age[50-54]}}, \\ \beta_{\text{Age[55-59]}}, \beta_{\text{Age[60-64]}}, \beta_{\text{Age[65-69]}}, \beta_{\text{Age[70-74]}}, \beta_{\text{Age[75-79]}}, \beta_{\text{Age[80-84]}}, \beta_{\text{Age[85+]}})$  
+$\overrightarrow{\beta}_{\text{Race}} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{\text{College}} = (\beta_{\text{\% with College Degree Quartile 2}}, \beta_{\text{\% with College Degree Quartile 3}}, \beta_{\text{\% with College Degree Quartile 4}})$  
+$\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Quartile 2}}, \beta_{\text{\% with Insurance Quartile 3}}, \beta_{\text{\% with Insurance Quartile 4}})$
 
 
 Model 0:
 \begin{equation}
 \label{eq:Model0}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
@@ -392,8 +393,9 @@ Model 1:
 \begin{equation}
 \label{eq:Model1}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
@@ -464,8 +466,9 @@ Model 2:
 \begin{equation}
 \label{eq:Model2}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
-		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
+		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
 		&+ \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
 	\end{split}
