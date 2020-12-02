@@ -8,7 +8,7 @@ params:
   reclean_data: FALSE
   refit_model0: FALSE
   refit_model1: FALSE
-  refit_model_a: FALSE
+  refit_model2: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -435,6 +435,62 @@ if (params$refit_model1) {
 ```
 
 
+```{r prep-seropos-modeled-by-num-cases-data}
+# load in cleaned positivity data
+load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
+  
+all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
+all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]]) %>% 
+  mutate(zip = factor(zip))
+all_missing <- all_pcr_and_zip[["missing"]]
+all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+
+# Tabulate cumulative number of cases in each zip code
+cases_in_zip <- all_pcr %>% 
+  filter(covid_positive == 1) %>% 
+  group_by(zip) %>% 
+  summarise(num_cases_in_zip = n())
+
+# Make df of zip code, population, num_cases_in_zip, perc_zip_covid_pos 
+case_by_zip_pop <- merge(all_zip, cases_in_zip, by = "zip") %>% 
+  select(zip, num_cases_in_zip, population) %>% 
+  mutate(perc_zip_covid_pos = num_cases_in_zip/population)
+
+all_sero <- merge(all_sero, case_by_zip_pop, by = "zip")
+``` 
+
+
+Model 2:
+\begin{equation}
+\label{eq:Model2}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{(1-14)}\overrightarrow{\text{Age Groups}}_i + \beta_{Sex}\text{Sex}_i + \overrightarrow{\beta}_{(16-20)}\overrightarrow{\text{Race}}_i\\
+		&+ \overrightarrow{\beta}_{(21-23)}\overrightarrow{\text{\% with College Degree Quartile}}_i + \overrightarrow{\beta}_{(24-26)}\overrightarrow{\text{\% with Insurance Quartile}}_i \\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
+		&+ \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
+
+
+```{r fit-seropos-modeled-by-num-cases}
+if (params$refit_model2) {
+  fit2 <- glm(
+    formula = covid_pos ~ age_grp + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              perc_zip_covid_pos,
+    family = binomial, 
+    data = all_sero
+    )
+
+  save(fit2, file = here("analysis/testing-seropositive-regression-results", "fit2.Rdata"))
+} else {
+  load(file = here("analysis/testing-seropositive-regression-results", "fit2.Rdata"))
+}
+```
+
+
 ```{r compute-model-odds-cis}
 parameter_names <- c(
   "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+", 
@@ -447,17 +503,18 @@ parameter_names <- c(
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
+summary_fit2 <- compute_ci_logistic_glm(fit2, param_names = c(parameter_names, "% of Zip SARS-CoV2+"))
 ```
 
 
 ```{r bic-table}
-compare_bic <- BIC(fit0, fit1) 
-row.names(compare_bic) <- c("Model 0", "Model 1")
+compare_bic <- BIC(fit0, fit1, fit2) 
+row.names(compare_bic) <- c("Model 0", "Model 1", "Model 2")
 
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
       format = "latex",
-      caption = "Model comparison using BIC shows do real difference in modeling odds of testing sero-positive for COVID-19 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
+      caption = "Model comparison using BIC shows negligible difference in modeling odds of testing sero-positive for COVID-19 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
@@ -645,52 +702,132 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
+```{r fita-model-results-table}
+fm_sum <- summary(fit2)
+
+intercept <- paste0(
+  round(exp(fm_sum$coefficients[1, 1]), 3),
+  " (",
+  round(exp(fm_sum$coefficients[1, 1] - qnorm(0.975) * sqrt(diag(sandwich(fit2)))[1]), 3),
+  ",",
+  round(exp(fm_sum$coefficients[1, 1] + qnorm(0.975) * sqrt(diag(sandwich(fit2)))[1]), 3),
+  ")"
+)
 
 
-```{r prep-seropos-modeled-by-num-cases-data}
-# load in cleaned positivity data
-load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
-  
-all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]])
-all_zip <- data.frame(all_pcr_and_zip[["zip_data_merged"]]) %>% 
-  mutate(zip = factor(zip))
-all_missing <- all_pcr_and_zip[["missing"]]
-all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
+fit_final_model <- summary_fit2
 
-# Tabulate cumulative number of cases in each zip code
-cases_in_zip <- all_pcr %>% 
-  filter(covid_positive == 1) %>% 
-  group_by(zip) %>% 
-  summarise(num_cases_in_zip = n())
+rr_fm <- round(fit_final_model[, "odds"], 3)
+ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
+ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
+#p_values_fm <- fit_final_model$p.value
+#p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
 
-# Make df of zip code, population, num_cases_in_zip, perc_zip_covid_pos 
-case_by_zip_pop <- merge(all_zip, cases_in_zip, by = "zip") %>% 
-  select(zip, num_cases_in_zip, population) %>% 
-  mutate(perc_zip_covid_pos = num_cases_in_zip/population)
+reference_group <- c(
+  TRUE, rep(FALSE, 8),
+  TRUE, FALSE,
+  TRUE, rep(FALSE, 5),
+  TRUE, rep(FALSE, 3),
+  TRUE, rep(FALSE, 3),
+  FALSE,
+  FALSE,
+  FALSE
+)
 
-all_sero <- merge(all_sero, case_by_zip_pop, by = "zip")
-``` 
+table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
+colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
+rownames(table_fm) <- c(
+  "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Female", "Male",
+  "White", "Asian", "Black", "Hispanic", "Pacific Islander", "Unknown",
+  "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Population Density (1000ppl/km^2)",
+  "Median Income (std. dev.)",
+  "% of Zip Code SARS-CoV2+[note]"
+)
 
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_fm)) {
+  if (reference_group[i]) {
+    #table_fm[i, 1] <- "Reference"
+    table_fm[i, 3] <- "Reference"
+  } else {
+    table_fm[i, 3] <- paste(rr_fm[non_ref_counter], " (", 
+                          ci_lb_fm[non_ref_counter], ", ", 
+                          ci_ub_fm[non_ref_counter], ")", 
+                          sep = "")
+    #table_fm[i, 2] <- p_values_fm[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
 
-```{r fit-seropos-modeled-by-num-cases}
-if (params$refit_model_a) {
-  fita <- glm(
-    formula = covid_pos ~ age_grp + sex + race + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              perc_zip_covid_pos,
-    family = binomial, 
-    data = all_sero
-    )
+variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
+sero_pos <- all_sero[all_sero$covid_pos == "yes", ]
+quant_vars <- c("adj_pop_density", "adj_med_income", "perc_zip_covid_pos")
+order_quant_vars <- (nrow(table_fm) - 2):nrow(table_fm)
+variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
-  save(fita, file = here("analysis/testing-seropositive-regression-results", "fita.Rdata"))
-} else {
-  load(file = here("analysis/testing-seropositive-regression-results", "fita.Rdata"))
+qual_vars <- c("age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "age_grp.18-24", "age_grp.25-29", "age_grp.30-34", "age_grp.35-39", 
+  "age_grp.40-49", "age_grp.50-59","age_grp.60-69", "age_grp.70-79", "age_grp.80+",
+  "sex.female", "sex.male", 
+  "race.white", "race.asian", "race.black", "race.hispanic", 
+  "race.islander", "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+)
+ 
+calc_freq <- function(df, order_vars) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+
+  qual_count <- qual_count[order_vars]
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
 }
+
+variable_counts[order_qual_vars, 2] <- calc_freq(all_sero[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(sero_pos[, qual_vars], qual_vars_ordered)
+
+table_fm[, 2] <- variable_counts[, 2]
+table_fm[, 1] <- variable_counts[, 1]
+
+kable(
+  table_fm, 
+  format = "latex", 
+  caption = paste(
+    "Model 0 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV2 in Orange County.", 
+    sep = ""
+    )
+  ) %>%
+  kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
+  pack_rows("Age", 1, 9, bold = FALSE) %>% 
+  pack_rows("Sex", 10, 11, bold = FALSE) %>%
+  pack_rows("Race[note]", 12, 17, bold = FALSE) %>%
+  pack_rows("% with College Degree[note]", 18, 21, bold = FALSE) %>%
+  pack_rows("% with Insurance", 22, 24, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
+  add_footnote(
+    c(
+      paste0(
+        "Model intercept represents odds of testing sero-positive for SARS-CoV2 for a white female diagnosed with SARS-CoV2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density, and average percent of SARS-CoV2 positive individuals in Orange County. The odds of this individual testing sero-positive is estimated to be ",
+        intercept,
+        collapse = ""
+      ), 
+      "95% confidence interval computed with robust standard errors",
+      "Number of individuals who tested positive in individual's zip code reported to OC Public Health Department from March 1st to August 16th, divided by estimated population of zipcode",
+      "Native American/Native Alaskan race group not included in analysis due to lack of data, no individual of this race group tested seropositive",
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
+    ),
+    notation = "symbol"
+  )  
 ```
-
-
-
 
 
 
