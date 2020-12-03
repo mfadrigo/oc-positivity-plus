@@ -647,7 +647,7 @@ parameter_names <- c(
   "Population Density (1000ppl/km^2)", 
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "ICU beds with COVID patients[note] (std. dev.)"
+  "ICU COVID patients[note] (std. dev.)"
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
@@ -690,7 +690,7 @@ reference_group <- c(
   )
 
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
-colnames(table_fm) <- c("COVID-19 Deaths", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("Deaths[note]", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "Age (decades)",
   "Female", "Male",
@@ -700,7 +700,7 @@ rownames(table_fm) <- c(
   "Population Density (1000ppl/km^2)",
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "ICU beds with COVID patients (std. dev.)"
+  "ICU COVID patients (std. dev.)"
   )
 
           
@@ -776,6 +776,7 @@ kable(
         intercept,
         collapse = ""
       ), 
+      "All deaths with cause of death on death certificate specified as related to COVID-19",
       "95% confidence interval computed with robust standard errors",
       "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
       ),
