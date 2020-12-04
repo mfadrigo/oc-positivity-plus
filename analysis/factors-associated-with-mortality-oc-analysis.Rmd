@@ -305,7 +305,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     col_types = cols(
       .default = col_skip(),
       county = col_character(),
-      todays_date = col_date(),
+      todays_date = col_date("%Y-%m-%d T %H:%M:%S"),
       hospitalized_covid_patients = col_double(),
       all_hospital_beds = col_double(),
       icu_covid_confirmed_patients = col_double(),
