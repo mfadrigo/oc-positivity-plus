@@ -510,8 +510,24 @@ summary_fit2 <- compute_ci_logistic_glm(fit2, param_names = c(parameter_names, "
 ```
 
 
+
+```{r fit-seropos-modeled-by-num-cases}
+if (params$refit_model3) {
+  fit3 <- glm(
+    formula = covid_pos ~ I(perc_zip_covid_pos/10),
+    family = binomial, 
+    data = all_sero
+    )
+
+  #save(fit2, file = here("analysis/testing-seropositive-regression-results", "fit2.Rdata"))
+} else {
+  #load(file = here("analysis/testing-seropositive-regression-results", "fit2.Rdata"))
+}
+```
+
+
 ```{r bic-table}
-compare_bic <- BIC(fit0, fit1, fit2) 
+compare_bic <- BIC(fit0, fit1, fit3) 
 row.names(compare_bic) <- c("Model 0", "Model 1", "Model 2")
 
 kable(compare_bic,
