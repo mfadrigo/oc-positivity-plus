@@ -956,7 +956,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
-```{r fit3-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of testing sero-positive for SARS-CoV2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
+```{r fit3-model-results-plot, fig.align="center", fig.cap="Logistic model 3 results for odds of testing sero-positive for SARS-CoV2 in Orange County modeled only by percent of their zip code that has tested positive for SARS-CoV2"}
 
 fm_results_with_ref <- rbind(
   summary_fit3[1, ]
@@ -990,11 +990,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.25)) +
-  ggtitle("Results of SARS-CoV2 seropositivity logisitic regression (incidence only)")
+  ggtitle("Results of SARS-CoV2 seropositivity logisitic regression")
 ```
 
 
-```{r investigate-percent-pos-relationship}
+```{r investigate-percent-pos-relationship, eval=FALSE}
 modeled_vars <- all_sero[, c("perc_zip_covid_pos", "age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar", "pop_density", "med_income")]
 
 pdf(file = here("report", "modeled-predictors.pdf"))
