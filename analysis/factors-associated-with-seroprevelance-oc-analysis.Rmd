@@ -9,6 +9,7 @@ params:
   refit_model0: FALSE
   refit_model1: FALSE
   refit_model2: FALSE
+  refit_model3: TRUE
 ---
 
 ```{r setup, include=FALSE}
@@ -476,7 +477,7 @@ Model 2:
 without a random intercept for zip code.
 
 
-```{r fit-seropos-modeled-by-num-cases}
+```{r fit-seropos-modeled-with-num-cases}
 if (params$refit_model2) {
   fit2 <- glm(
     formula = covid_pos ~ age_grp + sex + race + 
