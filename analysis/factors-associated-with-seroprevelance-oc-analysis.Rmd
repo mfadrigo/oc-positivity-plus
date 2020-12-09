@@ -9,7 +9,8 @@ params:
   refit_model0: FALSE
   refit_model1: FALSE
   refit_model2: FALSE
-  refit_model3: TRUE
+  refit_model3: FALSE
+  refit_model4: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -958,9 +959,47 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
+```{r investigate-percent-pos-relationship}
+modeled_vars <- all_sero[, c("perc_zip_covid_pos", "age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar", "pop_density", "med_income")]
+
+pdf(file = here("report", "modeled-predictors.pdf"))
+plot(modeled_vars)
+dev.off()
+
+modeled_zip_vars <- all_sero[, c("perc_zip_covid_pos", "adj_perc_bach_quar", "adj_perc_insured_quar", "pop_density", "med_income")]
+
+pdf(file = here("report", "modeled-zip-code-variables.pdf"))
+plot(modeled_zip_vars)
+dev.off()
+
+```
 
 
+Model 4:
+\begin{equation}
+\label{eq:Model4}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		&+ \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
 
+
+```{r fit-seropos-modeled-by-num-cases}
+if (params$refit_model4) {
+  fit4 <- glm(
+    formula = covid_pos ~ age_grp + sex + race + 
+              I(perc_zip_covid_pos/10),
+    family = binomial, 
+    data = all_sero
+    )
+
+  save(fit4, file = here("analysis/testing-seropositive-regression-results", "fit4.Rdata"))
+} else {
+  load(file = here("analysis/testing-seropositive-regression-results", "fit4.Rdata"))
+}
+```
 
 
 
