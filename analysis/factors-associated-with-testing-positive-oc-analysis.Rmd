@@ -1045,10 +1045,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
     axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
     panel.background = element_blank(),
-    plot.title = element_text(hjust=5)
+    plot.title = element_text(hjust=0)
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
-  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5)) +
+  ggtitle("Results of SARS-CoV2 positivity logisitc regression")
 ```
 
 ```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 5. SARS-CoV2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
