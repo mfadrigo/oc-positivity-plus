@@ -498,7 +498,7 @@ if (params$refit_model2) {
 
 Model 3:
 \begin{equation}
-\label{eq:Model2}
+\label{eq:Model3}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
 	\end{split}
@@ -532,7 +532,7 @@ Model 4:
 without a random intercept for zip code.
 
 
-```{r fit-seropos-modeled-by-num-cases}
+```{r fit-seropos-modeled-without-zip-vars}
 if (params$refit_model4) {
   fit4 <- glm(
     formula = covid_pos ~ age_grp + sex + race + 
