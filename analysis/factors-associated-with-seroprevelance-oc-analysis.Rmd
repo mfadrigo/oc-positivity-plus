@@ -888,9 +888,9 @@ kable(
         collapse = ""
       ), 
       "95% confidence interval computed with robust standard errors",
-      "Number of individuals who tested positive in individual's zip code reported to OC Public Health Department from March 1st to August 16th, divided by estimated population of zipcode",
       "Native American/Native Alaskan race group not included in analysis due to lack of data, no individual of this race group tested seropositive",
-      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code"
+      "The esimated percent of people with a bachelor's degree, and similarly the estimated percent of people with medical insurance, in an individual's zip code",
+      "Number of individuals who tested positive in individual's zip code reported to OC Public Health Department from March 1st to August 16th, divided by estimated population of zipcode"
     ),
     notation = "symbol"
   )  
