@@ -185,3 +185,22 @@ Model 2:
 	\end{split}
 \end{equation}
 without a random intercept for zip code.
+
+Model 3:
+\begin{equation}
+\label{eq:Model3OSP}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \beta_{\text{Passive detection}}\text{\% of Zip Code SARS-CoV2+}_i,
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
+
+Model 4:
+\begin{equation}
+\label{eq:Model3OSP}
+	\begin{split}
+		\log(O_i) &= \beta_0 + \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\ 
+		&+ \beta_{\text{Passive detection}}\text{\% of Zip Code SARS-CoV2+}_i,
+	\end{split}
+\end{equation}
+without a random intercept for zip code.
