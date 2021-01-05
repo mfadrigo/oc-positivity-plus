@@ -1174,6 +1174,47 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
+\newpage
+```{r invesitgate-incidence-by-zip}
+inc_by_his_seropos <- all_sero %>% 
+  group_by(name) %>% 
+  summarize(
+    num_hispanic_seropos = sum(race == "hispanic" & covid_pos == "yes"),
+    num_seropos = sum(covid_pos == "yes"),
+    num_hispanic = sum(race == "hispanic"),
+    tot_tested_in_zip = n()
+  ) %>% 
+  mutate(per_hispanic_seropos = round(100*num_hispanic_seropos / num_hispanic), 2) %>% 
+  mutate(per_seropos = round(100*num_seropos / tot_tested_in_zip), 2) %>% 
+  select(
+    name,
+    num_hispanic_seropos,
+    per_hispanic_seropos,
+    per_seropos,
+    tot_tested_in_zip
+  )
+
+kable(
+  inc_by_his_seropos,
+  col.names = c(
+    "City",
+    "# hispanic seropos",
+    "% hispanic seropos",
+    "# hispanic",
+    "% hispanic",
+    "Total # ppl tested"
+  )
+)
+```
+
+
+
+
+
+
+
+
+
 
 
 
