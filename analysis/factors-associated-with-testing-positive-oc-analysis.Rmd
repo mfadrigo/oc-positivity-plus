@@ -1060,22 +1060,22 @@ plot(fit_time_gam_inter, scheme = 1, select = 2,
 ```
 
 
-```{r investigate-high-income-zips, eval=FALSE}
-all_zip %>% 
-ggplot(mapping = aes(x = adj_med_income, fill = name)) +
-  geom_histogram(color = "black") +
-  theme(axis.text.x = element_text(angle = 90))
-
-all_zip %>% 
-  filter(adj_med_income > 1) %>% 
-ggplot(mapping = aes(x = adj_med_income, fill = name)) +
-  geom_histogram(color = "black") +
-  theme(axis.text.x = element_text(angle = 90))
-
-all_zip %>% 
-  filter(adj_med_income > 1) %>% 
-ggplot(mapping = aes(x = adj_med_income, fill = zip)) +
-  geom_histogram(color = "black") +
-  theme(axis.text.x = element_text(angle = 90))
-```
+# ```{r investigate-high-income-zips, eval=FALSE}
+# all_zip %>% 
+# ggplot(mapping = aes(x = adj_med_income, fill = name)) +
+#   geom_histogram(color = "black") +
+#   theme(axis.text.x = element_text(angle = 90))
+# 
+# all_zip %>% 
+#   filter(adj_med_income > 1) %>% 
+# ggplot(mapping = aes(x = adj_med_income, fill = name)) +
+#   geom_histogram(color = "black") +
+#   theme(axis.text.x = element_text(angle = 90))
+# 
+# all_zip %>% 
+#   filter(asdj_med_income > 1) %>% 
+# ggplot(mapping = aes(x = adj_med_income, fill = zip)) +
+#   geom_histogram(color = "black") +
+#   theme(axis.text.x = element_text(angle = 90))
+# ```
 
