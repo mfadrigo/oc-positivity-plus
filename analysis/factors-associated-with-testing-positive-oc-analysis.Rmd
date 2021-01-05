@@ -918,7 +918,8 @@ for(i in 1:nrow(table_fm)) {
 }      
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + 5, ncol = 2))
-cov_pos_pcr <- all_pcr[all_pcr$covid_positive == 1, ]
+all_pcr_ppl <- all_pcr[!duplicated(all_pcr$id), ]
+cov_pos_pcr_ppl <- all_pcr_ppl[all_pcr_ppl$covid_positive == 1, ]
 quant_vars <- c("pop_density")
 order_quant_vars <- c(nrow(table_fm))
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
@@ -950,8 +951,8 @@ calc_freq <- function(df, order_vars) {
   paste(qual_count, " (", qual_freq, "%)", sep = "")
 }
 
-variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr[, qual_vars], qual_vars_ordered)
-variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr_ppl[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr_ppl[, qual_vars], qual_vars_ordered)
 
 table_fm[, 2] <- variable_counts[, 2]
 table_fm[, 1] <- variable_counts[, 1]
