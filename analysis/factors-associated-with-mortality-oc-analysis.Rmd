@@ -647,7 +647,7 @@ parameter_names <- c(
   "Population Density (1000ppl/km^2)", 
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "ICU beds with COVID patients[note] (std. dev.)"
+  "ICU COVID beds (std. dev.)"
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
