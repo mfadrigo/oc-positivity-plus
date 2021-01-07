@@ -851,13 +851,6 @@ parameter_names <- c(
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density"
   )
-
-fit_time_gam_inter_summary1 <- compute_ci_gam_logistic(
-  model = fit_time_gam_inter,
-  param_names = parameter_names
-)
-
-gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 ```
 
 
