@@ -21,8 +21,7 @@ Scott M. Bartell: sbartell@uci.edu
 Bernadette Boden-Albala: bbodenal@hs.uci.edu
 
 ## Content  
-This project's paper can be found  
-[here](missing).  
+This project's paper is currently being submitted. Once it is available the link can be found here.  
 
 The code for the analyses performed can be found:  
 
