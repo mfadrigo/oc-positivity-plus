@@ -24,7 +24,7 @@ Bernadette Boden-Albala: bbodenal@hs.uci.edu
 This project's paper can be found  
 [here](missing).  
 
-The analyses performed can be found:  
+The code for the analyses performed can be found:  
 
 - [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-testing-positive-oc-analysis.Rmd)  
 - [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-mortality-oc-analysis.Rmd)  
