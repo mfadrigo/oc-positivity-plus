@@ -571,7 +571,6 @@ $\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Qua
 
 Model 1:
 \begin{equation}
-\label{eq:Model1}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -622,7 +621,6 @@ if (params$refit_model1) {
 
 Model 2:
 \begin{equation}
-\label{eq:Model2}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -658,7 +656,6 @@ if (params$refit_model2) {
 
 Model 3:
 \begin{equation}
-\label{eq:Model3}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -713,7 +710,6 @@ if (params$refit_model3) {
 Model 4:  
 Generalized additive model
 \begin{equation}
-\label{eq:Model4}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -751,7 +747,6 @@ if (params$refit_model4) {
 Model 5:  
 Generalized additive model
 \begin{equation}
-	\label{eq:Model5}
 		\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -808,7 +803,6 @@ gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 Model 6:  
 Generalized additive model
 \begin{equation}
-	\label{eq:Model5}
 		\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
@@ -841,16 +835,6 @@ if (params$refit_model6) {
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
 }
- 
-parameter_names <- c(
-  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
-  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
-  "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
-  "2nd Quartile", "3rd Quartile", "4th Quartile",
-  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
-  "Population Density"
-  )
 ```
 
 
@@ -990,7 +974,7 @@ kable(
 ```
 
 
-```{r final-model-results-plot2_alt, fig.align="center", fig.cap="Model 5 logistic regression results for linear fixed effects of odds of testing positive for SARS-CoV2 in Orange County. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for SARS-CoV2 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in a given quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
+```{r final-model-results-coeff-plot, fig.align="center", fig.cap="Model 5 logistic regression results for linear fixed effects of odds of testing positive for SARS-CoV2 in Orange County. This plot excludes the coefficient for median income due to the interaction between median income and time. Percent with college degree is the estimated associated change in odds of testing positive for SARS-CoV2 for an individual living in a zip code where the estimate percent of the population with a bachelor's degree is in a given quartile relative to an individual from a zip code in the first. Percent insured representing estimated percent of zip code population with medical insurance is similarly defined."}
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
@@ -1046,30 +1030,10 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
   ggtitle("Results of SARS-CoV2 positivity logisitc regression")
 ```
 
-```{r interaction-plots, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 5. SARS-CoV2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
+```{r final-model-results-interaction-plot, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 5. SARS-CoV2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
 plot(fit_time_gam_inter, scheme = 1, select = 2, 
      xlab = "Time (std. dev.)",
      ylab = "Median Income (std. dev.)",
      main = "Interaction") 
 ```
-
-
-# ```{r investigate-high-income-zips, eval=FALSE}
-# all_zip %>% 
-# ggplot(mapping = aes(x = adj_med_income, fill = name)) +
-#   geom_histogram(color = "black") +
-#   theme(axis.text.x = element_text(angle = 90))
-# 
-# all_zip %>% 
-#   filter(adj_med_income > 1) %>% 
-# ggplot(mapping = aes(x = adj_med_income, fill = name)) +
-#   geom_histogram(color = "black") +
-#   theme(axis.text.x = element_text(angle = 90))
-# 
-# all_zip %>% 
-#   filter(asdj_med_income > 1) %>% 
-# ggplot(mapping = aes(x = adj_med_income, fill = zip)) +
-#   geom_histogram(color = "black") +
-#   theme(axis.text.x = element_text(angle = 90))
-# ```
 
