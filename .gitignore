@@ -1,4 +1,5 @@
 .Rproj.user
+*.Rproj
 .Rhistory
 *.RData
 .Ruserdata
@@ -12,6 +13,7 @@ positive-tests-release-to-uci-team-2020-10-05.csv
 *.csv
 *.html
 *.docx
+report/
 
 !education-by-zip.csv
 !income-by-zip2.csv
