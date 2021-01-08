@@ -1,5 +1,4 @@
-# Epidemiology of the early COVID-19 epidemic in Orange County, California: comparison
-of predictors of test positivity, mortality, and seropositivity
+# Epidemiology of the early COVID-19 epidemic in Orange County, California: comparison of predictors of test positivity, mortality, and seropositivity
 
 ## Authors:   
 *Daniel M. Parker 1 ; φ Tim Bruckner 1 ; Verónica M. Vieira 1 ; Catalina Medina 1 ; Vladimir
