@@ -994,22 +994,6 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
 ```
 
 
-```{r investigate-percent-pos-relationship, eval=FALSE}
-modeled_vars <- all_sero[, c("perc_zip_covid_pos", "age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar", "pop_density", "med_income")]
-
-pdf(file = here("report", "modeled-predictors.pdf"))
-plot(modeled_vars)
-dev.off()
-
-modeled_zip_vars <- all_sero[, c("perc_zip_covid_pos", "adj_perc_bach_quar", "adj_perc_insured_quar", "pop_density", "med_income")]
-
-pdf(file = here("report", "modeled-zip-code-variables.pdf"))
-plot(modeled_zip_vars)
-dev.off()
-
-```
-
-
 ```{r fit4-model-results-table}
 fm_sum <- summary(fit4)
 
@@ -1172,50 +1156,4 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.5)) +
   ggtitle("Results of SARS-CoV2 seropositivity logisitic regression (with incidence)")
 ```
-
-
-\newpage
-```{r invesitgate-incidence-by-zip}
-inc_by_his_seropos <- all_sero %>% 
-  group_by(name) %>% 
-  summarize(
-    num_hispanic_seropos = sum(race == "hispanic" & covid_pos == "yes"),
-    num_seropos = sum(covid_pos == "yes"),
-    num_hispanic = sum(race == "hispanic"),
-    tot_tested_in_zip = n()
-  ) %>% 
-  mutate(per_hispanic_seropos = round(100*num_hispanic_seropos / num_hispanic), 2) %>% 
-  mutate(per_seropos = round(100*num_seropos / tot_tested_in_zip), 2) %>% 
-  select(
-    name,
-    num_hispanic_seropos,
-    per_hispanic_seropos,
-    per_seropos,
-    tot_tested_in_zip
-  )
-
-kable(
-  inc_by_his_seropos,
-  col.names = c(
-    "City",
-    "# hispanic seropos",
-    "% hispanic seropos",
-    "# hispanic",
-    "% hispanic",
-    "Total # ppl tested"
-  )
-)
-```
-
-
-
-
-
-
-
-
-
-
-
-
 
