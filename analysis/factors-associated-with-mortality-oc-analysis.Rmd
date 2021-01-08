@@ -509,24 +509,6 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
     return("model_sum" = model_sum[, -4])
   }
 }
-
-compute_ci_logistic_glmer <- function(model, alpha = 0.05, param_names, include_pvalues = FALSE) {
-  #does not include intercept or median income
-  model_summary <- summary(model)
-  coeffs <- model_summary$coefficients[-1, 1]
-  se <- model_summary$coefficients[-1,2]
-  model_sum <- data.frame("odds" = exp(coeffs),
-                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
-                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
-                          "p-value" =  model_summary$coefficients[-1, 4],
-                          "param_names" = param_names)
-  if(include_pvalues){
-    return("model_sum" = model_sum)
-  } else {
-    return("model_sum" = model_sum[, -4])
-  }
-}
-
 ```
 
 
@@ -632,8 +614,6 @@ parameter_names <- c(
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
-
-summary_fit1 <- compute_ci_logistic_glmer(fit1, param_names = parameter_names)
 ```
 
 
