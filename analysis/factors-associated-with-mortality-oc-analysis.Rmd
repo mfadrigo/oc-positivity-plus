@@ -610,7 +610,7 @@ parameter_names <- c(
   "Population Density (1000ppl/km^2)", 
   "Median Income (std. dev.)",
   "Time (std. dev.)",
-  "ICU COVID beds (std. dev.)"
+  "COVID ICU patients (std. dev.)"
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
@@ -792,10 +792,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
     axis.line.x = element_line(color = "black"),
     panel.grid.major = element_line(colour = "gray"),
     panel.background = element_blank(),
-    plot.title = element_text(hjust=5)
+    plot.title = element_text(hjust=0)
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
-  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5))
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5)) +
+  ggtitle("Logistic regression results for odds ratio of COVID-19 related mortality given SARS-CoV2 positive \n in Orange County")
 ```
 
 
