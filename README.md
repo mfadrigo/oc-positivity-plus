@@ -1,6 +1,6 @@
 # Epidemiology of the early COVID-19 epidemic in Orange County, California: comparison of predictors of test positivity, mortality, and seropositivity
 
-## Authors:   
+## Authors   
 *Daniel M. Parker<sup>1</sup>; <sup>φ</sup>Tim Bruckner<sup>1</sup>; Verónica M. Vieira<sup>1</sup>; Catalina Medina<sup>1</sup>; Vladimir Minin<sup>1</sup>; Philip L. Felgner<sup>1</sup>; Allisa Dratch<sup>2</sup>; Matthew Zahn<sup>2</sup>; Scott M. Bartell<sup>1</sup>; <sup>φ</sup>Bernadette Boden-Albala<sup>1</sup>
 1. University of California, Irvine, California, U.S.A.
 2. Orange County Health Care Agency, Santa Ana, California, U.S.A.
