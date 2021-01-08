@@ -618,25 +618,6 @@ kable(compare_bic,
 ```
 
 
-```{r fit0-model-diagnostics, eval = FALSE}
-std_res0 <- rstandard(fit0)
-plot(fit0, which = 4, id.n = 3)
-
-
-# model.data <- augment(fit0) %>% 
-#   mutate(index = 1:n()) 
-# 
-# model.data %>% top_n(3, .cooksd)
-# 
-# ggplot(model.data, aes(index, .std.resid)) + 
-#   geom_point(aes(color = death_due_to_covid), alpha = .5) +
-#   theme_bw()
-# 
-# model.data %>% 
-#   filter(abs(.std.resid) > 4)
-```
-
-
 ```{r computes-model-odds-cis}
 parameter_names <- c(
   "Age (decades)",
