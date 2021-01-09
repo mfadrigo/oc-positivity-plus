@@ -1,5 +1,5 @@
 ---
-title: "Factors associated with seroprevelance of SARS-CoV2 in Orange County"
+title: "Factors associated with seroprevelance of SARS-CoV-2 in Orange County"
 output: 
   pdf_document:
     extra_dependencies:
@@ -458,7 +458,7 @@ cases_in_zip <- all_pcr %>%
 # Make df of zip code, population, num_cases_in_zip, perc_zip_covid_pos 
 case_by_zip_pop <- merge(all_zip, cases_in_zip, by = "zip") %>% 
   select(zip, num_cases_in_zip, population) %>% 
-  mutate(perc_zip_covid_pos = num_cases_in_zip/population)
+  mutate(perc_zip_covid_pos = num_cases_in_zip/(population*1000))
 
 all_sero <- merge(all_sero, case_by_zip_pop, by = "zip")
 ``` 
@@ -472,7 +472,7 @@ Model 2:
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
-		&+ \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
+		&+ \beta_{\text{\% of Zip Code SARS-CoV-2+}}\text{\% of Zip Code SARS-CoV-2+}_i,
 	\end{split}
 \end{equation}
 without a random intercept for zip code.
@@ -500,7 +500,7 @@ Model 3:
 \begin{equation}
 \label{eq:Model3}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
+		\log(O_i) &= \beta_0 + \beta_{\text{\% of Zip Code SARS-CoV-2+}}\text{\% of Zip Code SARS-CoV-2+}_i,
 	\end{split}
 \end{equation}
 without a random intercept for zip code.
@@ -526,7 +526,7 @@ Model 4:
 \label{eq:Model4}
 	\begin{split}
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
-		&+ \beta_{\text{\% of Zip Code SARS-CoV2+}}\text{\% of Zip Code SARS-CoV2+}_i,
+		&+ \beta_{\text{\% of Zip Code SARS-CoV-2+}}\text{\% of Zip Code SARS-CoV-2+}_i,
 	\end{split}
 \end{equation}
 without a random intercept for zip code.
@@ -563,12 +563,12 @@ parameter_names4 <- c(
   "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+", 
   "Male",
   "Asian", "Black", "Hispanic", "Pacific Islander", "Unknown",
-  "% of Zip SARS-CoV2+ (10%)"
+  "% of Zip SARS-CoV-2+ (10%)"
 )
 
 summary_fit0 <- compute_ci_logistic_glm(fit0, param_names = parameter_names)
-summary_fit2 <- compute_ci_logistic_glm(fit2, param_names = c(parameter_names, "% of Zip SARS-CoV2+ (10%)"))
-summary_fit3 <- compute_ci_logistic_glm(fit3, param_names = "% of Zip SARS-CoV2+ (10%)")
+summary_fit2 <- compute_ci_logistic_glm(fit2, param_names = c(parameter_names, "% of Zip SARS-CoV-2+ (10%)"))
+summary_fit3 <- compute_ci_logistic_glm(fit3, param_names = "% of Zip SARS-CoV-2+ (10%)")
 summary_fit4 <- compute_ci_logistic_glm(fit4, param_names = parameter_names4)
 ```
 
@@ -617,7 +617,7 @@ reference_group <- c(
 )
 
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
-colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("SARS-CoV-2+", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Female", "Male",
@@ -683,7 +683,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 0 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV2 in Orange County.", 
+    "Model 0 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV-2 in Orange County.", 
     sep = ""
     )
   ) %>%
@@ -697,7 +697,7 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Model intercept represents odds of testing sero-positive for SARS-CoV2 for a white female diagnosed with SARS-CoV-2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density in Orange County. The odds of this individual testing sero-positive is estimated to be ",
+        "Model intercept represents odds of testing sero-positive for SARS-CoV-2 for a white female diagnosed with SARS-CoV-2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density in Orange County. The odds of this individual testing sero-positive is estimated to be ",
         intercept,
         collapse = ""
       ), 
@@ -710,7 +710,7 @@ kable(
 ```
 
 
-```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of testing sero-positive for SARS-CoV2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of testing sero-positive for SARS-CoV-2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
@@ -765,7 +765,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.5)) +
-  ggtitle("Results of SARS-CoV2 seropositivity logisitic regression")
+  ggtitle("Results of SARS-CoV-2 seropositivity logisitic regression")
 ```
 
 
@@ -802,7 +802,7 @@ reference_group <- c(
 )
 
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
-colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("SARS-CoV-2+", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Female", "Male",
@@ -811,7 +811,7 @@ rownames(table_fm) <- c(
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)",
   "Median Income (std. dev.)",
-  "% of Zip Code SARS-CoV2+[note]"
+  "% of Zip Code SARS-CoV-2+[note]"
 )
 
           
@@ -869,7 +869,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 2 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV2 in Orange County.", 
+    "Model 2 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV-2 in Orange County.", 
     sep = ""
     )
   ) %>%
@@ -883,7 +883,7 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Model intercept represents odds of testing sero-positive for SARS-CoV2 for a white female diagnosed with SARS-CoV2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density, and average percent of SARS-CoV2 positive individuals in Orange County. The odds of this individual testing sero-positive is estimated to be ",
+        "Model intercept represents odds of testing sero-positive for SARS-CoV-2 for a white female diagnosed with SARS-CoV-2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density, and average percent of SARS-CoV-2 positive individuals in Orange County. The odds of this individual testing sero-positive is estimated to be ",
         intercept,
         collapse = ""
       ), 
@@ -897,7 +897,7 @@ kable(
 ```
 
 
-```{r fit2-model-results-plot, fig.align="center", fig.cap="Logistic model 2 results for odds of testing sero-positive for SARS-CoV2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
+```{r fit2-model-results-plot, fig.align="center", fig.cap="Logistic model 2 results for odds of testing sero-positive for SARS-CoV-2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
@@ -952,11 +952,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.5)) +
-  ggtitle("Logistic regression results for odds ratio of testing sero-positive for SARS-CoV2 in Orange County")
+  ggtitle("Logistic regression results for odds ratio of testing sero-positive for SARS-CoV-2 in Orange County")
 ```
 
 
-```{r fit3-model-results-plot, fig.align="center", fig.cap="Logistic model 3 results for odds of testing sero-positive for SARS-CoV2 in Orange County modeled only by percent of their zip code that has tested positive for SARS-CoV2"}
+```{r fit3-model-results-plot, fig.align="center", fig.cap="Logistic model 3 results for odds of testing sero-positive for SARS-CoV-2 in Orange County modeled only by percent of their zip code that has tested positive for SARS-CoV-2"}
 
 fm_results_with_ref <- rbind(
   summary_fit3[1, ]
@@ -990,7 +990,7 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5, color = va
   ) +
   scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
   scale_y_continuous(breaks = seq(0, max(fm_results_with_ref$upper_bound), by = 0.25)) +
-  ggtitle("Results of SARS-CoV2 seropositivity logisitic regression")
+  ggtitle("Results of SARS-CoV-2 seropositivity logisitic regression")
 ```
 
 
@@ -1023,12 +1023,12 @@ reference_group <- c(
 )
 
 table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + sum(reference_group), ncol = 3))
-colnames(table_fm) <- c("SARS-CoV2+", "Total", "with (95% CI[note])")
+colnames(table_fm) <- c("SARS-CoV-2+", "Total", "with (95% CI[note])")
 rownames(table_fm) <- c(
   "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Female", "Male",
   "White", "Asian", "Black", "Hispanic", "Pacific Islander", "Unknown",
-  "% of Zip Code SARS-CoV2+[note]"
+  "% of Zip Code SARS-CoV-2+[note]"
 )
 
           
@@ -1082,7 +1082,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 4 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV2 in Orange County.", 
+    "Model 4 regression estimation of adjusted odds ratio of testing sero-positive for SARS-CoV-2 in Orange County.", 
     sep = ""
     )
   ) %>%
@@ -1094,7 +1094,7 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Model intercept represents odds of testing sero-positive for SARS-CoV2 for a white female diagnosed with SARS-CoV2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density, and average percent of SARS-CoV2 positive individuals in Orange County. The odds of this individual testing sero-positive is estimated to be ",
+        "Model intercept represents odds of testing sero-positive for SARS-CoV-2 for a white female diagnosed with SARS-CoV-2 in the 18-24 age group in a zip code in the first quartile of college degree and insured with the average population density, and average percent of SARS-CoV-2 positive individuals in Orange County. The odds of this individual testing sero-positive is estimated to be ",
         intercept,
         collapse = ""
       ), 
@@ -1107,7 +1107,7 @@ kable(
 ```
 
 
-```{r fit4-model-results-plot, fig.align="center", fig.cap="Logistic model 4 results for odds of testing sero-positive for SARS-CoV2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
+```{r fit4-model-results-plot, fig.align="center", fig.cap="Logistic model 4 results for odds of testing sero-positive for SARS-CoV-2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
