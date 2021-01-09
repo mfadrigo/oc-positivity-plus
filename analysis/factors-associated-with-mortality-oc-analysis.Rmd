@@ -1,5 +1,5 @@
 ---
-title: "Factors associated with mortality among individuals who tested positive for SARS-CoV2 in Orange County"
+title: "Factors associated with mortality among individuals who tested positive for SARS-CoV-2 in Orange County"
 output: 
   pdf_document:
     extra_dependencies:
@@ -513,7 +513,7 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
 
 
 For simplicity let  
-$O_{i}$ be the odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County.  
+$O_{i}$ be the odds of mortality among individuals who tested positive for SARS-CoV-2 in Orange County.  
 $\overrightarrow{\beta}_{\text{Race}} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{Native American}}, \beta_{\text{Pacific Islander}}, \beta_{\text{Unknown}})$  
 $\overrightarrow{\beta}_{\text{College}} = (\beta_{\text{\% with College Degree Quartile 2}}, \beta_{\text{\% with College Degree Quartile 3}}, \beta_{\text{\% with College Degree Quartile 4}})$  
 $\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Quartile 2}}, \beta_{\text{\% with Insurance Quartile 3}}, \beta_{\text{\% with Insurance Quartile 4}})$
@@ -595,7 +595,7 @@ row.names(compare_bic) <- c("Model 0", "Model 1")
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
       format = "latex",
-      caption = "Model comparison using BIC shows do real difference in modeling odds of mortality given tested positive for SARS-CoV2 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
+      caption = "Model comparison using BIC shows do real difference in modeling odds of mortality given tested positive for SARS-CoV-2 in Orange County. Therefore the simpler model, Model 0, was chosen.") %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
@@ -720,7 +720,7 @@ kable(
   table_fm, 
   format = "latex", 
   caption = paste(
-    "Model 0 regression estimation of adjusted odds ratio of mortality given tested positive for SARS-CoV2 in Orange County.", 
+    "Model 0 regression estimation of adjusted odds ratio of mortality given tested positive for SARS-CoV-2 in Orange County.", 
     sep = ""
     )
   ) %>%
@@ -745,7 +745,7 @@ kable(
 ```
 
 
-```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of mortality among individuals who tested positive for SARS-CoV2 in Orange County."}
+```{r fit0-model-results-plot, fig.align="center", fig.cap="Logistic model 0 results for odds of mortality among individuals who tested positive for SARS-CoV-2 in Orange County."}
 
 fm_results_with_ref <- rbind(
   summary_fit0[1, ],
