@@ -21,7 +21,7 @@ Scott M. Bartell: sbartell@uci.edu
 Bernadette Boden-Albala: bbodenal@hs.uci.edu
 
 ## Content  
-This project's paper is currently being submitted. Once it is available the link can be found here.  
+This project's paper is currently being submitted. It can currently be found [here](https://urldefense.com/v3/__https://medrxiv.org/cgi/content/short/2021.01.13.21249507v1__;!!OLgoXmg!Clp7nEeBQo3Iozo1Oow4JwYpfZaXHAEiS77C1ZdH6QIKXUX_8GDZx_UE_WGPQ1Ygng$). 
 
 The code for the analyses performed can be found:  
 
