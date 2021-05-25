@@ -567,11 +567,13 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
   in_med_inc <- length(model_summary$p.coeff)
   coeffs <- model_summary$p.coeff[-c(1, in_med_inc)]
   se <- sqrt(diag(vcov(model, unconditional = TRUE)))[2:(length(coeffs) + 1)]
-  model_sum <- data.frame("odds" = exp(coeffs),
-                          "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
-                          "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
-                          "p-value" =  model_summary$p.pv[-c(1, in_med_inc)],
-                          "param_names" = param_names)
+  model_sum <- data.frame(
+    "odds" = exp(coeffs),
+    "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
+    "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
+    "p-value" =  model_summary$p.pv[-c(1, in_med_inc)],
+    "param_names" = param_names
+  )
   
   return("model_sum" = model_sum)
 }
@@ -619,10 +621,7 @@ if (params$refit_model1) {
   fit_time_lin2 <- update(
     fit_time_lin1,
     start = ss,
-    control = glmerControl(
-      optimizer = "bobyqa",
-      optCtrl = list(maxfun = 2e6)
-    )
+    control = glmerControl(optimizer = "bobyqa",boptCtrl = list(maxfun = 2e6))
   )
   toc()
   fit_time_lin <- fit_time_lin2
@@ -705,10 +704,7 @@ if (params$refit_model3) {
   fit_time_quad_inter2 <- update(
     fit_time_quad_inter1,
     start = ss,
-    control = glmerControl(
-      optimizer = "bobyqa",
-      optCtrl = list(maxfun = 2e6)
-    )
+    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
   )
   toc()
 
@@ -1109,5 +1105,36 @@ plot(fit_time_gam_inter, scheme = 1, select = 2,
      xlab = "Time (std. dev.)",
      ylab = "Median Income (std. dev.)",
      main = "Interaction") 
+```
+
+
+
+```{r missingness-model}
+all_pcr$race_unknown <- factor(
+  ifelse(all_pcr$race == "unknown", "unknown", "known"),
+  levels = c("known", "unknown")
+)
+
+if (params$refit_model_miss) {
+  tic()
+  miss_model <- gam(
+    formula = race_unknown ~ covid_positive + age_group + sex + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              s(time_days) +
+              s(zip, bs = "re"),              
+    family = binomial, 
+    data = all_pcr,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+  skrrrahh("drummaboy")
+#  sec elapsed
+# updated and saved 2021-05-25
+  save(miss_model, file = here("analysis/testing-positive-regression-results", "miss_model.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "miss_model.Rdata"))
+}
 ```
 
