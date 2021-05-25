@@ -8,13 +8,13 @@ params:
   reclean_data: FALSE
   first_test_date: "2020-03-01"
   last_test_date: "2020-08-16"
-  refit_model1: FALSE
-  refit_model2: FALSE
-  refit_model3: FALSE
-  refit_model4: FALSE
-  refit_model5: FALSE
-  refit_model6: FALSE
-  refit_model7: FALSE
+  refit_model1: TRUE
+  refit_model2: TRUE
+  refit_model3: TRUE
+  refit_model4: TRUE
+  refit_model5: TRUE
+  refit_model6: TRUE
+  refit_model7: TRUE
 ---
 
 ```{r setup, include=FALSE}
@@ -172,6 +172,8 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     (pcr_results_original$Race == "Unknown" & 
      pcr_results_original$Ethnicity != "Hispanic or Latino") |
     (pcr_results_original$Race == "Multiple Races" & 
+     pcr_results_original$Ethnicity != "Hispanic or Latino") |
+    (pcr_results_original$Race == "Other" & 
      pcr_results_original$Ethnicity != "Hispanic or Latino")
     )
   
@@ -205,7 +207,6 @@ read_all_pcr <- function(file_path, start_date, end_date) {
         "hispanic or latino",
         "american indian or alaska native",
         "native hawaiian or other pacific islander",
-        "other",
         "unknown"
         ),
       )) %>% 
@@ -265,7 +266,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   inconsistent_counts <- c(
     length(unique(pcr_inconsistent$id[(!pcr_inconsistent$reasonable_ages)])),
-    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_sex)])),
+    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_sex)]))#,
 #    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_race)]))
     )
   names(inconsistent_counts) <- c(
@@ -798,7 +799,7 @@ parameter_names <- c(
   "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density"
@@ -892,7 +893,7 @@ parameter_names <- c(
   "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Male",
-  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density",
@@ -935,7 +936,7 @@ rownames(table_fm) <- c(
   "0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
   "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
   "Female", "Male",
-  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Other", "Unknown",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)"
@@ -983,7 +984,7 @@ qual_vars_ordered <- c(
   "race.white", "race.asian",
   "race.black or african american", "race.hispanic or latino",
   "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
-  "race.other", "race.unknown",
+  "race.unknown",
   "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
   "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
   "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
@@ -1146,5 +1147,12 @@ miss_model_est <- data.frame(
 )
 rownames(miss_model_est) <- rownames(miss_sum$coefficients)
 miss_model_est
+```
+
+
+
+```{r to-be-deleted, eval = FALSE}
+case_data <- all_pcr %>% 
+  filter(covid_positive == 1)
 ```
 
