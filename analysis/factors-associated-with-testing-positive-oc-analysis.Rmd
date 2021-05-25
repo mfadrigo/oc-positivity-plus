@@ -488,16 +488,18 @@ all_inconsist_ids <- all_pcr_and_zip[["inconsistencies"]]
 
 # new data added after 1st review
 house_data_og <- read_csv(here("data/zip-code-data", "house-crowding.csv")) %>% 
-  janitor::clean_names()
-
-all_pcr <- house_data_og %>% 
+  janitor::clean_names() %>% 
   filter(period_of_measure == "2015-2019") %>% 
   filter(breakout_subcategory == "Owners") %>% 
-  select(zip = location, house_crowding = indicator_rate_value) %>% 
+  select(zip = location, house_crowding = indicator_rate_value)
+
+all_pcr <- house_data_og %>% 
   mutate(zip = factor(zip)) %>% 
   right_join(y = all_pcr, by = "zip")
 
-
+all_zip <- house_data_og %>% 
+  mutate(zip = as.character(zip)) %>% 
+  right_join(y = all_zip, by = "zip")
 ```
 
 
