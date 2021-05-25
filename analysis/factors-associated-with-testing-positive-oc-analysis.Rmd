@@ -141,7 +141,8 @@ read_all_pcr <- function(file_path, start_date, end_date) {
       Race = col_character(),
       Specimen.Collected.Date = col_date("%m-%d-%Y"),
       Resulted.Organism = col_character(),
-      Zip = col_character()
+      Zip = col_character(),
+      unique_num = col_character()
       )
     ) 
   
@@ -151,7 +152,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   
   full_num_id_cases <- pcr_results_original %>% 
     filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
-    select(PersonId) %>% 
+    select(unique_num) %>% 
     unique() %>% 
     nrow()
 
@@ -216,7 +217,7 @@ read_all_pcr <- function(file_path, start_date, end_date) {
         )))
       ) %>%
     select(
-      id = PersonId, 
+      id = unique_num, 
       posted_date = Specimen.Collected.Date, 
       time_days,
       test_result, 
@@ -250,27 +251,27 @@ read_all_pcr <- function(file_path, start_date, end_date) {
   pcr_rep_id2 <- pcr_rep_id %>%
     group_by(id) %>% 
     mutate(reasonable_ages = diff(range(age)) <= 1) %>%
-    mutate(identical_race = n_distinct(race) == 1) %>%
+#    mutate(identical_race = n_distinct(race) == 1) %>%
     mutate(identical_sex = n_distinct(sex) == 1) %>%
     ungroup()
   
   pcr_inconsistent <- data.frame(
     pcr_rep_id2[(
       !pcr_rep_id2$reasonable_ages | 
-      !pcr_rep_id2$identical_sex | 
-      !pcr_rep_id2$identical_race
+      !pcr_rep_id2$identical_sex #| 
+#      !pcr_rep_id2$identical_race
       ), ]
     )
   
   inconsistent_counts <- c(
     length(unique(pcr_inconsistent$id[(!pcr_inconsistent$reasonable_ages)])),
     length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_sex)])),
-    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_race)]))
+#    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_race)]))
     )
   names(inconsistent_counts) <- c(
     "number_id_age_inconsistencies", 
-    "number_id_sex_inconsistencies",
-    "number_id_race_inconsistencies"
+    "number_id_sex_inconsistencies"#,
+#    "number_id_race_inconsistencies"
     )
   
   pcr_results_consistent <- pcr_results_adjusted[!(pcr_results_adjusted$id %in% pcr_inconsistent$id), ]
@@ -1117,15 +1118,13 @@ all_pcr$race_unknown <- factor(
 
 if (params$refit_model_miss) {
   tic()
-  miss_model <- glmer(
+  miss_model <- glm(
     formula = race_unknown ~ covid_positive + age_group + sex + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              time_days +
-              (1 | zip),              
+              time_days,              
     family = binomial, 
-    data = all_pcr,
-    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    data = all_pcr
     )
   toc()
   skrrrahh("drummaboy")
@@ -1135,5 +1134,17 @@ if (params$refit_model_miss) {
 } else {
   load(file = here("analysis/testing-positive-regression-results", "miss_model.Rdata"))
 }
+
+
+miss_sum <- summary(miss_model)
+miss_sum_df <- data.frame(miss_sum$coefficients)
+miss_model_est <- data.frame(
+  "odds" = exp(miss_sum_df$Estimate), 
+  "lb95" = exp(miss_sum_df$Estimate - qnorm(0.975) * miss_sum_df$Std..Error), 
+  "up95" = exp(miss_sum_df$Estimate + qnorm(0.975) * miss_sum_df$Std..Error),
+  "pval" = miss_sum_df$Pr...z..
+)
+rownames(miss_model_est) <- rownames(miss_sum$coefficients)
+miss_model_est
 ```
 
