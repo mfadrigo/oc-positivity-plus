@@ -1117,16 +1117,15 @@ all_pcr$race_unknown <- factor(
 
 if (params$refit_model_miss) {
   tic()
-  miss_model <- gam(
+  miss_model <- glmer(
     formula = race_unknown ~ covid_positive + age_group + sex + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              s(time_days) +
-              s(zip, bs = "re"),              
+              time_days +
+              (1 | zip),              
     family = binomial, 
     data = all_pcr,
-    method = "REML",
-    gamma = 1.5
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
   skrrrahh("drummaboy")
