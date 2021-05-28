@@ -8,13 +8,13 @@ params:
   reclean_data: FALSE
   first_test_date: "2020-03-01"
   last_test_date: "2020-08-16"
-  refit_model1: TRUE
-  refit_model2: TRUE
-  refit_model3: TRUE
-  refit_model4: TRUE
-  refit_model5: TRUE
-  refit_model6: TRUE
-  refit_model7: TRUE
+  refit_model1: FALSE
+  refit_model2: FALSE
+  refit_model3: FALSE
+  refit_model4: FALSE
+  refit_model5: FALSE
+  refit_model6: FALSE
+  refit_model7: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -623,13 +623,13 @@ if (params$refit_model1) {
   fit_time_lin2 <- update(
     fit_time_lin1,
     start = ss,
-    control = glmerControl(optimizer = "bobyqa",boptCtrl = list(maxfun = 2e6))
+    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
   )
   toc()
   fit_time_lin <- fit_time_lin2
   skrrrahh("drummaboy")
-  # 4372.56 sec elapsed
-  # updated and saved 11-3-2020
+  # 4305.4 sec elapsed
+  # updated and saved 2021-05-25
   save(fit_time_lin, file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
@@ -663,8 +663,8 @@ if (params$refit_model2) {
     )
   toc()
   skrrrahh("drummaboy")
-  # 4846.83 sec elapsed
-  # updated and saved 11-2-2020
+  # Model failed to converge with max|grad| = 0.00219462 (tol = 0.002, component 1)
+  # 4602.03 sec elapsed
   save(fit_time_quad, file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
@@ -699,8 +699,7 @@ if (params$refit_model3) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  # 5212.67 sec elapsed
-  # Model failed to converge with max|grad| = 0.00348316 (tol = 0.002, component 1)
+  # 6271.09 sec elapsed
     tic()
   ss <- getME(fit_time_quad_inter1, c("theta","fixef"))
   fit_time_quad_inter2 <- update(
@@ -711,10 +710,9 @@ if (params$refit_model3) {
   toc()
 
   fit_time_quad_inter <- fit_time_quad_inter2
-  # 3284.9 sec elapsed
-  # Model failed to converge with max|grad| = 0.00348316 (tol = 0.002, component 1)
+  # 3152.36 sec elapsed
   skrrrahh("drummaboy")
-  # updated 11/3/2020
+  # updated 2021-05-26
   save(fit_time_quad_inter, file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
@@ -750,8 +748,8 @@ if (params$refit_model4) {
     )
   toc()
   skrrrahh("drummaboy")
-  # 1289.41 sec elapsed
-  # updated and saved 11-2-2020
+  # updated and saved 2021-05-27
+  # 1296.45 sec elapsed
   save(fit_time_gam, file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
@@ -788,8 +786,8 @@ if (params$refit_model5) {
     )
   toc()
   skrrrahh("drummaboy")
-# 4714.62 sec elapsed
-# updated and saved 11-2-2020
+# 3762.87 sec elapsed
+# updated and saved 2021-05-26
   save(fit_time_gam_inter, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
@@ -843,8 +841,8 @@ if (params$refit_model6) {
     )
   toc()
   skrrrahh("drummaboy")
-# 4714.62 sec elapsed
-# updated and saved 11-2-2020
+# 4253 sec elapsed
+# updated and saved 2021-05-27
   save(fit6, file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
@@ -882,8 +880,8 @@ if (params$refit_model7) {
     )
   toc()
   skrrrahh("drummaboy")
-# 4952.92 sec elapsed
-# updated and saved 2021-05-24
+# 4763.63 sec elapsed
+# updated and saved 2021-05-26
   save(fit_time_gam_inter_house, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter_house.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter_house.Rdata"))
@@ -922,7 +920,7 @@ kable(compare_bic,
 
 
 ```{r final-model-results-table}
-fit_final_model <- fit_time_gam_inter_summary1
+fit_final_model <- fit_time_gam_inter_house_summary1
 
 rr_fm <- round(fit_final_model[, "odds"], 3)
 ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
@@ -939,14 +937,16 @@ rownames(table_fm) <- c(
   "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
-  "Population Density (1000ppl/km^2)"
+  "Population Density (1000ppl/km^2)",
+  "House Crowding Index"
   )
 reference_group <- c(
   TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
   TRUE, FALSE,
-  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
   TRUE, FALSE, FALSE, FALSE,
   TRUE, FALSE, FALSE, FALSE,
+  FALSE,
   FALSE
   )
           
@@ -968,8 +968,8 @@ for(i in 1:nrow(table_fm)) {
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + 5, ncol = 2))
 all_pcr_ppl <- all_pcr[!duplicated(all_pcr$id), ]
 cov_pos_pcr_ppl <- all_pcr_ppl[all_pcr_ppl$covid_positive == 1, ]
-quant_vars <- c("pop_density")
-order_quant_vars <- c(nrow(table_fm))
+quant_vars <- c("pop_density", "house_crowding")
+order_quant_vars <- c(nrow(table_fm) - 1, nrow(table_fm))
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
 qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
@@ -1034,11 +1034,11 @@ kable(
   add_footnote(
     c(
       paste0(
-        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density. The odds of this individual testing positive for COVID-19 is estimated to be ",
+        "Adjusted for all covariates listed plus zip code estimated median income and time of test in days. Model intercept represents odds of a white female in the 0 to 4 age group in a zip code in the first quartile of college degree and insured with the average population density and no house crowding. The odds of this individual testing positive for COVID-19 is estimated to be ",
         intercept
       ), 
       "95% Confidence Interval",
-      "Esimated: percent of people with a bachelor's degree, percent of people with medical insurance, and population density in an individual's zip code "
+      "Esimated: percent of people with a bachelor's degree, percent of people with medical insurance, population density, and house crowding index in an individual's zip code "
       ),
     notation = "symbol"
   )  
@@ -1049,16 +1049,17 @@ kable(
 
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
-  fit_time_gam_inter_summary1[1:12, ],
+  fit_time_gam_inter_house_summary1[1:12, ],
   c(1, 0.99, 1.01, 0, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
-  fit_time_gam_inter_summary1[13, ],
+  fit_time_gam_inter_house_summary1[13, ],
   c(1, 0.99, 1.01, 0, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
-  fit_time_gam_inter_summary1[14:20, ],
+  fit_time_gam_inter_house_summary1[14:19, ],
   c(1, 0.99, 1.01, 0, "% with College Degree [ref: 1st Quartile]"),
-  fit_time_gam_inter_summary1[21:23, ],
+  fit_time_gam_inter_house_summary1[20:22, ],
   c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
-  fit_time_gam_inter_summary1[24:26, ],
-  c(as.character(fit_time_gam_inter_summary1[27, -5]), "Population Density (1000ppl/km^2)")
+  fit_time_gam_inter_house_summary1[23:25, ],
+  c(as.character(fit_time_gam_inter_house_summary1[26, -5]), "Population Density (1000ppl/km^2)"),
+  c(as.character(fit_time_gam_inter_house_summary1[27, -5]), "House Crowding Index")
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
@@ -1071,11 +1072,11 @@ variable_colors <- c(
   "white",
   rep("black", 1),
   "white",
-  rep("black", 7),
+  rep("black", 6),
   "white",
   rep("black", 3),
   "white",
-  rep("black", 4)
+  rep("black", 5)
 )
 
 
@@ -1102,8 +1103,8 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
 ```
 
 
-```{r final-model-results-interaction-plot, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 5. SARS-CoV-2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
-plot(fit_time_gam_inter, scheme = 1, select = 2, 
+```{r final-model-results-interaction-plot, fig.align="center", fig.width=7, fig.height=7, fig.cap="Three dimentional visualization of interaction between time and median income from logistic model 7. SARS-CoV-2 test results in Orange County from March 1st to August 16th. Large difference visible in early March between individuals in zip codes with relatively high median incomes and those in zip codes with relatively small median incomes; this difference diminishes as time increase. Gap is due to lack of zip codes with median income in interval, the extreme median income is Newport Coast with zip code 92657."}
+plot(fit_time_gam_inter_house, scheme = 1, select = 2, 
      xlab = "Time (std. dev.)",
      ylab = "Median Income (std. dev.)",
      main = "Interaction") 
@@ -1111,48 +1112,4 @@ plot(fit_time_gam_inter, scheme = 1, select = 2,
 
 
 
-```{r missingness-model}
-all_pcr$race_unknown <- factor(
-  ifelse(all_pcr$race == "unknown", "unknown", "known"),
-  levels = c("known", "unknown")
-)
-
-if (params$refit_model_miss) {
-  tic()
-  miss_model <- glm(
-    formula = race_unknown ~ covid_positive + age_group + sex + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              time_days,              
-    family = binomial, 
-    data = all_pcr
-    )
-  toc()
-  skrrrahh("drummaboy")
-#  sec elapsed
-# updated and saved 2021-05-25
-  save(miss_model, file = here("analysis/testing-positive-regression-results", "miss_model.Rdata"))
-} else {
-  load(file = here("analysis/testing-positive-regression-results", "miss_model.Rdata"))
-}
-
-
-miss_sum <- summary(miss_model)
-miss_sum_df <- data.frame(miss_sum$coefficients)
-miss_model_est <- data.frame(
-  "odds" = exp(miss_sum_df$Estimate), 
-  "lb95" = exp(miss_sum_df$Estimate - qnorm(0.975) * miss_sum_df$Std..Error), 
-  "up95" = exp(miss_sum_df$Estimate + qnorm(0.975) * miss_sum_df$Std..Error),
-  "pval" = miss_sum_df$Pr...z..
-)
-rownames(miss_model_est) <- rownames(miss_sum$coefficients)
-miss_model_est
-```
-
-
-
-```{r to-be-deleted, eval = FALSE}
-case_data <- all_pcr %>% 
-  filter(covid_positive == 1)
-```
 
