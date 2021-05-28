@@ -173,6 +173,8 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     arrange(test_date) 
   
   
+  pos_results_adjusted <- pos_results_adjusted[!duplicated(pos_results_adjusted$unique_num), ]
+  
   # Add zip code level data and merge with pcr results ----------------------------------
   zip_area_oc <- read_csv(
     here("data/zip-code-data", "zip-area2.csv"),
@@ -300,12 +302,12 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   # Read and filter hospital bed data -----------------------------------------------------------
   # OC data
   hos_bed_gov <- read_csv(
-    here("data/mortality-data", "covid19-hospital-data-gov.csv"),
+    here("data/mortality-data", "covid19hospitalbycounty.csv"),
     na = c("", " "),
     col_types = cols(
       .default = col_skip(),
       county = col_character(),
-      todays_date = col_date("%Y-%m-%d T %H:%M:%S"),
+      todays_date = col_date("%Y-%m-%d"),
       hospitalized_covid_patients = col_double(),
       all_hospital_beds = col_double(),
       icu_covid_confirmed_patients = col_double(),
