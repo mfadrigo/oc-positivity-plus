@@ -50,7 +50,7 @@ library(mgcv)
 ```{r data-wrangling-function}
 read_pos_pcr <- function(file_path, start_date, end_date) {
   # Read in data --------------------------------------------------------------------
-  pos_results_original <- read_csv(
+  mortality_og <- read_csv(
     file_path,
     col_types = cols(
       .default = col_skip(),
@@ -63,241 +63,41 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       SpCollDt = col_date(),
       DeathDueCOVID = col_character(),
       DtDeath = col_date(),
-      unique_num = col_double()
+      unique_num = col_character()
     )
-  ) 
-  
-  # Mutate and save desired variables ------------------------------------------------------
-  full_num_data_cases <- pos_results_original %>% 
-    filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
-    nrow()
-
-  
-  pos_results_original$Race[is.na(pos_results_original$Race)] <- "Unknown"
-  pos_results_original$Ethnicity[is.na(pos_results_original$Ethnicity)] <- "Unknown"
-
-  # All classified as Hispanic or Latino
-  hispanic_race_unknown <- (
-    (pos_results_original$Race == "Other" & 
-     pos_results_original$Ethnicity == "Hispanic or Latino") |
-    (pos_results_original$Race == "Unknown" & 
-     pos_results_original$Ethnicity == "Hispanic or Latino") |
-    (pos_results_original$Race == "Multiple Races" & 
-     pos_results_original$Ethnicity == "Hispanic or Latino") 
-  )
-  
-  # All classified as Unknown
-  non_hispanic_unknown <- (
-    (pos_results_original$Race == "Unknown" & 
-     pos_results_original$Ethnicity != "Hispanic or Latino") |
-    (pos_results_original$Race == "Multiple Races" & 
-     pos_results_original$Ethnicity != "Hispanic or Latino") |
-    (pos_results_original$Race == "Other" & 
-     pos_results_original$Ethnicity != "Hispanic or Latino")
-  )
-  
-  pos_results_original_new_race <- data.frame(
-    pos_results_original, 
-    "race1" = str_to_lower(pos_results_original$Race)
-  )
-  
-  pos_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
-  pos_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
-
-  pos_results_original_new_race$DeathDueCOVID <- replace_na(
-    pos_results_original_new_race$DeathDueCOVID,
-    "n"
-  )
-  pos_results_original_new_race$Age <- replace_na(
-    pos_results_original_new_race$Age,
-    -999
-  )
-  pos_results_original_new_race$Zip <- replace_na(
-    pos_results_original_new_race$Zip,
-    "unknown"
-  )
-  
-  
-  
-  
-  pos_results_adjusted <- pos_results_original_new_race %>% 
-    mutate(death_due_to_covid = factor(
-      str_to_lower(DeathDueCOVID), 
-      levels = c("n", "y")
-      )     
-    ) %>% 
-    mutate(sex = fct_collapse(
-      str_to_lower(Gender),
-      male = "m",
-      female = "f",
-      unknown = c("o", "u")
-    )) %>%
-    mutate(race = factor(
-      race1, 
-      levels = c(
-        "white",
-        "asian",
-        "black or african american",
-        "hispanic or latino",
-        "american indian or alaska native",
-        "native hawaiian or other pacific islander",
-        "unknown"
-      ),
-    )) %>% 
-    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>% 
+  ) %>% 
     mutate(           # time_days = days from start date to date they tested positive
       time_days = as.integer(round(difftime(
         SpCollDt, 
         start_date, 
         units = "days"
       )))
-    ) %>%
-    select(
-      unique_num,
-      test_date = SpCollDt,
-      death_date,
-      death_due_to_covid,
-      zip = Zip,
-      time_days,
-      age = Age,
-      sex,
-      race,
-      reported_city = ReportedCity
     ) %>% 
-    filter((test_date >= ymd(start_date)) & (test_date <= ymd(end_date))) %>% 
-    filter(sex != "unknown") %>% 
-    filter(age != -999) %>% 
-    filter(zip != "unknown") %>% 
-    mutate(zip = str_sub(zip, end = 5)) %>% 
-    mutate(decades_old = age / 10) %>% 
-    arrange(test_date) 
+    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
+    mutate(decades_old = Age / 10) 
   
-  
-  pos_results_adjusted <- pos_results_adjusted[!duplicated(pos_results_adjusted$unique_num), ]
-  
-  # Add zip code level data and merge with pcr results ----------------------------------
-  zip_area_oc <- read_csv(
-    here("data/zip-code-data", "zip-area2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      NAME = col_character(),
-      Zip = col_character(),
-      AreaKm = col_double()
-    )
-  ) %>%
-    select(name = NAME, zip = Zip, area_km = AreaKm)
-  
-  zip_pop_oc <- read_csv(
-    here("data/zip-code-data", "zip-pop.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      Population = col_integer()
-    )
-  ) %>%
-    drop_na() %>%
-    mutate(population = Population / 1000) %>%
-    select(zip = Zip, population)
-  
-  zip_data_merged <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
-  zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
-  
-  zip_income_oc <- read_csv(
-    here("data/zip-code-data", "income-by-zip2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      IncomeMed = col_integer(),
-      IncPeriodofMeas = col_character()
-    )
-  ) %>%
-    mutate(med_income = IncomeMed / 10000) %>%
-    filter(IncPeriodofMeas == "2014-2018") %>%
-    select(zip = Zip, med_income)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
-
-  zip_education_oc <- read_csv(
-    here("data/zip-code-data", "education-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentBach = col_double()
-    )
-  ) %>%
-    select(zip = Zip, percent_bachelors = PercentBach)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
-
-  zip_insurance_oc <- read_csv(
-    here("data/zip-code-data", "insurance-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentInsured = col_double()
-    )
-  ) %>%                           
-    select(zip = Zip, percent_insured = PercentInsured)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
+  # Mutate and save desired variables ------------------------------------------------------
+  full_num_data_cases <- mortality_og %>% 
+    filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
+    nrow()
 
   
-  # Scale zip code level variables
-  zip_data_merged$adj_pop_density <- scale(
-    zip_data_merged$pop_density, 
-    center = TRUE, 
-    scale = TRUE
-    )
-  
-  zip_data_merged$adj_med_income <- scale(
-    zip_data_merged$med_income, 
-    center = TRUE, 
-    scale = TRUE
-    )
-  
-  zip_data_merged$adj_perc_bach <- scale(
-    zip_data_merged$percent_bachelors,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  zip_data_merged$adj_perc_bach_quar <- with(
-    zip_data_merged,
-    cut(adj_perc_bach,
-        breaks = quantile(adj_perc_bach, 
-        probs = seq(0, 1, by = 0.25)),
-        include.lowest = TRUE,
-        labels = c("Q1", "Q2", "Q3", "Q4"))
-    )
-  
-  zip_data_merged$adj_perc_insured <- scale(
-    zip_data_merged$percent_insured,
-    center = TRUE,
-    scale = TRUE
-    )
-  
-  zip_data_merged$adj_perc_insured_quar <- with(
-    zip_data_merged,
-    cut(
-      adj_perc_insured,
-      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
-      include.lowest = TRUE,
-      labels = c("Q1", "Q2", "Q3", "Q4")
-      )
-    )
+  load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
   
   
-  #3 rows in 92678 zipcode we don't have area data for
-  pos_results_adjusted$old_zip <- pos_results_adjusted$zip
+  all_pos <- data.frame(all_pcr_and_zip[["pcr_results_merged"]]) %>% 
+    filter(covid_positive == 1)
+
   
-  pos_results_adjusted$zip[pos_results_adjusted$old_zip == "92678"] <- "92679"
-  pos_results_adjusted$zip[pos_results_adjusted$old_zip == "90743"] <- "90742" 
-  
-  pos_results_merged <- merge(x = pos_results_adjusted, y = zip_data_merged, by = "zip")
-  
-  pos_results_merged$old_zip <- factor(pos_results_merged$old_zip)
-  pos_results_merged$zip <- factor(pos_results_merged$zip)
-  
+  pos_results_adjusted <- mortality_og %>% 
+    mutate(DeathDueCOVID = replace_na(DeathDueCOVID, "n")) %>% 
+    mutate(death_due_to_covid = factor(str_to_lower(DeathDueCOVID))) %>% 
+    select(id = unique_num, death_due_to_covid, time_days, decades_old, death_date) %>% 
+    right_join(y = all_pos) %>% 
+    select(-c(adj_time_days)) %>% 
+    filter(!is.na(death_due_to_covid)) %>% 
+    mutate(zip = droplevels(zip))
+    
   
   # Read and filter hospital bed data -----------------------------------------------------------
   # OC data
@@ -316,6 +116,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     )
   ) %>% 
     filter(county == "Orange") 
+  
   
   first_date <- sort(hos_bed_gov$todays_date)[1]
   if(month(params$first_test_date) == month(first_date) & day(params$first_test_date) < day(first_date)) {
@@ -381,7 +182,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     scale = TRUE
   )
   
-  pos_results_merged <- merge(pos_results_merged, hos_bed_gov, by = "test_date")
+  pos_results_merged <- merge(x = pos_results_adjusted, y = hos_bed_gov, by.x = "posted_date", by.y = "test_date")
 
   
   # Scale time ----------------------------------------------------------------------------------------------
@@ -425,7 +226,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   list(
     "pos_results_merged" = pos_results_merged, 
-    "zip_data_merged" = zip_data_merged, 
+    "zip_data_merged" = all_pcr_and_zip$zip_data_merged, 
     "missing" = missing_vec
   )
 }
@@ -436,7 +237,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data/mortality-data", "all-positive-tests-updated-2020-11-16.csv"),
+    file_path = here("data/mortality-data", "1.4.21 release to UCI team.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
   )
