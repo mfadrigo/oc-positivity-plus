@@ -199,6 +199,16 @@ read_sero <- function(file_path){
   zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
   
   
+  house_data_og <- read_csv(here("data/zip-code-data", "house-crowding.csv")) %>% 
+    janitor::clean_names() %>% 
+    filter(period_of_measure == "2015-2019") %>% 
+    filter(breakout_subcategory == "Owners") %>% 
+    select(zip = location, house_crowding = indicator_rate_value) %>% 
+    mutate(zip = as.character(zip))
+   
+  zip_data_merged <- merge(x = zip_data_merged, y = house_data_og, by = "zip")
+  
+  
   # Scale zip code level variables
   zip_data_merged$adj_pop_density <- scale(
     zip_data_merged$pop_density , 
