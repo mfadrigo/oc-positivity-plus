@@ -93,15 +93,16 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   
   all_pos <- data.frame(all_pcr_and_zip[["pcr_results_merged"]]) %>% 
-    filter(covid_positive == 1)
+    filter(covid_positive == 1) %>% 
+    select(-c(time_days, adj_time_days))
 
   
   pos_results_adjusted <- mortality_cleaned %>% 
     select(id = unique_num, death_due_to_covid = DeathDueCOVID, time_days, decades_old, death_date) %>% 
     right_join(y = all_pos, by = "id") %>% 
-    select(-c(adj_time_days)) %>% 
     filter(!is.na(death_due_to_covid)) %>% 
-    mutate(zip = droplevels(zip))
+    mutate(zip = droplevels(zip)) %>% 
+    mutate(death_due_to_covid = factor(death_due_to_covid))
     
   
   # Read and filter hospital bed data -----------------------------------------------------------
@@ -333,8 +334,8 @@ Model 0:
     \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{\text{Time}}\text{Time}_i\\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i 
+		&+ \beta_{\text{Median Income}}\text{Median Income}_i + \beta_{\text{Time}}\text{Time}_i\\
 		&+ \beta_{\text{\% Hospital Beds Available}}\text{\% Hospital Beds Available}_i,
   \end{split}
 \end{equation}
@@ -345,7 +346,7 @@ if (params$refit_model0) {
   fit0 <- glm(
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
+              adj_pop_density + house_crowding + adj_med_income +
               adj_time_days + adj_covid_icu_beds,
     family = binomial, 
     data = pos_pcr
@@ -365,8 +366,8 @@ Model 1:
     \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
-		&+ \beta_{\text{Time}}\text{Time}_i\\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i
+		&+ \beta_{\text{Median Income}}\text{Median Income}_i + \beta_{\text{Time}}\text{Time}_i\\
 		&+ \beta_{\text{\% Hospital Beds Available}}\text{\% Hospital Beds Available}_i,
   \end{split}
 \end{equation}
@@ -378,7 +379,7 @@ if (params$refit_model1) {
   fit1 <- glmer(
     formula = death_due_to_covid  ~ decades_old + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
+              adj_pop_density + house_crowding + adj_med_income +
               adj_time_days + adj_covid_icu_beds +
               (1 | zip),              
     family = binomial, 
@@ -416,6 +417,7 @@ parameter_names <- c(
   "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density (1000ppl/km^2)", 
+  "House Crowding",
   "Median Income (std. dev.)",
   "Time (std. dev.)",
   "COVID ICU patients (std. dev.)"
@@ -455,6 +457,7 @@ reference_group <- c(
   FALSE,
   FALSE,
   FALSE,
+  FALSE,
   FALSE
   )
 
@@ -467,6 +470,7 @@ rownames(table_fm) <- c(
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)",
+  "House Crowding",
   "Median Income (std. dev.)",
   "Time (std. dev.)",
   "ICU beds with COVID patients (std. dev.)"
@@ -490,8 +494,8 @@ for(i in 1:nrow(table_fm)) {
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
 dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == "y", ]
-quant_vars <- c("decades_old", "adj_pop_density", "adj_med_income", "adj_time_days", "adj_avail_icu_beds")
-order_quant_vars <- c(1, 19:22)
+quant_vars <- c("decades_old", "adj_pop_density", "house_crowding", "adj_med_income", "adj_time_days", "adj_avail_icu_beds")
+order_quant_vars <- c(1, 19:23)
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
 qual_vars <- c("sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
@@ -581,7 +585,7 @@ variable_colors <- c(
   rep("black", 3),
   "white",
   rep("black", 3),
-  rep("black", 4)
+  rep("black", 5)
 )
 
 # will need to add colors again to make reference groups white
