@@ -37,7 +37,7 @@ library(kableExtra)
 # fit-model1 chunk
 library(tictoc)
 library(lme4)
-library(BRRR)
+#library(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
 ```
