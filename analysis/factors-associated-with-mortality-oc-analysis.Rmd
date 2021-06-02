@@ -74,14 +74,21 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
       )))
     ) %>% 
     mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-    mutate(decades_old = Age / 10) 
+    mutate(decades_old = Age / 10) %>% 
+    mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
   
   # Mutate and save desired variables ------------------------------------------------------
   full_num_data_cases <- mortality_og %>% 
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
     nrow()
 
-  
+  ids_of_deaths <- mortality_og %>% 
+    filter(DeathDueCOVID == "y") %>% 
+    pull(unique_num)
+    
+  mortality_cleaned <- mortality_og %>% 
+    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no"))
+
   load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
   
   
@@ -89,11 +96,9 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     filter(covid_positive == 1)
 
   
-  pos_results_adjusted <- mortality_og %>% 
-    mutate(DeathDueCOVID = replace_na(DeathDueCOVID, "n")) %>% 
-    mutate(death_due_to_covid = factor(str_to_lower(DeathDueCOVID))) %>% 
-    select(id = unique_num, death_due_to_covid, time_days, decades_old, death_date) %>% 
-    right_join(y = all_pos) %>% 
+  pos_results_adjusted <- mortality_cleaned %>% 
+    select(id = unique_num, death_due_to_covid = DeathDueCOVID, time_days, decades_old, death_date) %>% 
+    right_join(y = all_pos, by = "id") %>% 
     select(-c(adj_time_days)) %>% 
     filter(!is.na(death_due_to_covid)) %>% 
     mutate(zip = droplevels(zip))
@@ -237,7 +242,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
 ```{r load-clean-data}
 if (params$reclean_data) {
   pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data/mortality-data", "1.4.21 release to UCI team.csv"),
+    file_path = here("data/mortality-data", "all-positive-tests-updated-2020-11-09.csv"),
     start_date = params$first_test_date,
     end_date = params$last_test_date
   )
