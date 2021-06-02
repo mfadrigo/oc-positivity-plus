@@ -378,7 +378,8 @@ Model 0:
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i
+		+ \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
 without a random intercept for zip code.
@@ -389,7 +390,7 @@ if (params$refit_model0) {
   fit0 <- glm(
     formula = covid_pos ~ age_grp + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income,
+              adj_pop_density + house_crowding + adj_med_income,
     family = binomial, 
     data = all_sero
     )
@@ -408,7 +409,7 @@ Model 1:
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
 	\end{split}
 \end{equation}
 with a random intercept for zip code.
@@ -417,10 +418,10 @@ with a random intercept for zip code.
 ```{r fit-model1}
 if (params$refit_model1) {
   tic()
-  fit1a <- glmer(
+  fit1 <- glmer(
     formula = covid_pos ~ age_grp + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
+              adj_pop_density + house_crowding + adj_med_income +
               (1 | zip),              
     family = binomial, 
     data = all_sero,
@@ -428,19 +429,15 @@ if (params$refit_model1) {
     )
   toc()
 
-  tic()
-  ss <- getME(fit1a, c("theta","fixef"))
-  fit1b <- update(
-    fit1a,
-    start = ss,
-    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
-  )
-  toc()
-  fit1 <- fit1b
-  # Message:
-  # variance-covariance matrix computed from finite-difference Hessian is 
-  # not positive definite or contains NA values: 
-  # falling back to var-cov estimated from RXvariance-covariance
+  # tic()
+  # ss <- getME(fit1a, c("theta","fixef"))
+  # fit1b <- update(
+  #   fit1a,
+  #   start = ss,
+  #   control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
+  # )
+  # toc()
+  # fit1 <- fit1b
   
   save(fit1, file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
 } else {
@@ -468,7 +465,7 @@ cases_in_zip <- all_pcr %>%
 # Make df of zip code, population, num_cases_in_zip, perc_zip_covid_pos 
 case_by_zip_pop <- merge(all_zip, cases_in_zip, by = "zip") %>% 
   select(zip, num_cases_in_zip, population) %>% 
-  mutate(perc_zip_covid_pos = num_cases_in_zip/(population*1000))
+  mutate(perc_zip_covid_pos = 1000 * num_cases_in_zip/(population * 1000))
 
 all_sero <- merge(all_sero, case_by_zip_pop, by = "zip")
 ``` 
@@ -481,7 +478,7 @@ Model 2:
 		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
 		&+ \beta_{\text{\% of Zip Code SARS-CoV-2+}}\text{\% of Zip Code SARS-CoV-2+}_i,
 	\end{split}
 \end{equation}
@@ -493,7 +490,7 @@ if (params$refit_model2) {
   fit2 <- glm(
     formula = covid_pos ~ age_grp + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
+              adj_pop_density + house_crowding + adj_med_income +
               I(perc_zip_covid_pos/10),
     family = binomial, 
     data = all_sero
@@ -566,6 +563,7 @@ parameter_names <- c(
   "2nd Quartile", "3rd Quartile", "4th Quartile",
   " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
   "Population Density (1000ppl/km^2)", 
+  "House Crowding",
   "Median Income (std. dev.)"
 )
 
@@ -585,7 +583,7 @@ summary_fit4 <- compute_ci_logistic_glm(fit4, param_names = parameter_names4)
 
 ```{r bic-table}
 compare_bic <- BIC(fit0, fit1, fit2, fit3, fit4) 
-row.names(compare_bic) <- c("Model 0", "Model 1", "Model 2", "Model3", "Model4")
+row.names(compare_bic) <- c("Model 0", "Model 1", "Model 2", "Model 3", "Model 4")
 
 kable(compare_bic,
       col.names = c("Degrees of Freedom", "BIC"),
@@ -623,6 +621,7 @@ reference_group <- c(
   TRUE, rep(FALSE, 3),
   TRUE, rep(FALSE, 3),
   FALSE,
+  FALSE,
   FALSE
 )
 
@@ -635,6 +634,7 @@ rownames(table_fm) <- c(
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)",
+  "House Crowding",
   "Median Income (std. dev.)"
 )
 
@@ -656,9 +656,9 @@ for(i in 1:nrow(table_fm)) {
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
 sero_pos <- all_sero[all_sero$covid_pos == "yes", ]
-quant_vars <- c("adj_pop_density", "adj_med_income")
-order_quant_vars <- c(nrow(table_fm) - 1, nrow(table_fm))
-variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
+quant_vars <- c("adj_pop_density", "house_crowding", "adj_med_income")
+order_quant_vars <- (nrow(table_fm) - 2):nrow(table_fm)
+variable_counts[order_quant_vars, c(1, 2)] <- rep("", length(quant_vars))
 
 qual_vars <- c("age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
 order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
@@ -750,7 +750,7 @@ variable_colors <- c(
   rep("black", 3),
   "white",
   rep("black", 3),
-  rep("black", 2)
+  rep("black", 3)
 )
 
 fm_results_with_ref <- fm_results_with_ref %>% 
@@ -808,6 +808,7 @@ reference_group <- c(
   TRUE, rep(FALSE, 3),
   FALSE,
   FALSE,
+  FALSE,
   FALSE
 )
 
@@ -820,6 +821,7 @@ rownames(table_fm) <- c(
   "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
   "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
   "Population Density (1000ppl/km^2)",
+  "House Crowding",
   "Median Income (std. dev.)",
   "% of Zip Code SARS-CoV-2+[note]"
 )
@@ -842,9 +844,9 @@ for(i in 1:nrow(table_fm)) {
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
 sero_pos <- all_sero[all_sero$covid_pos == "yes", ]
-quant_vars <- c("adj_pop_density", "adj_med_income", "perc_zip_covid_pos")
-order_quant_vars <- (nrow(table_fm) - 2):nrow(table_fm)
-variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
+quant_vars <- c("adj_pop_density", "house_crowding", "adj_med_income", "perc_zip_covid_pos")
+order_quant_vars <- (nrow(table_fm) - 3):nrow(table_fm)
+variable_counts[order_quant_vars, c(1, 2)] <- rep("", length(quant_vars))
 
 qual_vars <- c("age_grp", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
 order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
@@ -937,7 +939,7 @@ variable_colors <- c(
   rep("black", 3),
   "white",
   rep("black", 3),
-  rep("black", 3)
+  rep("black", 4)
 )
 
 fm_results_with_ref <- fm_results_with_ref %>% 
