@@ -82,27 +82,29 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
     filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
     nrow()
 
-  ids_of_deaths <- mortality_og %>% 
+  ids_of_deaths <- mortality_og %>% # if a person every died of covid it is recorded under each of their tests
     filter(DeathDueCOVID == "y") %>% 
     pull(unique_num)
     
   mortality_cleaned <- mortality_og %>% 
-    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no"))
+    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
+    select(id = unique_num, time_days, covid_death, death_date, decades_old) %>% 
+    arrange(id) %>% 
+    filter(!duplicated(id))
 
+    
   load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
   
   
-  all_pos <- data.frame(all_pcr_and_zip[["pcr_results_merged"]]) %>% 
-    filter(covid_positive == 1) %>% 
+  all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]]) %>% 
     select(-c(time_days, adj_time_days))
 
+  all_pcr_with_deaths <- mortality_cleaned %>% 
+    right_join(y = all_pcr, by = "id") %>% 
+    mutate(zip = droplevels(zip)) # drop zip = 92678 b/c there are no observations
   
-  pos_results_adjusted <- mortality_cleaned %>% 
-    select(id = unique_num, death_due_to_covid = DeathDueCOVID, time_days, decades_old, death_date) %>% 
-    right_join(y = all_pos, by = "id") %>% 
-    filter(!is.na(death_due_to_covid)) %>% 
-    mutate(zip = droplevels(zip)) %>% 
-    mutate(death_due_to_covid = factor(death_due_to_covid))
+  pos_results_adjusted <- all_pcr_with_deaths %>% 
+    filter(covid_positive == 1)
     
   
   # Read and filter hospital bed data -----------------------------------------------------------
@@ -231,6 +233,7 @@ read_pos_pcr <- function(file_path, start_date, end_date) {
   
   
   list(
+    "all_results_merged" = all_pcr_with_deaths,
     "pos_results_merged" = pos_results_merged, 
     "zip_data_merged" = all_pcr_and_zip$zip_data_merged, 
     "missing" = missing_vec
