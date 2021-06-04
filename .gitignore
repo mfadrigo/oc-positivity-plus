@@ -16,6 +16,10 @@ positive-tests-release-to-uci-team-2020-10-05.csv
 *.txt
 *.tex
 
+!factors-associated-with-mortality-oc-analysis-.pdf
+!factors-associated-with-seroprevelance-oc-analysis-.pdf
+!factors-associated-with-testing-positive-oc-analysis-.pdf
+
 !education-by-zip.csv
 !income-by-zip2.csv
 !insurance-by-zip.csv
