@@ -6,8 +6,8 @@ output:
       amsmath 
 params:
   reclean_data: FALSE
-  refit_model0: FALSE
-  refit_model1: FALSE
+  refit_model0: TRUE
+  refit_model1: TRUE
 ---
 
 ```{r setup, include=FALSE}
@@ -94,7 +94,7 @@ without a random intercept for zip code.
 ```{r fit-model0}
 if (params$refit_model0) {
   fit0 <- glm(
-    formula = death_due_to_covid  ~ decades_old + sex + race + 
+    formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + house_crowding + adj_med_income +
               adj_time_days + adj_covid_icu_beds,
@@ -127,7 +127,7 @@ with a random intercept for zip code.
 if (params$refit_model1) {
   tic()
   fit1 <- glmer(
-    formula = death_due_to_covid  ~ decades_old + sex + race + 
+    formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + house_crowding + adj_med_income +
               adj_time_days + adj_covid_icu_beds +
@@ -248,11 +248,11 @@ quant_vars <- c("decades_old", "adj_pop_density", "house_crowding", "adj_med_inc
 order_quant_vars <- c(1, 19:23)
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
 
-qual_vars <- c("sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+qual_vars <- c("gender", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
 order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
 
 qual_vars_ordered <- c(
-  "sex.female", "sex.male", 
+  "gender.female", "gender.male", 
   "race.white", "race.asian",
   "race.black or african american", "race.hispanic or latino",
   "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
@@ -311,13 +311,13 @@ kable(
 
 fm_results_with_ref <- rbind(
   summary_fit0[1, ],
-  c(1, 0.99, 1.01, paste0(c("Gender", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Gender", rep(" ", 37), "[ref: Female]"), collapse = "")),
   summary_fit0[2, ],
-  c(1, 0.99, 1.01, paste0(c("Race/ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Race/ethnicity", rep(" ", 29), "[ref: White]"), collapse = "")),
   summary_fit0[3:8, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
   summary_fit0[9:11, ],
-  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 11), "[ref: 1st Quartile]"), collapse = "")),
   summary_fit0[12:nrow(summary_fit0), ]
 )
 
