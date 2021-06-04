@@ -6,8 +6,8 @@ output:
       amsmath 
 params:
   reclean_data: FALSE
-  refit_model0: TRUE
-  refit_model1: TRUE
+  refit_model0: FALSE
+  refit_model1: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -243,7 +243,7 @@ for(i in 1:nrow(table_fm)) {
 }      
 
 variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + sum(reference_group), ncol = 2))
-dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == "y", ]
+dead_pcr <- pos_pcr[pos_pcr$death_due_to_covid == 1, ]
 quant_vars <- c("decades_old", "adj_pop_density", "house_crowding", "adj_med_income", "adj_time_days", "adj_avail_icu_beds")
 order_quant_vars <- c(1, 19:23)
 variable_counts[order_quant_vars, c(1, 2)] <- c("", "")
