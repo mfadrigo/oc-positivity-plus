@@ -575,7 +575,6 @@ sero_results_adjusted <- sero_results_original %>%
 # Tabulate cumulative number of cases in each zip code
 cases_in_zip <- usable_cases %>% 
   mutate(zip = as.character(zip)) %>% 
-  filter(covid_positive == 1) %>% 
   group_by(zip) %>% 
   summarise(num_cases_in_zip = n()) %>% 
   left_join(y = zip_data_merged, by = "zip") %>% 
