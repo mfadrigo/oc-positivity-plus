@@ -1,7 +1,6 @@
 library(tidyverse)
 library(here)
 library(lubridate)
-library(data.table)
 library(forcats)
 
 
@@ -406,11 +405,25 @@ first_pos <- pcr_results_consistent %>%
   group_by(id) %>%
   summarise(first_pos = min(posted_date))
 
-pcr_results_reduced <- left_join(pcr_results_consistent, first_pos, by = "id") %>%
+pcr_results_reduced <- pcr_results_consistent %>% 
+  left_join(y = first_pos, by = "id") %>%
   mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
   filter(posted_date <= first_pos) %>%
-  select(-first_pos) %>%
-  distinct()
+  select(-first_pos)
+
+# remove ppl who tested in the same day
+repeated_pos_id <- pcr_results_reduced %>% 
+  filter(covid_positive == 1) %>% 
+  group_by(id) %>% 
+  summarize(reps = n()) %>% 
+  filter(reps > 1) %>% 
+  pull(id)
+
+pcr_results_reduced <- pcr_results_reduced %>% 
+  arrange(id, posted_date) %>% 
+  mutate(obs_to_be_dropped = ifelse(covid_positive == 1 & duplicated(id), TRUE, FALSE)) %>% 
+  filter(!obs_to_be_dropped)
+  
 
 
 # Merge with zip code and hospital data
@@ -442,32 +455,39 @@ mortality_og <- read_csv(
   )
 ) %>% 
   mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
+  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y"))
 
 
-# if a person ever died of covid record it under each of their tests (and drop their repeated tests)
 ids_of_deaths <- mortality_og %>% 
   filter(DeathDueCOVID == "y") %>% 
   pull(unique_num)
 
-mortality_cleaned <- mortality_og %>% 
-  mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
-  arrange(unique_num, SpCollDt) %>% 
-  filter(!duplicated(unique_num)) %>% 
-  select(id = unique_num, covid_death) 
+mortality_cleaned <- mortality_og %>%
+  mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>%
+  arrange(unique_num, SpCollDt) %>%
+  filter(!duplicated(unique_num)) %>%
+  select(id = unique_num, covid_death, death_date)
 
 
-neg_usable_tests <- usable_tests_wo_death %>% 
-  filter(covid_positive == 0) %>% 
-  mutate(covid_death = "no") %>% 
+neg_usable_tests <- usable_tests_wo_death %>%
+  filter(covid_positive == 0) %>%
+  mutate(covid_death = "no") %>%
   mutate(death_date = ymd("9999/09/09"))
+
+# usable_tests <- usable_tests_wo_death %>% 
+#   mutate(covid_death = ifelse(
+#     (covid_positive == 1) & (id %in% ids_of_deaths), 
+#     "yes", 
+#     "no"
+#   ))
 
 pos_usable_tests <- usable_tests_wo_death %>% 
   filter(covid_positive == 1) %>% 
   left_join(y = mortality_cleaned, by = "id") %>% 
   drop_na()
 
-usable_tests <- rbind(pos_usable_tests, neg_usable_tests) %>% 
+
+usable_tests <- bind_rows(pos_usable_tests, neg_usable_tests) %>% 
   arrange(id, posted_date)
 
 usable_cases <- usable_tests %>% 
@@ -475,8 +495,9 @@ usable_cases <- usable_tests %>%
 
 
 
-list(
-  "zip_data_merged" = zip_data_merged,
-  "hosp_data_merged" = hosp_data_merged,
-  "pcr_results_merged" = pcr_results_merged
-)
+
+usable_tests_wo_death %>% 
+  filter(covid_positive == 1) %>% 
+  group_by(id) %>% 
+  summarize(reps = n()) %>% 
+  filter(reps > 1)
