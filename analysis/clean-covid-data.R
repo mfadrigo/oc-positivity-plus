@@ -427,7 +427,7 @@ pcr_results_reduced <- pcr_results_reduced %>%
 
 
 # Merge with zip code and hospital data
-usable_tests_wo_death <- pcr_results_reduced %>% 
+usable_tests <- pcr_results_reduced %>% 
   left_join(y = zip_data_merged, by = "zip") %>% 
   mutate(zip = factor(zip)) %>% 
   left_join(y = hosp_data_merged, by = "posted_date")
@@ -471,23 +471,9 @@ mortality_cleaned <- mortality_og %>%
   select(id = unique_num, covid_death, death_date)
 
 
-neg_usable_tests <- usable_tests_wo_death %>%
-  filter(covid_positive == 0) %>%
-  mutate(covid_death = "no") %>%
-  mutate(death_date = ymd("9999/09/09"))
 
 
-pos_usable_tests <- usable_tests_wo_death %>% 
-  filter(covid_positive == 1) %>% 
-  left_join(y = mortality_cleaned, by = "id") %>% 
-  drop_na()
-
-
-usable_tests <- bind_rows(pos_usable_tests, neg_usable_tests) %>% 
-  arrange(id, posted_date)
-
-usable_cases <- usable_tests %>% 
-  filter(covid_positive == 1)
+usable_cases <- 
 
 
 
