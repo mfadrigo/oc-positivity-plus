@@ -35,7 +35,6 @@ usepackage_latex("threeparttable")
 library(sandwich)
 library(tictoc)
 library(lme4)
-#(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
 ```
@@ -76,7 +75,7 @@ compute_ci_logistic_glm <- function(model, alpha = 0.05, param_names, include_pv
 For simplicity let  
 $O_i$ be the odds of testing positive for COVID-19 in Orange County.  
 $\overrightarrow{\beta}_{\text{Age Group}} = (\beta_{\text{Age[18-24]}}, \beta_{\text{Age[25-29]}}, \beta_{\text{Age[30-34]}}, \beta_{\text{Age[35-39]}}, \beta_{\text{Age[40-44]}}, \beta_{\text{Age[45-49]}}, \beta_{\text{Age[50-54]}}, \\ \beta_{\text{Age[55-59]}}, \beta_{\text{Age[60-64]}}, \beta_{\text{Age[65-69]}}, \beta_{\text{Age[70-74]}}, \beta_{\text{Age[75-79]}}, \beta_{\text{Age[80-84]}}, \beta_{\text{Age[85+]}})$  
-$\overrightarrow{\beta}_{\text{Race}} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
+$\overrightarrow{\beta}_{\text{Race/ethnicity}} = (\beta_{\text{Asian}}, \beta_{\text{Black}}, \beta_{\text{Hispanic}}, \beta_{\text{PacificIslander}}, \beta_{\text{Unknown}})$  
 $\overrightarrow{\beta}_{\text{College}} = (\beta_{\text{\% with College Degree Quartile 2}}, \beta_{\text{\% with College Degree Quartile 3}}, \beta_{\text{\% with College Degree Quartile 4}})$  
 $\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Quartile 2}}, \beta_{\text{\% with Insurance Quartile 3}}, \beta_{\text{\% with Insurance Quartile 4}})$
 
@@ -85,7 +84,7 @@ Model 0:
 \begin{equation}
 \label{eq:Model0}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i
@@ -116,7 +115,7 @@ Model 1:
 \begin{equation}
 \label{eq:Model1}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i + \beta_{\text{Median Income}}\text{Median Income}_i,
@@ -138,16 +137,6 @@ if (params$refit_model1) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-
-  # tic()
-  # ss <- getME(fit1a, c("theta","fixef"))
-  # fit1b <- update(
-  #   fit1a,
-  #   start = ss,
-  #   control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
-  # )
-  # toc()
-  # fit1 <- fit1b
   
   save(fit1, file = here("analysis/testing-seropositive-regression-results", "fit1.Rdata"))
 } else {
@@ -160,7 +149,7 @@ Model 2:
 \begin{equation}
 \label{eq:Model2}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\
@@ -217,7 +206,7 @@ Model 4:
 \begin{equation}
 \label{eq:Model4}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \beta_{\text{\% of Zip Code SARS-CoV-2+}}\text{\% of Zip Code SARS-CoV-2+}_i,
 	\end{split}
 \end{equation}
@@ -384,8 +373,8 @@ kable(
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Age", 1, 9, bold = FALSE) %>% 
-  pack_rows("Sex", 10, 11, bold = FALSE) %>%
-  pack_rows("Race[note]", 12, 17, bold = FALSE) %>%
+  pack_rows("Gender", 10, 11, bold = FALSE) %>%
+  pack_rows("Race/ethnicity[note]", 12, 17, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 18, 21, bold = FALSE) %>%
   pack_rows("% with Insurance", 22, 24, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
@@ -410,9 +399,9 @@ kable(
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
   summary_fit0[1:8, ],
-  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Gender", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit0[9, ],
-  c(1, 0.99, 1.01, paste0(c("Race", rep(" ", 38), "[ref: White]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Race/ethnicity", rep(" ", 38), "[ref: White]"), collapse = "")),
   summary_fit0[10:14, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
   summary_fit0[15:17, ],
@@ -572,8 +561,8 @@ kable(
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Age", 1, 9, bold = FALSE) %>% 
-  pack_rows("Sex", 10, 11, bold = FALSE) %>%
-  pack_rows("Race[note]", 12, 17, bold = FALSE) %>%
+  pack_rows("Gender", 10, 11, bold = FALSE) %>%
+  pack_rows("Race/ethnicity[note]", 12, 17, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 18, 21, bold = FALSE) %>%
   pack_rows("% with Insurance", 22, 24, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
@@ -597,15 +586,15 @@ kable(
 ```{r fit2-model-results-plot, fig.align="center", fig.cap="Logistic model 2 results for odds of testing sero-positive for SARS-CoV-2 in Orange County. Pasific Islander adjusted odds ratio omitted due to width of confidence interval (1.05, 15.14)."}
 
 fm_results_with_ref <- rbind(
-  c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 44), "[ref: 18-24]"), collapse = "")),
   summary_fit2[1:8, ],
-  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Gender", rep(" ", 35), "[ref: Female]"), collapse = "")),
   summary_fit2[9, ],
-  c(1, 0.99, 1.01, paste0(c("Race", rep(" ", 38), "[ref: White]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Race/ethnicity", rep(" ", 27), "[ref: White]"), collapse = "")),
   summary_fit2[10:14, ],
   c(1, 0.99, 1.01, "% with College Degree [ref: 1st Quartile]"),
   summary_fit2[15:17, ],
-  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("% with Insurance", rep(" ", 11), "[ref: 1st Quartile]"), collapse = "")),
   summary_fit2[18:nrow(summary_fit2), ]
 )
 
@@ -785,8 +774,8 @@ kable(
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Age", 1, 9, bold = FALSE) %>% 
-  pack_rows("Sex", 10, 11, bold = FALSE) %>%
-  pack_rows("Race[note]", 12, 17, bold = FALSE) %>%
+  pack_rows("Gender", 10, 11, bold = FALSE) %>%
+  pack_rows("Race/ethnicity[note]", 12, 17, bold = FALSE) %>%
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
   add_footnote(
     c(
@@ -809,9 +798,9 @@ kable(
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, paste0(c("Age", rep(" ", 39), "[ref: 18-24]"), collapse = "")),
   summary_fit4[1:8, ],
-  c(1, 0.99, 1.01, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Gender", rep(" ", 38), "[ref: Female]"), collapse = "")),
   summary_fit4[9, ],
-  c(1, 0.99, 1.01, paste0(c("Race", rep(" ", 38), "[ref: White]"), collapse = "")),
+  c(1, 0.99, 1.01, paste0(c("Race/ethnicity", rep(" ", 38), "[ref: White]"), collapse = "")),
   summary_fit4[10:nrow(summary_fit4), ]
 )
 
