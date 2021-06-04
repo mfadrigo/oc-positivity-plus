@@ -17,25 +17,25 @@ oc_icu_full_beds_earliest_val <- 71
 # Combine zip code data ---------------------------------------------------
 ## General zip code data
 zip_data_merged <- read_csv( # area
-    here("data/zip-code-data", "zip-area2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      NAME = col_character(),
-      Zip = col_character(),
-      AreaKm = col_double()
-    )
-  ) %>%
+  here("data/zip-code-data", "zip-area2.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    NAME = col_character(),
+    Zip = col_character(),
+    AreaKm = col_double()
+  )
+) %>%
   select(name = NAME, zip = Zip, area_km = AreaKm)
 
 
 zip_data_merged <- read_csv( # population
-    here("data/zip-code-data", "zip-pop.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      Population = col_integer()
-    )
-  ) %>%
+  here("data/zip-code-data", "zip-pop.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Zip = col_character(),
+    Population = col_integer()
+  )
+) %>%
   drop_na() %>%
   mutate(population = Population / 1000) %>%
   select(zip = Zip, population) %>% 
@@ -46,14 +46,14 @@ zip_data_merged <- read_csv( # population
 
 
 zip_data_merged <- read_csv( # income
-    here("data/zip-code-data", "income-by-zip2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      IncomeMed = col_integer(),
-      IncPeriodofMeas = col_character()
-    )
-  ) %>%
+  here("data/zip-code-data", "income-by-zip2.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Zip = col_character(),
+    IncomeMed = col_integer(),
+    IncPeriodofMeas = col_character()
+  )
+) %>%
   mutate(med_income = IncomeMed / 10000) %>%
   filter(IncPeriodofMeas == "2014-2018") %>%
   select(zip = Zip, med_income) %>% 
@@ -62,13 +62,13 @@ zip_data_merged <- read_csv( # income
 
 
 zip_data_merged <- read_csv( # education
-    here("data/zip-code-data", "education-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentBach = col_double()
-    )
-  ) %>%
+  here("data/zip-code-data", "education-by-zip.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Zip = col_character(),
+    PercentBach = col_double()
+  )
+) %>%
   select(zip = Zip, percent_bachelors = PercentBach) %>% 
   full_join(y =  zip_data_merged, by = "zip") %>% 
   mutate(adj_perc_bach = scale(percent_bachelors, center = TRUE, scale = TRUE)) %>% 
@@ -79,17 +79,17 @@ zip_data_merged <- read_csv( # education
       breaks = quantile(adj_perc_bach, probs = seq(0, 1, by = 0.25)),
       include.lowest = TRUE,
       labels = c("Q1", "Q2", "Q3", "Q4")
-  )))
+    )))
 
 
 zip_data_merged <- read_csv( # insurance
-    here("data/zip-code-data", "insurance-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentInsured = col_double()
-    )
-  ) %>%                           
+  here("data/zip-code-data", "insurance-by-zip.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Zip = col_character(),
+    PercentInsured = col_double()
+  )
+) %>%                           
   select(zip = Zip, percent_insured = PercentInsured) %>% 
   full_join(y =  zip_data_merged, by = "zip") %>% 
   mutate(adj_perc_insured = scale(percent_insured, center = TRUE, scale = TRUE)) %>% 
@@ -100,19 +100,19 @@ zip_data_merged <- read_csv( # insurance
       breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
       include.lowest = TRUE,
       labels = c("Q1", "Q2", "Q3", "Q4")
-  )))
+    )))
 
 
 zip_data_merged <- read_csv( # house crowding
-    here("data/zip-code-data", "house-crowding.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Location = col_character(),
-      `Indicator Rate Value` = col_double(),
-      `Period of Measure` = col_character(),
-      `Breakout Subcategory` = col_character()
-    )
-  ) %>% 
+  here("data/zip-code-data", "house-crowding.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Location = col_character(),
+    `Indicator Rate Value` = col_double(),
+    `Period of Measure` = col_character(),
+    `Breakout Subcategory` = col_character()
+  )
+) %>% 
   filter(`Period of Measure` == "2015-2019") %>% 
   filter(`Breakout Subcategory` == "Owners") %>% 
   select(zip = Location, house_crowding = `Indicator Rate Value`) %>% 
@@ -121,7 +121,7 @@ zip_data_merged <- read_csv( # house crowding
 
 ## OC Hospital data by date
 hos_bed_gov <- read_csv(
-  here("data/mortality-data", "covid19hospitalbycounty.csv"),
+  here("data/zip-code-data", "covid19hospitalbycounty.csv"),
   na = c("", " "),
   col_types = cols(
     .default = col_skip(),
@@ -423,7 +423,7 @@ pcr_results_reduced <- pcr_results_reduced %>%
   arrange(id, posted_date) %>% 
   mutate(obs_to_be_dropped = ifelse(covid_positive == 1 & duplicated(id), TRUE, FALSE)) %>% 
   filter(!obs_to_be_dropped)
-  
+
 
 
 # Merge with zip code and hospital data
@@ -431,8 +431,8 @@ usable_tests_wo_death <- pcr_results_reduced %>%
   left_join(y = zip_data_merged, by = "zip") %>% 
   mutate(zip = factor(zip)) %>% 
   left_join(y = hosp_data_merged, by = "posted_date")
-  
-  
+
+
 
 
 
@@ -455,12 +455,13 @@ mortality_og <- read_csv(
   )
 ) %>% 
   mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y"))
+  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID) & death_date == ymd("9999/09/09"), "n", "y"))
 
 
 ids_of_deaths <- mortality_og %>% 
   filter(DeathDueCOVID == "y") %>% 
   pull(unique_num)
+
 
 mortality_cleaned <- mortality_og %>%
   mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>%
@@ -474,12 +475,6 @@ neg_usable_tests <- usable_tests_wo_death %>%
   mutate(covid_death = "no") %>%
   mutate(death_date = ymd("9999/09/09"))
 
-# usable_tests <- usable_tests_wo_death %>% 
-#   mutate(covid_death = ifelse(
-#     (covid_positive == 1) & (id %in% ids_of_deaths), 
-#     "yes", 
-#     "no"
-#   ))
 
 pos_usable_tests <- usable_tests_wo_death %>% 
   filter(covid_positive == 1) %>% 
@@ -495,9 +490,111 @@ usable_cases <- usable_tests %>%
 
 
 
+# clean seropositivity data -----------------------------------------------
+sero_results_original <- read_csv(
+  here("data/seroprevelance-data", "oc-seroprevelance-data-2020-08-01.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    E4 = col_integer(),
+    DV_PANEL = col_character(),
+    DV_IMPORT_TEST_RESULTresult = col_character(),
+    Q1 = col_integer(),
+    Q2 = col_integer(),
+    Q3 = col_character(),
+    Q6r1 = col_integer(),
+    Q6r2 = col_integer(),
+    Q6r3 = col_integer(),
+    Q6r4 = col_integer(),
+    Q6r5 = col_integer(),
+    Q6r6 = col_integer(),
+    Q6r7 = col_integer(),
+    Q6r8 = col_integer(),
+    Q7 = col_integer()
+  ) 
+)
 
-usable_tests_wo_death %>% 
+
+sero_results_adjusted <- sero_results_original %>% 
+  filter(E4 == 1) %>% # Only individuals who had a blood test completed
+  filter(DV_PANEL != 7) %>%  # Only individuals who are not home recruits
+  filter(
+    DV_IMPORT_TEST_RESULTresult == "Reactive" |
+      DV_IMPORT_TEST_RESULTresult == "Non-Reactive"
+  ) %>% 
+  mutate(covid_pos = factor(
+    DV_IMPORT_TEST_RESULTresult,
+    levels = c("Non-Reactive", "Reactive"),
+    labels = c("no", "yes")
+  )) %>% 
+  mutate(age_grp = factor(
+    case_when(
+      Q2 == 2 ~ "18-24",
+      Q2 == 3 ~ "25-29",
+      Q2 == 4 ~ "30-34",
+      Q2 == 5 ~ "35-39",
+      Q2 == 6 | Q2 == 7 ~ "40-49",
+      Q2 == 8 | Q2 == 9 ~ "50-59",
+      Q2 == 10 | Q2 == 11 ~ "60-69",
+      Q2 == 12 | Q2 == 13 ~ "70-79",
+      Q2 == 14 | Q2 == 15 ~ "80+"
+    ),
+    levels = c(
+      "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+"
+    )
+  )) %>% 
+  filter(Q1 == 1 | Q1 == 2) %>% 
+  mutate(sex = factor(
+    Q1,
+    levels = c(2, 1),
+    labels = c("female", "male")
+  )) %>% 
+  mutate(race = factor(
+    case_when(
+      ((Q6r1 == 1) & (Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "white",
+      ((Q6r2 == 2) & (Q6r1 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "black",
+      ((Q6r3 == 3) & (Q6r1 + Q6r2 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "hispanic",
+      ((Q6r4 == 4) & (Q6r1 + Q6r2 + Q6r3 + Q6r5 + Q6r6 == 0)) ~ "native",
+      ((Q6r5 == 5) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r6 == 0)) ~ "asian",
+      ((Q6r6 == 6) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r5 == 0)) ~ "islander",
+      TRUE ~ "unknown"
+    ),
+    levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
+  )) %>% 
+  select(
+    zip = Q3,
+    covid_pos,
+    age_grp,
+    sex,
+    race
+  ) %>% 
+  filter(race != "native") %>% 
+  mutate(race = droplevels(race, exclude = "native")) %>% 
+  filter(zip %in% zip_data_merged$zip)
+
+
+# Tabulate cumulative number of cases in each zip code
+cases_in_zip <- usable_cases %>% 
+  mutate(zip = as.character(zip)) %>% 
   filter(covid_positive == 1) %>% 
-  group_by(id) %>% 
-  summarize(reps = n()) %>% 
-  filter(reps > 1)
+  group_by(zip) %>% 
+  summarise(num_cases_in_zip = n()) %>% 
+  left_join(y = zip_data_merged, by = "zip") %>% 
+  mutate(perc_zip_covid_pos = 1000 * num_cases_in_zip/(population * 1000)) # 10% and unscale population
+
+
+
+sero_results_merged <- sero_results_adjusted %>% 
+  left_join(y = cases_in_zip, by = "zip") %>% 
+  mutate(zip = factor(zip))
+
+
+
+
+
+
+# save cleaned data -------------------------------------------------------
+save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata"))
+
+save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
+
+save(sero_results_merged, file = here("data/cleaned-data", "sero_results_merged.Rdata"))
