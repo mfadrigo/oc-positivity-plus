@@ -5,6 +5,14 @@ library(data.table)
 library(forcats)
 
 
+start_date <- "2020-03-01"
+end_date <- "2020-08-16"
+
+daniel_est_beds <- 4879
+oc_icu_avail_beds_earliest_val <- 131
+oc_hos_covid_pateients_earliest_val <- 308
+oc_all_hos_bed_earliest_val <- 4213
+oc_icu_full_beds_earliest_val <- 71
 
 
 # Combine zip code data ---------------------------------------------------
@@ -132,8 +140,8 @@ hos_bed_gov <- read_csv(
 
 first_date <- sort(hos_bed_gov$todays_date)[1]
 
-if(month(params$first_test_date) == month(first_date) & day(params$first_test_date) < day(first_date)) {
-  dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
+if(month(first_test_date) == month(first_date) & day(first_test_date) < day(first_date)) {
+  dates_missing <- seq(as.Date(first_test_date), first_date, by = "days")
   dates_missing <- dates_missing[-length(dates_missing)]
   num_dm <- length(dates_missing)
   missing_rows <- data.frame(
@@ -171,7 +179,7 @@ hosp_data_merged <- hos_bed_gov %>%
     icu_covid_confirmed_patients + icu_suspected_covid_patients
   )) %>% 
   select(
-    test_date = todays_date,
+    posted_date = todays_date,
     avail_icu_beds,
     perc_avail_beds,
     covid_icu_beds
@@ -269,7 +277,7 @@ other_test_synonyms <- c(
 )
 
 
-read_all_pcr <- function(file_path, start_date, end_date) {
+read_all_pcr <- function(file_path) {
   pcr_results_original <- read_csv(
     file_path,
     col_types = cols(
@@ -364,11 +372,12 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     mutate(covid_positive = ifelse(test_result == "positive", 1, 0)) %>% 
     filter(sex != "unknown") %>%
     mutate(sex = droplevels(sex)) %>%
-    filter(!is.na(age)) %>% 
+    filter(!is.na(age) & age != 119) %>% 
     mutate(age_group = factor(
       cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
       levels = age_labels
     )) %>% 
+    mutate(decades_old = age / 10) %>%
     group_by(id) %>%
     arrange(posted_date) %>%
     ungroup()
@@ -399,23 +408,91 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     group_by(id) %>%
     summarise(first_pos = min(posted_date))
   
-  pcr_results_reduced <- left_join(pcr_results_consistent, first_pos) %>%
+  pcr_results_reduced <- left_join(pcr_results_consistent, first_pos, by = "id") %>%
     mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
     distinct()
 
   
-  pcr_results_merged <- left_join(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
-  pcr_results_merged$zip <- factor(pcr_results_merged$zip)
+  # Merge with zip code and hospital data
+  usable_tests_wo_death <- pcr_results_reduced %>% 
+    left_join(y = zip_data_merged, by = "zip") %>% 
+    mutate(zip = factor(zip)) %>% 
+    left_join(y = hosp_data_merged, by = "posted_date")
   
   
-  pcr_results_merged
+  usable_tests_wo_death
+}
+
+
+
+# clean and match mortality data ------------------------------------------
+
+
+read_pos_pcr <- function(file_path) {
+  # Read in data --------------------------------------------------------------------
+  mortality_og <- read_csv(
+    file_path,
+    col_types = cols(
+      .default = col_skip(),
+      Age = col_double(),
+      Gender = col_character(),
+      Ethnicity = col_character(),
+      Race = col_character(),
+      ReportedCity = col_character(),
+      Zip = col_double(),
+      SpCollDt = col_date(),
+      DeathDueCOVID = col_character(),
+      DtDeath = col_date(),
+      unique_num = col_character()
+    )
+  ) %>% 
+    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
+    mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
+
+  
+  # if a person ever died of covid record it under each of their tests (and drop their repeated tests)
+  ids_of_deaths <- mortality_og %>% 
+    filter(DeathDueCOVID == "y") %>% 
+    pull(unique_num)
+  
+  mortality_cleaned <- mortality_og %>% 
+    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
+    arrange(unique_num, SpCollDt) %>% 
+    filter(!duplicated(unique_num)) %>% 
+    select(id = unique_num, covid_death, death_date) 
+  
+  
+  neg_usable_tests <- usable_tests_wo_death %>% 
+    filter(covid_positive == 0) %>% 
+    mutate(covid_death = "no") %>% 
+    mutate(death_date = ymd("9999/09/09"))
+  
+  pos_usable_tests <- usable_tests_wo_death %>% 
+    filter(covid_positive == 1) %>% 
+    left_join(y = mortality_cleaned, by = "id")
+    
+  usable_tests <- rbind(pos_usable_tests, neg_usable_tests) %>% 
+    arrange(id, posted_date)
+  
+  
+  usable_cases <- all_pcr_with_deaths %>% 
+    filter(covid_positive == 1)
+  
+  
+ 
+  
+  pos_results_merged <- merge(x = pos_results_adjusted, y = hos_bed_gov, by.x = "posted_date", by.y = "test_date")
+  
+  
+
 }
 
 
 
 list(
   "zip_data_merged" = zip_data_merged,
-  "hosp_data_merged" = hosp_data_merged
+  "hosp_data_merged" = hosp_data_merged,
+  "pcr_results_merged" = pcr_results_merged
 )
