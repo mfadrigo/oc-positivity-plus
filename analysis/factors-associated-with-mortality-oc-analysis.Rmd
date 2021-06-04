@@ -254,8 +254,8 @@ order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
 qual_vars_ordered <- c(
   "gender.female", "gender.male", 
   "race.white", "race.asian",
-  "race.black or african american", "race.hispanic or latino",
-  "race.american indian or alaska native", "race.native hawaiian or other pacific islander",
+  "race.black", "race.hispanic",
+  "race.native", "race.islander",
   "race.unknown",
   "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
   "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
