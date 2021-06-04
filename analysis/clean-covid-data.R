@@ -2,14 +2,13 @@ library(tidyverse)
 library(here)
 library(lubridate)
 library(data.table)
-library(janitor)
+library(forcats)
+
 
 
 
 # Combine zip code data ---------------------------------------------------
 ## General zip code data
-
-# Scale zip code level variables
 zip_data_merged <- read_csv( # area
     here("data/zip-code-data", "zip-area2.csv"),
     col_types = cols(
@@ -33,7 +32,7 @@ zip_data_merged <- read_csv( # population
   drop_na() %>%
   mutate(population = Population / 1000) %>%
   select(zip = Zip, population) %>% 
-  full_join(y =  zip_data_merged, by = "zip") %>% 
+  right_join(y =  zip_data_merged, by = "zip") %>% 
   mutate(pop_density = population / area_km) %>% 
   mutate(adj_pop_density = scale(pop_density , center = TRUE, scale = TRUE))
 
@@ -96,25 +95,24 @@ zip_data_merged <- read_csv( # insurance
       labels = c("Q1", "Q2", "Q3", "Q4")
   )))
 
-house_data_og <- read_csv( # house crowding
+
+zip_data_merged <- read_csv( # house crowding
     here("data/zip-code-data", "house-crowding.csv"),
     col_types = cols(
       .default = col_skip(),
-      location = col_character(),
-      indicator_rate_value = col_double(),
-      period_of_measure = col_date()
+      Location = col_character(),
+      `Indicator Rate Value` = col_double(),
+      `Period of Measure` = col_character(),
+      `Breakout Subcategory` = col_character()
     )
   ) %>% 
-  janitor::clean_names() %>% 
-  filter(period_of_measure == "2015-2019") %>% 
-  filter(breakout_subcategory == "Owners") %>% 
-  select(zip = location, house_crowding = indicator_rate_value) %>% 
-  mutate(zip = as.character(zip)) %>% 
+  filter(`Period of Measure` == "2015-2019") %>% 
+  filter(`Breakout Subcategory` == "Owners") %>% 
+  select(zip = Location, house_crowding = `Indicator Rate Value`) %>% 
   full_join(y =  zip_data_merged, by = "zip")
 
-zip_data_merged <- merge(x = zip_data_merged, y = house_data_og, by = "zip")
 
-# Hospital OC zip code level data
+## OC Hospital data by date
 hos_bed_gov <- read_csv(
   here("data/mortality-data", "covid19hospitalbycounty.csv"),
   na = c("", " "),
@@ -133,6 +131,7 @@ hos_bed_gov <- read_csv(
 
 
 first_date <- sort(hos_bed_gov$todays_date)[1]
+
 if(month(params$first_test_date) == month(first_date) & day(params$first_test_date) < day(first_date)) {
   dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
   dates_missing <- dates_missing[-length(dates_missing)]
@@ -155,7 +154,7 @@ if(month(params$first_test_date) == month(first_date) & day(params$first_test_da
 # Beds were not recorded before 2020-04-20. To fill in missing:
 # For ICU available beds the earliest value is used
 # For percent of beds not used by COVID-19 patients the earliest value was used
-hos_bed_gov <- hos_bed_gov %>% 
+hosp_data_merged <- hos_bed_gov %>% 
   mutate(avail_icu_beds = ifelse(
     is.na(icu_available_beds), 
     params$oc_icu_avail_beds_earliest_val,
@@ -176,32 +175,15 @@ hos_bed_gov <- hos_bed_gov %>%
     avail_icu_beds,
     perc_avail_beds,
     covid_icu_beds
-  )
-
-hos_bed_gov$adj_perc_avail_beds <- scale(
-  hos_bed_gov$perc_avail_beds, 
-  center = TRUE, 
-  scale = TRUE
-)
-
-hos_bed_gov$adj_avail_icu_beds <- scale(
-  hos_bed_gov$avail_icu_beds, 
-  center = TRUE, 
-  scale = TRUE
-)
-
-hos_bed_gov$adj_covid_icu_beds <- scale(
-  hos_bed_gov$covid_icu_beds,
-  center = TRUE,
-  scale = TRUE
-)
-
-
-# clean-all-tests-data ----------------------------------------------------
+  ) %>% 
+  mutate(adj_perc_avail_beds = scale(perc_avail_beds, center = TRUE, scale = TRUE)) %>% 
+  mutate(adj_avail_icu_beds = scale(avail_icu_beds, center = TRUE, scale = TRUE)) %>% 
+  mutate(adj_covid_icu_beds = scale(covid_icu_beds, center = TRUE, scale = TRUE)) 
 
 
 
-# Test results need to be categorized ------------------------------------------------------
+# Clean all test data ----------------------------------------------------
+## All test categorizations
 negative_test_synonyms <- c(
   "not detected",
   "negative",
@@ -242,6 +224,7 @@ positive_test_synonyms <- c(
 )
 
 other_test_synonyms <- c(
+  "unknown",
   "inconclusive",
   "indeterminate",
   "specimen unsatisfactory",
@@ -302,69 +285,56 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     )
   ) 
   
-  full_num_data_cases <- pcr_results_original %>% 
-    filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
-    nrow()
   
-  full_num_id_cases <- pcr_results_original %>% 
-    filter(Specimen.Collected.Date >= ymd(start_date) & Specimen.Collected.Date <= ymd(end_date)) %>% 
-    select(unique_num) %>% 
-    unique() %>% 
-    nrow()
-  
-  pcr_results_original$Race[is.na(pcr_results_original$Race)] <- "Unknown"
-  pcr_results_original$Ethnicity[is.na(pcr_results_original$Ethnicity)] <- "Unknown"
-  
-  hispanic_race_unknown <- (
-    (pcr_results_original$Race == "Other" & 
-       pcr_results_original$Ethnicity == "Hispanic or Latino") |
-      (pcr_results_original$Race == "Unknown" & 
-         pcr_results_original$Ethnicity == "Hispanic or Latino") |
-      (pcr_results_original$Race == "Multiple Races" & 
-         pcr_results_original$Ethnicity == "Hispanic or Latino") 
+  specified_race <- c(
+    "White", 
+    "Asian", 
+    "Black or African American", 
+    "American Indian or Alaska Native", 
+    "Native Hawaiian or Other Pacific Islander"
   )
   
-  non_hispanic_unknown <- (
-    (pcr_results_original$Race == "Unknown" & 
-       pcr_results_original$Ethnicity != "Hispanic or Latino") |
-      (pcr_results_original$Race == "Multiple Races" & 
-         pcr_results_original$Ethnicity != "Hispanic or Latino") |
-      (pcr_results_original$Race == "Other" & 
-         pcr_results_original$Ethnicity != "Hispanic or Latino")
+  unspecified_race <- c(
+    "Multiple Races", 
+    "Other", 
+    "Unknown"
   )
   
-  pcr_results_original_new_race <- data.frame(
-    pcr_results_original, 
-    "race1" = str_to_lower(pcr_results_original$Race)
-  )
-  pcr_results_original_new_race$race1[hispanic_race_unknown] <- "hispanic or latino"
-  pcr_results_original_new_race$race1[non_hispanic_unknown] <- "unknown"
+  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
   
-  pcr_results_adjusted <- pcr_results_original_new_race %>%
+  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                  "40-49","50-59","60-69","70-79","80+")
+  
+  
+  pcr_results_adjusted <- pcr_results_original %>%
     filter(!is.na(Resulted.Organism)) %>%
     mutate(test_result = fct_collapse(
       str_to_lower(Resulted.Organism),
       negative = negative_test_synonyms,
       positive = positive_test_synonyms,
-      unknown = other_test_synonyms) 
-    ) %>%
+      unknown = other_test_synonyms
+    )) %>%
     mutate(sex = fct_collapse(
       str_to_lower(Sex),
       male = "m",
       female = "f",
       unknown = c("d", "g", "i", "tf", "tm", "u")
     )) %>%
+    mutate(Race = ifelse(is.na(Race), "Unknown", Race)) %>% 
+    mutate(Ethnicity = ifelse(is.na(Ethnicity), "Unknown", Ethnicity)) %>% 
     mutate(race = factor(
-      race1, 
-      levels = c(
-        "white",
-        "asian",
-        "black or african american",
-        "hispanic or latino",
-        "american indian or alaska native",
-        "native hawaiian or other pacific islander",
-        "unknown"
+      case_when(
+        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[1]) ~ "white",
+        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[2]) ~ "asian",
+        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[3]) ~ "black",
+        (Ethnicity == "Hispanic or Latino") & (Race %in% unspecified_race) ~ "hispanic",
+        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[4]) ~ "native",
+        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[5]) ~ "islander",
+        ((Ethnicity != "Hispanic or Latino") & (Race %in% unspecified_race)) |
+        ((Ethnicity == "Hispanic or Latino") & (Race %in% specified_race))  ~ "unknown",
+        TRUE ~ "NA"
       ),
+      levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
     )) %>% 
     mutate(
       time_days = as.integer(round(difftime(
@@ -373,10 +343,12 @@ read_all_pcr <- function(file_path, start_date, end_date) {
         units = "days"
       )))
     ) %>%
+    mutate(adj_time_days = scale(time_days, center = TRUE, scale = TRUE)) %>% 
     select(
       id = unique_num, 
       posted_date = Specimen.Collected.Date, 
       time_days,
+      adj_time_days,
       test_result, 
       age = Age,
       sex,
@@ -384,51 +356,38 @@ read_all_pcr <- function(file_path, start_date, end_date) {
       ethnicity = Ethnicity,
       zip = Zip,
     ) %>%
-    filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>%
+    filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>% 
+    filter(!is.na(zip)) %>% 
+    filter(zip %in% zip_data_merged$zip) %>%
     filter(test_result != "unknown") %>%
+    mutate(test_result = droplevels(test_result)) %>%
+    mutate(covid_positive = ifelse(test_result == "positive", 1, 0)) %>% 
     filter(sex != "unknown") %>%
-    mutate(zip = str_sub(zip, end = 5)) %>%
-    drop_na() %>% 
+    mutate(sex = droplevels(sex)) %>%
+    filter(!is.na(age)) %>% 
+    mutate(age_group = factor(
+      cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
+      levels = age_labels
+    )) %>% 
     group_by(id) %>%
     arrange(posted_date) %>%
     ungroup()
-  
-  
-  if(length(levels(pcr_results_adjusted$test_result)) != 3) warning("New test result category not accounted for.")
-  
-  pcr_results_adjusted$covid_positive <- ifelse( pcr_results_adjusted$test_result == "positive", 1, 0)
-  
+      
   
   # Extract df of all observations with an id that has inconsistencies for the demographic variables (age, sex, race)
   pcr_rep_id <- pcr_results_adjusted[(
     duplicated(pcr_results_adjusted$id, fromLast=TRUE) | 
-      duplicated(pcr_results_adjusted$id)
+    duplicated(pcr_results_adjusted$id)
   ), ]
   
   pcr_rep_id2 <- pcr_rep_id %>%
     group_by(id) %>% 
     mutate(reasonable_ages = diff(range(age)) <= 1) %>%
-    #    mutate(identical_race = n_distinct(race) == 1) %>%
     mutate(identical_sex = n_distinct(sex) == 1) %>%
     ungroup()
   
   pcr_inconsistent <- data.frame(
-    pcr_rep_id2[(
-      !pcr_rep_id2$reasonable_ages | 
-        !pcr_rep_id2$identical_sex #| 
-      #      !pcr_rep_id2$identical_race
-    ), ]
-  )
-  
-  inconsistent_counts <- c(
-    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$reasonable_ages)])),
-    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_sex)]))#,
-    #    length(unique(pcr_inconsistent$id[(!pcr_inconsistent$identical_race)]))
-  )
-  names(inconsistent_counts) <- c(
-    "number_id_age_inconsistencies", 
-    "number_id_sex_inconsistencies"#,
-    #    "number_id_race_inconsistencies"
+    pcr_rep_id2[(!pcr_rep_id2$reasonable_ages | !pcr_rep_id2$identical_sex), ]
   )
   
   pcr_results_consistent <- pcr_results_adjusted[!(pcr_results_adjusted$id %in% pcr_inconsistent$id), ]
@@ -445,191 +404,18 @@ read_all_pcr <- function(file_path, start_date, end_date) {
     filter(posted_date <= first_pos) %>%
     select(-first_pos) %>%
     distinct()
+
   
-  
-  # Add zip code level data and merge with pcr results
-  zip_area_oc <- read_csv(
-    here("data/zip-code-data", "zip-area2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      NAME = col_character(),
-      Zip = col_character(),
-      AreaKm = col_double()
-    )
-  ) %>%
-    select(name = NAME, zip = Zip, area_km = AreaKm)
-  
-  zip_pop_oc <- read_csv(
-    here("data/zip-code-data", "zip-pop.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      Population = col_integer()
-    )
-  ) %>%
-    drop_na() %>%
-    mutate(population = Population / 1000) %>%
-    select(zip = Zip, population)
-  
-  zip_data_merged <- merge(x = zip_area_oc, y = zip_pop_oc, by = "zip")
-  zip_data_merged$pop_density <- zip_data_merged$population / zip_data_merged$area_km
-  
-  zip_income_oc <- read_csv(
-    here("data/zip-code-data", "income-by-zip2.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      IncomeMed = col_integer(),
-      IncPeriodofMeas = col_character()
-    )
-  ) %>%
-    mutate(med_income = IncomeMed / 10000) %>%
-    filter(IncPeriodofMeas == "2014-2018") %>%
-    select(zip = Zip, med_income)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_income_oc, by = "zip")
-  
-  zip_education_oc <- read_csv(
-    here("data/zip-code-data", "education-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentBach = col_double()
-    )
-  ) %>%
-    select(zip = Zip, percent_bachelors = PercentBach)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_education_oc, by = "zip")
-  
-  zip_insurance_oc <- read_csv(
-    here("data/zip-code-data", "insurance-by-zip.csv"),
-    col_types = cols(
-      .default = col_skip(),
-      Zip = col_character(),
-      PercentInsured = col_double()
-    )
-  ) %>%                           
-    select(zip = Zip, percent_insured = PercentInsured)
-  
-  zip_data_merged <- merge(x = zip_data_merged, y = zip_insurance_oc, by = "zip")
-  
-  
-  # Scale zip code level variables
-  zip_data_merged$adj_pop_density <- scale(
-    zip_data_merged$pop_density , 
-    center = TRUE, 
-    scale = TRUE
-  )
-  
-  zip_data_merged$adj_med_income <- scale(
-    zip_data_merged$med_income, 
-    center = TRUE, 
-    scale = TRUE
-  )
-  
-  zip_data_merged$adj_perc_bach <- scale(
-    zip_data_merged$percent_bachelors,
-    center = TRUE,
-    scale = TRUE
-  )
-  
-  zip_data_merged$adj_perc_bach_quar <- with(
-    zip_data_merged,
-    cut(adj_perc_bach,
-        breaks = quantile(adj_perc_bach, 
-                          probs = seq(0, 1, by = 0.25)),
-        include.lowest = TRUE,
-        labels = c("Q1", "Q2", "Q3", "Q4"))
-  )
-  
-  zip_data_merged$adj_perc_insured <- scale(
-    zip_data_merged$percent_insured,
-    center = TRUE,
-    scale = TRUE
-  )
-  
-  zip_data_merged$adj_perc_insured_quar <- with(
-    zip_data_merged,
-    cut(
-      adj_perc_insured,
-      breaks = quantile(adj_perc_insured, probs = seq(0, 1, by = 0.25)),
-      include.lowest = TRUE,
-      labels = c("Q1", "Q2", "Q3", "Q4")
-    )
-  )
-  
-  #23 rows in 92678 zipcode we don't have area data for
-  pcr_results_reduced$old_zip <- pcr_results_reduced$zip
-  pcr_results_reduced$zip[pcr_results_reduced$old_zip == "92678"] <- "92679"
-  pcr_results_merged <- merge(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
-  pcr_results_merged$old_zip <- factor(pcr_results_merged$old_zip)
+  pcr_results_merged <- left_join(x = pcr_results_reduced, y = zip_data_merged, by = "zip")
   pcr_results_merged$zip <- factor(pcr_results_merged$zip)
   
   
-  # Group ages 
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  setDT(pcr_results_merged)[, age_group := cut(
-    age, 
-    breaks = age_breaks, 
-    right = FALSE, 
-    labels = age_labels
-  )]
-  
-  pcr_results_merged$age_group <- factor(
-    pcr_results_merged$age_group,
-    levels = age_labels
-  )
-  
-  #technically we would want to do this differently for days but we don't used scaled in final model
-  pcr_results_merged$adj_time_days <- scale( 
-    pcr_results_merged$time_days,
-    center = TRUE,
-    scale = TRUE
-  )
-  
-  
-  house_data_og <- read_csv(here("data/zip-code-data", "house-crowding.csv")) %>% 
-    janitor::clean_names() %>% 
-    filter(period_of_measure == "2015-2019") %>% 
-    filter(breakout_subcategory == "Owners") %>% 
-    select(zip = location, house_crowding = indicator_rate_value)
-  
-  
-  pcr_results_merged <- house_data_og %>% 
-    mutate(zip = factor(zip)) %>% 
-    right_join(y = pcr_results_merged, by = "zip")
-  
-  # Count missingness by type
-  missing_counts <- c(
-    full_num_data_cases, 
-    full_num_data_cases - nrow(pcr_results_adjusted), 
-    nrow(pcr_results_adjusted) - nrow(pcr_results_consistent),
-    nrow(pcr_results_consistent) - nrow(pcr_results_reduced),
-    nrow(pcr_results_reduced) - nrow(pcr_results_merged)
-  )
-  missing_ids <- c(
-    full_num_id_cases,
-    full_num_id_cases - length(unique(pcr_results_adjusted$id)),
-    length(unique(pcr_results_adjusted$id)) - length(unique(pcr_results_consistent$id)),
-    length(unique(pcr_results_consistent$id)) - length(unique(pcr_results_reduced$id)),
-    length(unique(pcr_results_reduced$id)) - length(unique(pcr_results_merged$id))
-  )
-  missing_tab <- data.frame("missing_counts" = missing_counts, "missing_ids" = missing_ids)
-  rownames(missing_tab) <- c(
-    "full_num_data_cases", 
-    "num_na_cases_removed", 
-    "num_inconsistent_cases_removed",
-    "num_consecutive_cases_removed",
-    "num_bad_zip_cases_removed"
-  )
-  
-  
-  list(
-    "pcr_results_merged" = pcr_results_merged, 
-    "zip_data_merged" = zip_data_merged, 
-    "missing" = missing_tab,
-    "inconsistencies" = inconsistent_counts
-  )
+  pcr_results_merged
 }
+
+
+
+list(
+  "zip_data_merged" = zip_data_merged,
+  "hosp_data_merged" = hosp_data_merged
+)
