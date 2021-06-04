@@ -471,6 +471,7 @@ mortality_cleaned <-  mortality_og %>%
     death_date,
     death_due_to_covid = DeathDueCOVID
   ) %>% 
+  mutate(zip = as.character(zip)) %>% 
   mutate(age_group = factor(
     cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
     levels = age_labels
@@ -526,6 +527,7 @@ mortality_reduced <- mortality_cleaned %>%
   arrange(id, posted_date)
 
 mortality_merged <- mortality_reduced  %>% 
+  left_join(y = zip_data_merged, by = "zip") %>% 
   left_join(y = hosp_data_merged, by = "posted_date")
 
 usable_cases <- mortality_merged
