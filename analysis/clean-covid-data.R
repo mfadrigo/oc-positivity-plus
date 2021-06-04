@@ -437,7 +437,7 @@ usable_tests_wo_death <- pcr_results_reduced %>%
 
 
 
-# clean and match mortality data ------------------------------------------
+# clean and match cases/mortality data ------------------------------------------
 mortality_og <- read_csv(
   here("data/mortality-data", "all-positive-tests-updated-2020-11-09.csv"),
   col_types = cols(
@@ -454,9 +454,10 @@ mortality_og <- read_csv(
     unique_num = col_character()
   )
 ) %>% 
-  mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID) & death_date == ymd("9999/09/09"), "n", "y"))
-
+  mutate(death_date = replace_na(DtDeath, ymd("2020-03-01"))) %>%
+  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) %>% 
+  filter(death_date >= as.Date(start_date) & death_date <= as.Date(end_date)) %>% 
+  filter(SpCollDt >= as.Date(start_date) & SpCollDt <= as.Date(end_date))
 
 ids_of_deaths <- mortality_og %>% 
   filter(DeathDueCOVID == "y") %>% 
@@ -465,7 +466,7 @@ ids_of_deaths <- mortality_og %>%
 
 mortality_cleaned <- mortality_og %>%
   mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>%
-  arrange(unique_num, SpCollDt) %>%
+  arrange(unique_num, DtDeath) %>%
   filter(!duplicated(unique_num)) %>%
   select(id = unique_num, covid_death, death_date)
 
