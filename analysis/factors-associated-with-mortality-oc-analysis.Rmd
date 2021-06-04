@@ -6,15 +6,8 @@ output:
       amsmath 
 params:
   reclean_data: FALSE
-  first_test_date: "2020-03-01"
-  last_test_date: "2020-08-16"
   refit_model0: FALSE
   refit_model1: FALSE
-  daniel_est_beds: 4879
-  oc_icu_avail_beds_earliest_val: 131
-  oc_hos_covid_pateients_earliest_val: 308
-  oc_all_hos_bed_earliest_val: 4213
-  oc_icu_full_beds_earliest_val: 71
 ---
 
 ```{r setup, include=FALSE}
@@ -32,7 +25,6 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(here)
 library(lubridate)
-library(data.table)
 # missing-data-table chunk
 library(knitr)
 library(kableExtra)
@@ -47,260 +39,16 @@ library(mgcv)
 ```
 
 
-```{r data-wrangling-function}
-read_pos_pcr <- function(file_path, start_date, end_date) {
-  # Read in data --------------------------------------------------------------------
-  mortality_og <- read_csv(
-    file_path,
-    col_types = cols(
-      .default = col_skip(),
-      Age = col_double(),
-      Gender = col_character(),
-      Ethnicity = col_character(),
-      Race = col_character(),
-      ReportedCity = col_character(),
-      Zip = col_double(),
-      SpCollDt = col_date(),
-      DeathDueCOVID = col_character(),
-      DtDeath = col_date(),
-      unique_num = col_character()
-    )
-  ) %>% 
-    mutate(           # time_days = days from start date to date they tested positive
-      time_days = as.integer(round(difftime(
-        SpCollDt, 
-        start_date, 
-        units = "days"
-      )))
-    ) %>% 
-    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-    mutate(decades_old = Age / 10) %>% 
-    mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
-  
-  # Mutate and save desired variables ------------------------------------------------------
-  full_num_data_cases <- mortality_og %>% 
-    filter(SpCollDt >= ymd(start_date) & SpCollDt <= ymd(end_date)) %>% 
-    nrow()
-
-  ids_of_deaths <- mortality_og %>% # if a person every died of covid it is recorded under each of their tests
-    filter(DeathDueCOVID == "y") %>% 
-    pull(unique_num)
-    
-  mortality_cleaned <- mortality_og %>% 
-    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
-    select(id = unique_num, time_days, covid_death, death_date, decades_old) %>% 
-    arrange(id) %>% 
-    filter(!duplicated(id))
-
-    
-  load(file = here("data/positivity-data", "cleaned_process_pcr_data.Rdata"))
-  
-  
-  all_pcr <- data.frame(all_pcr_and_zip[["pcr_results_merged"]]) %>% 
-    select(-c(time_days, adj_time_days))
-
-  all_pcr_with_deaths <- mortality_cleaned %>% 
-    right_join(y = all_pcr, by = "id") %>% 
-    mutate(zip = droplevels(zip)) # drop zip = 92678 b/c there are no observations
-  
-  pos_results_adjusted <- all_pcr_with_deaths %>% 
-    filter(covid_positive == 1)
-    
-  
-  # Read and filter hospital bed data -----------------------------------------------------------
-  # OC data
-  hos_bed_gov <- read_csv(
-    here("data/mortality-data", "covid19hospitalbycounty.csv"),
-    na = c("", " "),
-    col_types = cols(
-      .default = col_skip(),
-      county = col_character(),
-      todays_date = col_date("%Y-%m-%d"),
-      hospitalized_covid_patients = col_double(),
-      all_hospital_beds = col_double(),
-      icu_covid_confirmed_patients = col_double(),
-      icu_suspected_covid_patients = col_double(),
-      icu_available_beds = col_double()
-    )
-  ) %>% 
-    filter(county == "Orange") 
-  
-  
-  first_date <- sort(hos_bed_gov$todays_date)[1]
-  if(month(params$first_test_date) == month(first_date) & day(params$first_test_date) < day(first_date)) {
-    dates_missing <- seq(as.Date(params$first_test_date), first_date, by = "days")
-    dates_missing <- dates_missing[-length(dates_missing)]
-    num_dm <- length(dates_missing)
-    missing_rows <- data.frame(
-      rep("Orange", num_dm), 
-      dates_missing, 
-      rep(NA, num_dm), 
-      rep(NA, num_dm), 
-      rep(NA, num_dm),
-      rep(NA, num_dm),
-      rep(NA, num_dm)
-    )
-    colnames(missing_rows) <- colnames(hos_bed_gov)
-    hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
-  } else {
-    print("Error: fix hospital data dates")
-  }
-
-  # Beds were not recorded before 2020-04-20. To fill in missing:
-  # For ICU available beds the earliest value is used
-  # For percent of beds not used by COVID-19 patients the earliest value was used
-  hos_bed_gov <- hos_bed_gov %>% 
-    mutate(avail_icu_beds = ifelse(
-      is.na(icu_available_beds), 
-      params$oc_icu_avail_beds_earliest_val,
-      icu_available_beds
-    )) %>% 
-    mutate(perc_avail_beds = ifelse(
-      is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
-      100 * (1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val),
-      100 * (1 - hospitalized_covid_patients / all_hospital_beds)
-    )) %>% 
-    mutate(covid_icu_beds = ifelse(
-      is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
-      params$oc_icu_full_beds_earliest_val,
-      icu_covid_confirmed_patients + icu_suspected_covid_patients
-    )) %>% 
-    select(
-      test_date = todays_date,
-      avail_icu_beds,
-      perc_avail_beds,
-      covid_icu_beds
-    )
-  
-  hos_bed_gov$adj_perc_avail_beds <- scale(
-    hos_bed_gov$perc_avail_beds, 
-    center = TRUE, 
-    scale = TRUE
-  )
-  
-  hos_bed_gov$adj_avail_icu_beds <- scale(
-    hos_bed_gov$avail_icu_beds, 
-    center = TRUE, 
-    scale = TRUE
-  )
-  
-  hos_bed_gov$adj_covid_icu_beds <- scale(
-    hos_bed_gov$covid_icu_beds,
-    center = TRUE,
-    scale = TRUE
-  )
-  
-  pos_results_merged <- merge(x = pos_results_adjusted, y = hos_bed_gov, by.x = "posted_date", by.y = "test_date")
-
-  
-  # Scale time ----------------------------------------------------------------------------------------------
-  time_range <- 1:as.integer(difftime(as.Date(end_date), as.Date(start_date), units = "days"))
-  adj_time_range <- scale(
-    time_range,
-    center = TRUE,
-    scale = TRUE
-  )
-  time_data <- data.frame("time_days" = time_range, "adj_time_days" = adj_time_range)
-  pos_results_merged <- merge(pos_results_merged, time_data, by = "time_days")
-
-  
-  
-  # Scale age ----------------------------------------------------------------------------------------------
-  pos_results_merged <- pos_results_merged %>% 
-    filter(age != 119)
-  age_range <- min(pos_results_merged$age):max(pos_results_merged$age)
-  adj_age_range <- scale(
-    age_range,
-    center = TRUE,
-    scale = TRUE
-  )
-  age_data <- data.frame("age" = age_range, "adj_age" = adj_age_range)
-  
-  pos_results_merged <- merge(pos_results_merged, age_data, by = "age")
-  
-  
-  # Count missing values ------------------------------------------------------------------------------------
-  missing_vec <- c(
-    full_num_data_cases , # number of observations with test date between start date and end date
-    full_num_data_cases - nrow(pos_results_adjusted),  # number of NA for age, sex and zip
-    nrow(pos_results_adjusted) - nrow(pos_results_merged) # number of invalid or non Orange County zip codes
-  )
-  names(missing_vec) <- c(
-    "full_num_data_cases", 
-    "num_na_cases_removed", 
-    "num_bad_zip_cases_removed"
-  )
-  
-  
-  list(
-    "all_results_merged" = all_pcr_with_deaths,
-    "pos_results_merged" = pos_results_merged, 
-    "zip_data_merged" = all_pcr_and_zip$zip_data_merged, 
-    "missing" = missing_vec
-  )
-}
-
-```
-
-
 ```{r load-clean-data}
 if (params$reclean_data) {
-  pos_pcr_and_zip <- read_pos_pcr(
-    file_path = here("data/mortality-data", "all-positive-tests-updated-2020-11-09.csv"),
-    start_date = params$first_test_date,
-    end_date = params$last_test_date
-  )
-  save(pos_pcr_and_zip, file = here("data/mortality-data", "cleaned_process_pos_pcr_data.Rdata"))
-}
-  load(file = here("data/mortality-data", "cleaned_process_pos_pcr_data.Rdata"))
+  source(here("analysis", "clean-covid-data.R"))
   
-  pos_pcr <- data.frame(pos_pcr_and_zip[["pos_results_merged"]])
-  pos_zip <- data.frame(pos_pcr_and_zip[["zip_data_merged"]])
-  pos_missing <- pos_pcr_and_zip[["missing"]]
+} 
 
-```
+load(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
 
 
-```{r missing-data-table}
-usable_counts <- c(
-  pos_missing[1],
-  pos_missing[1] - pos_missing[2],
-  pos_missing[1] - sum(pos_missing[2:3])
-)
-
-tab_obs <- data.frame(
-  c(NA, pos_missing[2:3]), 
-  usable_counts
-)
-rownames(tab_obs) <- c(
-  "Unmodified",
-  "Missing or Inconclusive[note]",
-  "Invalid Zip Code"
-)
-
-kable(
-  tab_obs,
-  col.names = c(
-    "With Issue", 
-    "After Removal"
-  ),
-  format = "latex",
-  caption = paste(
-    "Number of positive COVID-19 tests in Orange County from ",
-      params$first_test_date, " to ", params$last_test_date,
-      ". Includes number removed from data by type of issue for this analysis.",
-    sep = "")
-  ) %>%
-  kable_styling(latex_options = c("HOLD_position")) %>% 
-  add_header_above(c(" " = 1, "Number of Tests" = 2), line = TRUE) %>% 
-  column_spec(column = 2:3, width = "5.5cm") %>% 
-  add_footnote(
-    c(
-      "Number without conclusive test result or complete demographic information"
-      ),
-    notation = "symbol",
-    threeparttable = TRUE
-    )
+pos_pcr <- usable_cases
 ```
 
 
