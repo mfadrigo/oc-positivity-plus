@@ -23,11 +23,11 @@ Bernadette Boden-Albala: bbodenal@hs.uci.edu
 ## Content  
 This project's paper is currently being submitted. It can currently be found [here](https://urldefense.com/v3/__https://medrxiv.org/cgi/content/short/2021.01.13.21249507v1__;!!OLgoXmg!Clp7nEeBQo3Iozo1Oow4JwYpfZaXHAEiS77C1ZdH6QIKXUX_8GDZx_UE_WGPQ1Ygng$). 
 
-The code for the analyses performed can be found:  
+The code, model equations, and all graphs and tables for the analyses performed can be found:  
 
-- [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-testing-positive-oc-analysis.Rmd)  
-- [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-mortality-oc-analysis.Rmd)  
-- [Factors associated with seroprevelance of SARS-CoV2 in Orange County](analysis/factors-associated-with-seroprevelance-oc-analysis.Rmd)  
+- [Factors associated with testing positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-testing-positive-oc-analysis-.pdf)  
+- [Factors associated with mortality among those who tested positive for SARS-CoV2 in Orange County](analysis/factors-associated-with-mortality-oc-analysis-.pdf)  
+- [Factors associated with seroprevelance of SARS-CoV2 in Orange County](analysis/factors-associated-with-seroprevelance-oc-analysis-.pdf)  
 
 ## Data  
 
