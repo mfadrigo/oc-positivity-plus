@@ -34,7 +34,6 @@ library(kableExtra)
 # fit-model1 chunk
 library(tictoc)
 library(lme4)
-#library(BRRR)
 library(car) # I don't think I need this anymore
 library(mgcv)
 ```
@@ -83,7 +82,7 @@ $\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Qua
 Model 1:
 \begin{equation}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -95,7 +94,7 @@ with a random intercept for zip code.
 ```{r fit-model1}
 if (params$refit_model1) {
   tic()
-  fit_time_lin1 <- glmer(
+  fit_time_lin <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -106,21 +105,9 @@ if (params$refit_model1) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  skrrrahh("drummaboy")
-  # 4423.84 sec elapsed
-  # Model failed to converge with max|grad| = 0.00298652 (tol = 0.002, component 1)
-  tic()
-  ss <- getME(fit_time_lin1, c("theta","fixef"))
-  fit_time_lin2 <- update(
-    fit_time_lin1,
-    start = ss,
-    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
-  )
-  toc()
-  fit_time_lin <- fit_time_lin2
-  skrrrahh("drummaboy")
-  # 4305.4 sec elapsed
-  # updated and saved 2021-05-25
+  # 
+  # 2730.94 sec elapsed
+  # updated and saved 2021-06-04
   save(fit_time_lin, file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
@@ -130,7 +117,7 @@ if (params$refit_model1) {
 Model 2:
 \begin{equation}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -153,9 +140,9 @@ if (params$refit_model2) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  skrrrahh("drummaboy")
-  # Model failed to converge with max|grad| = 0.00219462 (tol = 0.002, component 1)
-  # 4602.03 sec elapsed
+  # 
+  # 2916.06 sec elapsed
+  # Updated 2020-06-04
   save(fit_time_quad, file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
@@ -165,7 +152,7 @@ if (params$refit_model2) {
 Model 3:
 \begin{equation}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -178,7 +165,7 @@ with a random intercept for zip code.
 ```{r fit-model3}
 if (params$refit_model3) {
   tic()
-  fit_time_quad_inter1 <- glmer(
+  fit_time_quad_inter <- glmer(
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -190,20 +177,8 @@ if (params$refit_model3) {
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
   toc()
-  # 6271.09 sec elapsed
-    tic()
-  ss <- getME(fit_time_quad_inter1, c("theta","fixef"))
-  fit_time_quad_inter2 <- update(
-    fit_time_quad_inter1,
-    start = ss,
-    control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e6))
-  )
-  toc()
-
-  fit_time_quad_inter <- fit_time_quad_inter2
-  # 3152.36 sec elapsed
-  skrrrahh("drummaboy")
-  # updated 2021-05-26
+  # 2903.28 sec elapsed
+  # updated 2021-06-04
   save(fit_time_quad_inter, file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
@@ -214,7 +189,7 @@ Model 4:
 Generalized additive model
 \begin{equation}
 	\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -238,9 +213,9 @@ if (params$refit_model4) {
     gamma = 1.5
     )
   toc()
-  skrrrahh("drummaboy")
-  # updated and saved 2021-05-27
-  # 1296.45 sec elapsed
+  # 
+  # updated and saved 2021-06-04
+  # 915.72 sec elapsed
   save(fit_time_gam, file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
@@ -251,7 +226,7 @@ Model 5:
 Generalized additive model
 \begin{equation}
 		\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -276,9 +251,9 @@ if (params$refit_model5) {
     gamma = 1.5
     )
   toc()
-  skrrrahh("drummaboy")
-# 3762.87 sec elapsed
-# updated and saved 2021-05-26
+  # 
+# 1889.62 sec elapsed
+# updated and saved 2021-06-04
   save(fit_time_gam_inter, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
@@ -307,7 +282,7 @@ Model 6:
 Generalized additive model
 \begin{equation}
 		\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -331,9 +306,9 @@ if (params$refit_model6) {
     gamma = 1.5
     )
   toc()
-  skrrrahh("drummaboy")
-# 4253 sec elapsed
-# updated and saved 2021-05-27
+  # 
+# 139.25 sec elapsed
+# updated and saved 2021-06-04
   save(fit6, file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit6.Rdata"))
@@ -345,7 +320,7 @@ Model 7:
 Generalized additive model
 \begin{equation}
 		\begin{split}
-		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Sex}}\text{Sex}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+		\log(O_i) &= \beta_0 + \overrightarrow{\beta}_{\text{Age Group}}\overrightarrow{\text{Age Group}}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
 		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i + \beta_{\text{Median Income}}\text{Median Income}_i\\ 
@@ -370,9 +345,9 @@ if (params$refit_model7) {
     gamma = 1.5
     )
   toc()
-  skrrrahh("drummaboy")
-# 4763.63 sec elapsed
-# updated and saved 2021-05-26
+  # 
+# 1862.25 sec elapsed
+# updated and saved 2021-06-04
   save(fit_time_gam_inter_house, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter_house.Rdata"))
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter_house.Rdata"))
@@ -517,8 +492,8 @@ kable(
   ) %>%
   kable_styling(latex_options = c("HOLD_position"), font_size = 11) %>%
   pack_rows("Age", 1, 13, bold = FALSE) %>%
-  pack_rows("Sex", 14,15, bold = FALSE) %>%
-  pack_rows("Race", 16, 23, bold = FALSE) %>%
+  pack_rows("Gender", 14,15, bold = FALSE) %>%
+  pack_rows("Race/ethnicity", 16, 23, bold = FALSE) %>%
   pack_rows("% with College Degree[note]", 24, 27, bold = FALSE) %>%
   pack_rows("% with Insurance", 28, 31, bold = FALSE) %>% 
   add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE) %>% 
@@ -541,16 +516,16 @@ kable(
 fm_results_with_ref <- rbind(
   c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
   fit_time_gam_inter_house_summary1[1:12, ],
-  c(1, 0.99, 1.01, 0, paste0(c("Sex", rep(" ", 38), "[ref: Female]"), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("Gender", rep(" ", 33), "[ref: Female]"), collapse = "")),
   fit_time_gam_inter_house_summary1[13, ],
-  c(1, 0.99, 1.01, 0, paste0(c("Race/Ethnicity", rep(" ", 24), "[ref: White]"), collapse = "")),
+  c(1, 0.99, 1.01, 0, paste0(c("Race/ethnicity", rep(" ", 25), "[ref: White]"), collapse = "")),
   fit_time_gam_inter_house_summary1[14:19, ],
   c(1, 0.99, 1.01, 0, "% with College Degree [ref: 1st Quartile]"),
   fit_time_gam_inter_house_summary1[20:22, ],
   c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
   fit_time_gam_inter_house_summary1[23:25, ],
   c(as.character(fit_time_gam_inter_house_summary1[26, -5]), "Population Density (1000ppl/km^2)"),
-  c(as.character(fit_time_gam_inter_house_summary1[27, -5]), "House Crowding Index")
+  c(as.character(fit_time_gam_inter_house_summary1[27, -5]), "House Crowding")
 )
 
 fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
