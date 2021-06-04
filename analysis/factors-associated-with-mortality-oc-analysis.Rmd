@@ -79,12 +79,11 @@ $\overrightarrow{\beta}_{\text{Insurance}} = (\beta_{\text{\% with Insurance Qua
 
 Model 0:
 \begin{equation}
-  \label{eq:Model0}
   \begin{split}
-    \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i 
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i\\
 		&+ \beta_{\text{Median Income}}\text{Median Income}_i + \beta_{\text{Time}}\text{Time}_i\\
 		&+ \beta_{\text{\% Hospital Beds Available}}\text{\% Hospital Beds Available}_i,
   \end{split}
@@ -111,12 +110,11 @@ if (params$refit_model0) {
 
 Model 1:
 \begin{equation}
-  \label{eq:Model1}
   \begin{split}
-    \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race}}\overrightarrow{\text{Race}}_i\\
+    \log(O_i) &= \beta_0 + \beta_{\text{Age}}\text{Age}_i + \beta_{\text{Gender}}\text{Gender}_i + \overrightarrow{\beta}_{\text{Race/ethnicity}}\overrightarrow{\text{Race/ethnicity}}_i\\
 		&+ \overrightarrow{\beta}_{\text{College}}\overrightarrow{\text{\% with College Degree Quartile}}_i\\
 		&+ \overrightarrow{\beta}_{\text{Insurance}}\overrightarrow{\text{\% with Medical Insurance Quartile}}_i \\
-		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i
+		&+ \beta_{\text{Population Density}}\text{Population Density}_i + \beta_{\text{House Crowding}}\text{House Crowding}_i\\
 		&+ \beta_{\text{Median Income}}\text{Median Income}_i + \beta_{\text{Time}}\text{Time}_i\\
 		&+ \beta_{\text{\% Hospital Beds Available}}\text{\% Hospital Beds Available}_i,
   \end{split}
