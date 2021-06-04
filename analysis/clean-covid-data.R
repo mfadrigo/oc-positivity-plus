@@ -140,8 +140,8 @@ hos_bed_gov <- read_csv(
 
 first_date <- sort(hos_bed_gov$todays_date)[1]
 
-if(month(first_test_date) == month(first_date) & day(first_test_date) < day(first_date)) {
-  dates_missing <- seq(as.Date(first_test_date), first_date, by = "days")
+if(month(start_date) == month(first_date) & day(start_date) < day(first_date)) {
+  dates_missing <- seq(as.Date(start_date), first_date, by = "days")
   dates_missing <- dates_missing[-length(dates_missing)]
   num_dm <- length(dates_missing)
   missing_rows <- data.frame(
@@ -165,17 +165,17 @@ if(month(first_test_date) == month(first_date) & day(first_test_date) < day(firs
 hosp_data_merged <- hos_bed_gov %>% 
   mutate(avail_icu_beds = ifelse(
     is.na(icu_available_beds), 
-    params$oc_icu_avail_beds_earliest_val,
+    oc_icu_avail_beds_earliest_val,
     icu_available_beds
   )) %>% 
   mutate(perc_avail_beds = ifelse(
     is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
-    100 * (1 - params$oc_hos_covid_pateients_earliest_val / params$oc_all_hos_bed_earliest_val),
+    100 * (1 - oc_hos_covid_pateients_earliest_val / oc_all_hos_bed_earliest_val),
     100 * (1 - hospitalized_covid_patients / all_hospital_beds)
   )) %>% 
   mutate(covid_icu_beds = ifelse(
     is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
-    params$oc_icu_full_beds_earliest_val,
+    oc_icu_full_beds_earliest_val,
     icu_covid_confirmed_patients + icu_suspected_covid_patients
   )) %>% 
   select(
