@@ -45,8 +45,7 @@ if (params$reclean_data) {
   
 } 
 
-load(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
-
+load(file = here("data/cleaned-data", "usable_cases.Rdata"))
 
 pos_pcr <- usable_cases
 ```

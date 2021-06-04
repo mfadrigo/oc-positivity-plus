@@ -46,10 +46,7 @@ if (params$reclean_data) {
   
 } 
 
-load(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata"))
-load(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
-load(sero_results_merged, file = here("data/cleaned-data", "sero_results_merged.Rdata"))
-
+load(file = here("data/cleaned-data", "usable_tests.Rdata"))
 
 all_pcr <- usable_tests
 ```

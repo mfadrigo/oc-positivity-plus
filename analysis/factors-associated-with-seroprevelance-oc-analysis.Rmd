@@ -47,7 +47,7 @@ if (params$reclean_data) {
   
 } 
 
-load(sero_results_merged, file = here("data/cleaned-data", "sero_results_merged.Rdata"))
+load(file = here("data/cleaned-data", "sero_results_merged.Rdata"))
 
 all_sero <- sero_results_merged
 ```
