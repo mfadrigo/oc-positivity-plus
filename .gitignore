@@ -15,6 +15,7 @@ positive-tests-release-to-uci-team-2020-10-05.csv
 *.docx
 report/
 *.txt
+*.tex
 
 !education-by-zip.csv
 !income-by-zip2.csv
