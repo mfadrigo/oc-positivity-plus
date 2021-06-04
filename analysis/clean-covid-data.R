@@ -453,27 +453,82 @@ mortality_og <- read_csv(
     DtDeath = col_date(),
     unique_num = col_character()
   )
-) %>% 
+) 
+
+mortality_cleaned <-  mortality_og %>% 
   mutate(death_date = replace_na(DtDeath, ymd("2020-03-01"))) %>%
-  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) %>% 
+  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) %>%
   filter(death_date >= as.Date(start_date) & death_date <= as.Date(end_date)) %>% 
-  filter(SpCollDt >= as.Date(start_date) & SpCollDt <= as.Date(end_date))
+  filter(SpCollDt >= as.Date(start_date) & SpCollDt <= as.Date(end_date)) %>% 
+  select(
+    id = unique_num,
+    zip = Zip,
+    posted_date = SpCollDt,
+    age = Age,
+    gender = Gender,
+    race = Race,
+    ethnicity = Ethnicity,
+    death_date,
+    death_due_to_covid = DeathDueCOVID
+  ) %>% 
+  mutate(age_group = factor(
+    cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
+    levels = age_labels
+  )) %>% 
+  mutate(decades_old = age / 10) %>%
+  mutate(gender = fct_collapse(
+    str_to_lower(gender),
+    male = "m",
+    female = "f",
+    unknown = c("o", "u")
+  )) %>%
+  mutate(race = ifelse(is.na(race), "Unknown", race)) %>% 
+  mutate(ethnicity = ifelse(is.na(ethnicity), "Unknown", ethnicity)) %>% 
+  mutate(race = factor(
+    case_when(
+      (ethnicity != "Hispanic or Latino") & (race == specified_race[1]) ~ "white",
+      (ethnicity != "Hispanic or Latino") & (race == specified_race[2]) ~ "asian",
+      (ethnicity != "Hispanic or Latino") & (race == specified_race[3]) ~ "black",
+      (ethnicity == "Hispanic or Latino") & (race %in% unspecified_race) ~ "hispanic",
+      (ethnicity != "Hispanic or Latino") & (race == specified_race[4]) ~ "native",
+      (ethnicity != "Hispanic or Latino") & (race == specified_race[5]) ~ "islander",
+      ((ethnicity != "Hispanic or Latino") & (race %in% unspecified_race)) |
+        ((ethnicity == "Hispanic or Latino") & (race %in% specified_race))  ~ "unknown",
+      TRUE ~ "NA"
+    ),
+    levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
+  )) %>% 
+  mutate(
+    time_days = as.integer(round(difftime(
+      posted_date, 
+      start_date, 
+      units = "days"
+    )))
+  ) %>%
+  mutate(adj_time_days = scale(time_days, center = TRUE, scale = TRUE))
+  
 
-ids_of_deaths <- mortality_og %>% 
-  filter(DeathDueCOVID == "y") %>% 
-  pull(unique_num)
+ids_of_deaths <- mortality_cleaned %>% 
+  filter(death_due_to_covid == "y") %>% 
+  pull(id)
 
 
-mortality_cleaned <- mortality_og %>%
-  mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>%
-  arrange(unique_num, DtDeath) %>%
-  filter(!duplicated(unique_num)) %>%
-  select(id = unique_num, covid_death, death_date)
+mortality_reduced <- mortality_cleaned %>%
+  mutate(covid_death = ifelse(id %in% ids_of_deaths, "yes", "no")) %>%
+  mutate(death_due_to_covid = ifelse(covid_death == "y", 1, 0)) %>% 
+  filter(!is.na(zip)) %>% 
+  filter(zip %in% zip_data_merged$zip) %>%
+  arrange(id, posted_date) %>%
+  filter(!duplicated(id)) %>%
+  filter(gender != "unknown") %>%
+  mutate(gender = droplevels(gender)) %>%
+  filter(!is.na(age) & age != 119) %>% 
+  arrange(id, posted_date)
 
+mortality_merged <- mortality_reduced  %>% 
+  left_join(y = hosp_data_merged, by = "posted_date")
 
-
-
-usable_cases <- 
+usable_cases <- mortality_merged
 
 
 
