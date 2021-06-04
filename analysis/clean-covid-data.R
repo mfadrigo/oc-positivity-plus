@@ -277,217 +277,201 @@ other_test_synonyms <- c(
 )
 
 
-read_all_pcr <- function(file_path) {
-  pcr_results_original <- read_csv(
-    file_path,
-    col_types = cols(
-      .default = col_skip(),
-      Age = col_integer(),
-      Sex = col_character(),
-      Ethnicity = col_character(),
-      Race = col_character(),
-      Specimen.Collected.Date = col_date("%m-%d-%Y"),
-      Resulted.Organism = col_character(),
-      Zip = col_character(),
-      unique_num = col_character()
-    )
-  ) 
-  
-  
-  specified_race <- c(
-    "White", 
-    "Asian", 
-    "Black or African American", 
-    "American Indian or Alaska Native", 
-    "Native Hawaiian or Other Pacific Islander"
+pcr_results_original <- read_csv(
+  here("data/positivity-data", "all-elr-pcr-tests-updated-2020-11-09.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Age = col_integer(),
+    Sex = col_character(),
+    Ethnicity = col_character(),
+    Race = col_character(),
+    Specimen.Collected.Date = col_date("%m-%d-%Y"),
+    Resulted.Organism = col_character(),
+    Zip = col_character(),
+    unique_num = col_character()
   )
-  
-  unspecified_race <- c(
-    "Multiple Races", 
-    "Other", 
-    "Unknown"
-  )
-  
-  age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
-  
-  age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-                  "40-49","50-59","60-69","70-79","80+")
-  
-  
-  pcr_results_adjusted <- pcr_results_original %>%
-    filter(!is.na(Resulted.Organism)) %>%
-    mutate(test_result = fct_collapse(
-      str_to_lower(Resulted.Organism),
-      negative = negative_test_synonyms,
-      positive = positive_test_synonyms,
-      unknown = other_test_synonyms
-    )) %>%
-    mutate(sex = fct_collapse(
-      str_to_lower(Sex),
-      male = "m",
-      female = "f",
-      unknown = c("d", "g", "i", "tf", "tm", "u")
-    )) %>%
-    mutate(Race = ifelse(is.na(Race), "Unknown", Race)) %>% 
-    mutate(Ethnicity = ifelse(is.na(Ethnicity), "Unknown", Ethnicity)) %>% 
-    mutate(race = factor(
-      case_when(
-        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[1]) ~ "white",
-        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[2]) ~ "asian",
-        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[3]) ~ "black",
-        (Ethnicity == "Hispanic or Latino") & (Race %in% unspecified_race) ~ "hispanic",
-        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[4]) ~ "native",
-        (Ethnicity != "Hispanic or Latino") & (Race == specified_race[5]) ~ "islander",
-        ((Ethnicity != "Hispanic or Latino") & (Race %in% unspecified_race)) |
-        ((Ethnicity == "Hispanic or Latino") & (Race %in% specified_race))  ~ "unknown",
-        TRUE ~ "NA"
-      ),
-      levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
-    )) %>% 
-    mutate(
-      time_days = as.integer(round(difftime(
-        Specimen.Collected.Date, 
-        start_date, 
-        units = "days"
-      )))
-    ) %>%
-    mutate(adj_time_days = scale(time_days, center = TRUE, scale = TRUE)) %>% 
-    select(
-      id = unique_num, 
-      posted_date = Specimen.Collected.Date, 
-      time_days,
-      adj_time_days,
-      test_result, 
-      age = Age,
-      sex,
-      race,
-      ethnicity = Ethnicity,
-      zip = Zip,
-    ) %>%
-    filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>% 
-    filter(!is.na(zip)) %>% 
-    filter(zip %in% zip_data_merged$zip) %>%
-    filter(test_result != "unknown") %>%
-    mutate(test_result = droplevels(test_result)) %>%
-    mutate(covid_positive = ifelse(test_result == "positive", 1, 0)) %>% 
-    filter(sex != "unknown") %>%
-    mutate(sex = droplevels(sex)) %>%
-    filter(!is.na(age) & age != 119) %>% 
-    mutate(age_group = factor(
-      cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
-      levels = age_labels
-    )) %>% 
-    mutate(decades_old = age / 10) %>%
-    group_by(id) %>%
-    arrange(posted_date) %>%
-    ungroup()
-      
-  
-  # Extract df of all observations with an id that has inconsistencies for the demographic variables (age, sex, race)
-  pcr_rep_id <- pcr_results_adjusted[(
-    duplicated(pcr_results_adjusted$id, fromLast=TRUE) | 
-    duplicated(pcr_results_adjusted$id)
-  ), ]
-  
-  pcr_rep_id2 <- pcr_rep_id %>%
-    group_by(id) %>% 
-    mutate(reasonable_ages = diff(range(age)) <= 1) %>%
-    mutate(identical_sex = n_distinct(sex) == 1) %>%
-    ungroup()
-  
-  pcr_inconsistent <- data.frame(
-    pcr_rep_id2[(!pcr_rep_id2$reasonable_ages | !pcr_rep_id2$identical_sex), ]
-  )
-  
-  pcr_results_consistent <- pcr_results_adjusted[!(pcr_results_adjusted$id %in% pcr_inconsistent$id), ]
-  
-  
-  # Need to keep all observations for a person up to and including their first positive
-  first_pos <- pcr_results_consistent %>%
-    filter(test_result == "positive") %>%
-    group_by(id) %>%
-    summarise(first_pos = min(posted_date))
-  
-  pcr_results_reduced <- left_join(pcr_results_consistent, first_pos, by = "id") %>%
-    mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
-    filter(posted_date <= first_pos) %>%
-    select(-first_pos) %>%
-    distinct()
+) 
 
+specified_race <- c(
+  "White", 
+  "Asian", 
+  "Black or African American", 
+  "American Indian or Alaska Native", 
+  "Native Hawaiian or Other Pacific Islander"
+)
+
+unspecified_race <- c(
+  "Multiple Races", 
+  "Other", 
+  "Unknown"
+)
+
+age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
+
+age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
+                "40-49","50-59","60-69","70-79","80+")
+
+
+pcr_results_adjusted <- pcr_results_original %>%
+  filter(!is.na(Resulted.Organism)) %>%
+  mutate(test_result = fct_collapse(
+    str_to_lower(Resulted.Organism),
+    negative = negative_test_synonyms,
+    positive = positive_test_synonyms,
+    unknown = other_test_synonyms
+  )) %>%
+  mutate(sex = fct_collapse(
+    str_to_lower(Sex),
+    male = "m",
+    female = "f",
+    unknown = c("d", "g", "i", "tf", "tm", "u")
+  )) %>%
+  mutate(Race = ifelse(is.na(Race), "Unknown", Race)) %>% 
+  mutate(Ethnicity = ifelse(is.na(Ethnicity), "Unknown", Ethnicity)) %>% 
+  mutate(race = factor(
+    case_when(
+      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[1]) ~ "white",
+      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[2]) ~ "asian",
+      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[3]) ~ "black",
+      (Ethnicity == "Hispanic or Latino") & (Race %in% unspecified_race) ~ "hispanic",
+      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[4]) ~ "native",
+      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[5]) ~ "islander",
+      ((Ethnicity != "Hispanic or Latino") & (Race %in% unspecified_race)) |
+        ((Ethnicity == "Hispanic or Latino") & (Race %in% specified_race))  ~ "unknown",
+      TRUE ~ "NA"
+    ),
+    levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
+  )) %>% 
+  mutate(
+    time_days = as.integer(round(difftime(
+      Specimen.Collected.Date, 
+      start_date, 
+      units = "days"
+    )))
+  ) %>%
+  mutate(adj_time_days = scale(time_days, center = TRUE, scale = TRUE)) %>% 
+  select(
+    id = unique_num, 
+    posted_date = Specimen.Collected.Date, 
+    time_days,
+    adj_time_days,
+    test_result, 
+    age = Age,
+    sex,
+    race,
+    ethnicity = Ethnicity,
+    zip = Zip,
+  ) %>%
+  filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>% 
+  filter(!is.na(zip)) %>% 
+  filter(zip %in% zip_data_merged$zip) %>%
+  filter(test_result != "unknown") %>%
+  mutate(test_result = droplevels(test_result)) %>%
+  mutate(covid_positive = ifelse(test_result == "positive", 1, 0)) %>% 
+  filter(sex != "unknown") %>%
+  mutate(sex = droplevels(sex)) %>%
+  filter(!is.na(age) & age != 119) %>% 
+  mutate(age_group = factor(
+    cut(age, breaks = age_breaks, labels = age_labels, right = FALSE),
+    levels = age_labels
+  )) %>% 
+  mutate(decades_old = age / 10) %>%
+  group_by(id) %>%
+  arrange(posted_date) %>%
+  ungroup()
+
+
+# Extract df of all observations with an id that has inconsistencies for the demographic variables (age, sex, race)
+pcr_rep_id <- pcr_results_adjusted[(
+  duplicated(pcr_results_adjusted$id, fromLast=TRUE) | 
+    duplicated(pcr_results_adjusted$id)
+), ]
+
+pcr_rep_id2 <- pcr_rep_id %>%
+  group_by(id) %>% 
+  mutate(reasonable_ages = diff(range(age)) <= 1) %>%
+  mutate(identical_sex = n_distinct(sex) == 1) %>%
+  ungroup()
+
+pcr_inconsistent <- data.frame(
+  pcr_rep_id2[(!pcr_rep_id2$reasonable_ages | !pcr_rep_id2$identical_sex), ]
+)
+
+pcr_results_consistent <- pcr_results_adjusted[!(pcr_results_adjusted$id %in% pcr_inconsistent$id), ]
+
+
+# Need to keep all observations for a person up to and including their first positive
+first_pos <- pcr_results_consistent %>%
+  filter(test_result == "positive") %>%
+  group_by(id) %>%
+  summarise(first_pos = min(posted_date))
+
+pcr_results_reduced <- left_join(pcr_results_consistent, first_pos, by = "id") %>%
+  mutate(first_pos = replace_na(first_pos, lubridate::ymd("9999-12-31"))) %>%
+  filter(posted_date <= first_pos) %>%
+  select(-first_pos) %>%
+  distinct()
+
+
+# Merge with zip code and hospital data
+usable_tests_wo_death <- pcr_results_reduced %>% 
+  left_join(y = zip_data_merged, by = "zip") %>% 
+  mutate(zip = factor(zip)) %>% 
+  left_join(y = hosp_data_merged, by = "posted_date")
   
-  # Merge with zip code and hospital data
-  usable_tests_wo_death <- pcr_results_reduced %>% 
-    left_join(y = zip_data_merged, by = "zip") %>% 
-    mutate(zip = factor(zip)) %>% 
-    left_join(y = hosp_data_merged, by = "posted_date")
   
-  
-  usable_tests_wo_death
-}
+
 
 
 
 # clean and match mortality data ------------------------------------------
+mortality_og <- read_csv(
+  here("data/mortality-data", "all-positive-tests-updated-2020-11-09.csv"),
+  col_types = cols(
+    .default = col_skip(),
+    Age = col_double(),
+    Gender = col_character(),
+    Ethnicity = col_character(),
+    Race = col_character(),
+    ReportedCity = col_character(),
+    Zip = col_double(),
+    SpCollDt = col_date(),
+    DeathDueCOVID = col_character(),
+    DtDeath = col_date(),
+    unique_num = col_character()
+  )
+) %>% 
+  mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
+  mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
 
 
-read_pos_pcr <- function(file_path) {
-  # Read in data --------------------------------------------------------------------
-  mortality_og <- read_csv(
-    file_path,
-    col_types = cols(
-      .default = col_skip(),
-      Age = col_double(),
-      Gender = col_character(),
-      Ethnicity = col_character(),
-      Race = col_character(),
-      ReportedCity = col_character(),
-      Zip = col_double(),
-      SpCollDt = col_date(),
-      DeathDueCOVID = col_character(),
-      DtDeath = col_date(),
-      unique_num = col_character()
-    )
-  ) %>% 
-    mutate(death_date = replace_na(DtDeath, ymd("9999/09/09"))) %>%
-    mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) 
+# if a person ever died of covid record it under each of their tests (and drop their repeated tests)
+ids_of_deaths <- mortality_og %>% 
+  filter(DeathDueCOVID == "y") %>% 
+  pull(unique_num)
 
-  
-  # if a person ever died of covid record it under each of their tests (and drop their repeated tests)
-  ids_of_deaths <- mortality_og %>% 
-    filter(DeathDueCOVID == "y") %>% 
-    pull(unique_num)
-  
-  mortality_cleaned <- mortality_og %>% 
-    mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
-    arrange(unique_num, SpCollDt) %>% 
-    filter(!duplicated(unique_num)) %>% 
-    select(id = unique_num, covid_death, death_date) 
-  
-  
-  neg_usable_tests <- usable_tests_wo_death %>% 
-    filter(covid_positive == 0) %>% 
-    mutate(covid_death = "no") %>% 
-    mutate(death_date = ymd("9999/09/09"))
-  
-  pos_usable_tests <- usable_tests_wo_death %>% 
-    filter(covid_positive == 1) %>% 
-    left_join(y = mortality_cleaned, by = "id")
-    
-  usable_tests <- rbind(pos_usable_tests, neg_usable_tests) %>% 
-    arrange(id, posted_date)
-  
-  
-  usable_cases <- all_pcr_with_deaths %>% 
-    filter(covid_positive == 1)
-  
-  
- 
-  
-  pos_results_merged <- merge(x = pos_results_adjusted, y = hos_bed_gov, by.x = "posted_date", by.y = "test_date")
-  
-  
+mortality_cleaned <- mortality_og %>% 
+  mutate(covid_death = ifelse(unique_num %in% ids_of_deaths, "yes", "no")) %>% 
+  arrange(unique_num, SpCollDt) %>% 
+  filter(!duplicated(unique_num)) %>% 
+  select(id = unique_num, covid_death) 
 
-}
+
+neg_usable_tests <- usable_tests_wo_death %>% 
+  filter(covid_positive == 0) %>% 
+  mutate(covid_death = "no") %>% 
+  mutate(death_date = ymd("9999/09/09"))
+
+pos_usable_tests <- usable_tests_wo_death %>% 
+  filter(covid_positive == 1) %>% 
+  left_join(y = mortality_cleaned, by = "id") %>% 
+  drop_na()
+
+usable_tests <- rbind(pos_usable_tests, neg_usable_tests) %>% 
+  arrange(id, posted_date)
+
+usable_cases <- usable_tests %>% 
+  filter(covid_positive == 1)
 
 
 
