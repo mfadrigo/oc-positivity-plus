@@ -4,8 +4,8 @@ library(lubridate)
 library(forcats)
 
 
-start_date <- "2020-03-01"
-end_date <- "2020-08-16"
+start_date <- "2020-01-22" # earliest testing date (what dates are these supposed to be???)
+end_date <- "2021-01-25" # last testing date (???)
 
 daniel_est_beds <- 4879
 oc_icu_avail_beds_earliest_val <- 131
@@ -237,7 +237,7 @@ age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
 age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                 "40-49","50-59","60-69","70-79","80+")
 
-unique(pcr_results_original$Ethnicity)
+unique(pcr_results_adjusted$Race)
 
 pcr_results_adjusted <- pcr_results_original %>%
   mutate(TestResult = fct_collapse(
