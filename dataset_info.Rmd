@@ -1,0 +1,56 @@
+---
+title: "Dataset Information"
+author: "Micah Fadrigo"
+date: "5/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+```
+
+## Test Positivity Data From PCR Tests
+
+```{r}
+# Read in data
+# insert path to dataset on local computer 
+pcr_data <- read_csv("/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/All PCR tests updated 1.26.21.csv")
+
+glimpse(pcr_data) # get to know variables
+head(pcr_data) # first 6 observations
+tail(pcr_data) # last 6 observations
+```
+
+__There are `r nrow(pcr_data)` observations and `r ncol(pcr_data)` variables in the dataset. Each observation represents an individual in Orange County who has taken a PCR Test.__
+
+```{r}
+pcr_data %>% 
+  arrange(ymd(pcr_data$Specimen.Collected.Date)) %>% 
+  head()
+```
+
+```{r}
+pcr_data %>% 
+  arrange(ymd(pcr_data$Specimen.Collected.Date)) %>% 
+  tail(1)
+```
+
+## Mortality Data
+
+```{r}
+# Read in data
+# insert path to dataset on local computer 
+mortality_data <- read_csv("/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/1.26.21 release to UCI team.csv")
+
+glimpse(mortality_data) # get to know variables
+head(mortality_data) # first 6 observations
+tail(mortality_data) # last 6 observations
+```
+
+__There are `r nrow(mortality_data)` observations and `r ncol(mortality_data)` variables in the dataset. Each observation represents an individual in Orange County who has taken a PCR Test that tested positive for COVID-19.__
