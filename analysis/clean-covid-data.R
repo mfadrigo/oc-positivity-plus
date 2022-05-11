@@ -16,6 +16,8 @@ oc_icu_full_beds_earliest_val <- 71
 
 # Combine zip code data ---------------------------------------------------
 ## General zip code data
+
+# ZIP, NAME, AREAKM
 zip_data_merged <- read_csv( # area
   here("data/zip-code-data", "zip-area2.csv"),
   col_types = cols(
@@ -27,7 +29,7 @@ zip_data_merged <- read_csv( # area
 ) %>%
   select(name = NAME, zip = Zip, area_km = AreaKm)
 
-
+# ZIP, POPULATION -> NAME, AREAKM + (POP_DENSITY, ADJ_POP_DENSITY)
 zip_data_merged <- read_csv( # population
   here("data/zip-code-data", "zip-pop.csv"),
   col_types = cols(
@@ -37,14 +39,18 @@ zip_data_merged <- read_csv( # population
   )
 ) %>%
   drop_na() %>%
-  mutate(population = Population / 1000) %>%
+  mutate(population = Population / 1000) %>% # population -> 1 unit = 1000 individuals
   select(zip = Zip, population) %>% 
   right_join(y =  zip_data_merged, by = "zip") %>% 
   mutate(pop_density = population / area_km) %>% 
   mutate(adj_pop_density = scale(pop_density , center = TRUE, scale = TRUE))
 
+# scale(x, center = TRUE, scale = TRUE) means subtracting column means of x from 
+# their corresponding columns THEN dividing columns of x by their standard deviations
 
 
+# ZIP, MED_INCOME -> POPULATION, NAME, AREAKM, POP_DENSITY, ADJ_POP_DENSITY 
+  # + (ADJ_MED_INCOME)
 zip_data_merged <- read_csv( # income
   here("data/zip-code-data", "income-by-zip2.csv"),
   col_types = cols(
@@ -59,6 +65,7 @@ zip_data_merged <- read_csv( # income
   select(zip = Zip, med_income) %>% 
   full_join(y =  zip_data_merged, by = "zip") %>% 
   mutate(adj_med_income = scale(med_income, center = TRUE, scale = TRUE))
+
 
 
 zip_data_merged <- read_csv( # education
@@ -119,177 +126,97 @@ zip_data_merged <- read_csv( # house crowding
   full_join(y =  zip_data_merged, by = "zip")
 
 
-## OC Hospital data by date
-hos_bed_gov <- read_csv(
-  here("data/zip-code-data", "covid19hospitalbycounty.csv"),
-  na = c("", " "),
-  col_types = cols(
-    .default = col_skip(),
-    county = col_character(),
-    todays_date = col_date("%Y-%m-%d"),
-    hospitalized_covid_patients = col_double(),
-    all_hospital_beds = col_double(),
-    icu_covid_confirmed_patients = col_double(),
-    icu_suspected_covid_patients = col_double(),
-    icu_available_beds = col_double()
-  )
-) %>% 
-  filter(county == "Orange") 
-
-
-first_date <- sort(hos_bed_gov$todays_date)[1]
-
-if(month(start_date) == month(first_date) & day(start_date) < day(first_date)) {
-  dates_missing <- seq(as.Date(start_date), first_date, by = "days")
-  dates_missing <- dates_missing[-length(dates_missing)]
-  num_dm <- length(dates_missing)
-  missing_rows <- data.frame(
-    rep("Orange", num_dm), 
-    dates_missing, 
-    rep(NA, num_dm), 
-    rep(NA, num_dm), 
-    rep(NA, num_dm),
-    rep(NA, num_dm),
-    rep(NA, num_dm)
-  )
-  colnames(missing_rows) <- colnames(hos_bed_gov)
-  hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
-} else {
-  print("Error: fix hospital data dates")
-}
-
-# Beds were not recorded before 2020-04-20. To fill in missing:
-# For ICU available beds the earliest value is used
-# For percent of beds not used by COVID-19 patients the earliest value was used
-hosp_data_merged <- hos_bed_gov %>% 
-  mutate(avail_icu_beds = ifelse(
-    is.na(icu_available_beds), 
-    oc_icu_avail_beds_earliest_val,
-    icu_available_beds
-  )) %>% 
-  mutate(perc_avail_beds = ifelse(
-    is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
-    100 * (1 - oc_hos_covid_pateients_earliest_val / oc_all_hos_bed_earliest_val),
-    100 * (1 - hospitalized_covid_patients / all_hospital_beds)
-  )) %>% 
-  mutate(covid_icu_beds = ifelse(
-    is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
-    oc_icu_full_beds_earliest_val,
-    icu_covid_confirmed_patients + icu_suspected_covid_patients
-  )) %>% 
-  select(
-    posted_date = todays_date,
-    avail_icu_beds,
-    perc_avail_beds,
-    covid_icu_beds
-  ) %>% 
-  mutate(adj_perc_avail_beds = scale(perc_avail_beds, center = TRUE, scale = TRUE)) %>% 
-  mutate(adj_avail_icu_beds = scale(avail_icu_beds, center = TRUE, scale = TRUE)) %>% 
-  mutate(adj_covid_icu_beds = scale(covid_icu_beds, center = TRUE, scale = TRUE)) 
+# ## OC Hospital data by date
+# hos_bed_gov <- read_csv(
+#   here("data/zip-code-data", "covid19hospitalbycounty.csv"),
+#   na = c("", " "),
+#   col_types = cols(
+#     .default = col_skip(),
+#     county = col_character(),
+#     todays_date = col_date("%Y-%m-%d"),
+#     hospitalized_covid_patients = col_double(),
+#     all_hospital_beds = col_double(),
+#     icu_covid_confirmed_patients = col_double(),
+#     icu_suspected_covid_patients = col_double(),
+#     icu_available_beds = col_double()
+#   )
+# ) %>% 
+#   filter(county == "Orange") 
+# 
+# 
+# first_date <- sort(hos_bed_gov$todays_date)[1]
+# 
+# if(month(start_date) == month(first_date) & day(start_date) < day(first_date)) {
+#   dates_missing <- seq(as.Date(start_date), first_date, by = "days")
+#   dates_missing <- dates_missing[-length(dates_missing)]
+#   num_dm <- length(dates_missing)
+#   missing_rows <- data.frame(
+#     rep("Orange", num_dm), 
+#     dates_missing, 
+#     rep(NA, num_dm), 
+#     rep(NA, num_dm), 
+#     rep(NA, num_dm),
+#     rep(NA, num_dm),
+#     rep(NA, num_dm)
+#   )
+#   colnames(missing_rows) <- colnames(hos_bed_gov)
+#   hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
+# } else {
+#   print("Error: fix hospital data dates")
+# }
+# 
+# # Beds were not recorded before 2020-04-20. To fill in missing:
+# # For ICU available beds the earliest value is used
+# # For percent of beds not used by COVID-19 patients the earliest value was used
+# hosp_data_merged <- hos_bed_gov %>% 
+#   mutate(avail_icu_beds = ifelse(
+#     is.na(icu_available_beds), 
+#     oc_icu_avail_beds_earliest_val,
+#     icu_available_beds
+#   )) %>% 
+#   mutate(perc_avail_beds = ifelse(
+#     is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
+#     100 * (1 - oc_hos_covid_pateients_earliest_val / oc_all_hos_bed_earliest_val),
+#     100 * (1 - hospitalized_covid_patients / all_hospital_beds)
+#   )) %>% 
+#   mutate(covid_icu_beds = ifelse(
+#     is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
+#     oc_icu_full_beds_earliest_val,
+#     icu_covid_confirmed_patients + icu_suspected_covid_patients
+#   )) %>% 
+#   select(
+#     posted_date = todays_date,
+#     avail_icu_beds,
+#     perc_avail_beds,
+#     covid_icu_beds
+#   ) %>% 
+#   mutate(adj_perc_avail_beds = scale(perc_avail_beds, center = TRUE, scale = TRUE)) %>% 
+#   mutate(adj_avail_icu_beds = scale(avail_icu_beds, center = TRUE, scale = TRUE)) %>% 
+#   mutate(adj_covid_icu_beds = scale(covid_icu_beds, center = TRUE, scale = TRUE)) 
 
 
 
 # Clean all test data ----------------------------------------------------
 ## All test categorizations
-negative_test_synonyms <- c(
-  "not detected",
-  "negative",
-  "coronavirus 2019 novel not detected",
-  "negative (qualifier value)",
-  "not detected (qualifier value)",
-  "sars cov-2 negative",
-  "undetected",
-  "inst_negative",
-  "neg-see report",
-  "sars-cov-2 rna not detected by naa",
-  "none detected", 
-  "not detected in pooled specimen"
-)
-
-positive_test_synonyms <- c(
-  "detected",
-  "coronavirus 2019 novel positive",
-  "positive",
-  "positive (qualifier value)",
-  "sars cov-2 positive",
-  "detected (qualifier value)",
-  "presumptive pos",
-  "positive for 2019-ncov",
-  "presumptive positive",
-  "coronavirus 2019 novel presumptive pos",
-  "coronavirus 2019 novel detected",
-  "yes",
-  "coronavirus 2019 novel",
-  "presumptive positive for 2019-ncov",
-  "sars cov-2 presumptive pos",
-  "presumptive pos. for 2019-ncov",
-  "presumptive positive (qualifier value)",
-  "presumptive detected",
-  "reactive",
-  "sars-cov-2",
-  "not detected in pooled specimen (qualifier value)"
-)
-
-other_test_synonyms <- c(
-  "unknown",
-  "inconclusive",
-  "indeterminate",
-  "specimen unsatisfactory",
-  "invalid",
-  "test not performed",
-  "not provided (qualifier value)",
-  "see comment",
-  "tnp",
-  "coronavirus 2019 novel inconclusive",
-  "not tested",
-  "phoned results (and readback confirmed) to:",
-  "see note",
-  "clotted",
-  "coronavirus 2019 novel unsatisfactory",
-  "equivocal",
-  "non reactive",
-  "result comments",
-  "sars cov-2 inconclusive",
-  "test not done",
-  "test not perf",
-  "not pregnant",
-  "biofiresarsneg",
-  "equivocal result",
-  "coronavirus 2019 novel inconcluside",
-  "unsatisfactory",
-  "undefined",
-  "*corrected report* by",
-  "specimen unsatifactory for evaluation",
-  "warning....please disregard results.",
-  "presumptive result to be confirmed",
-  "indeterminate (qualifier value)", 
-  "invalid result", 
-  "specimen unsatisfactory for evaluation",
-  "acinetobacter baumannii (organism)",
-  "carbapenem resistant pseudomonas aeruginosa",
-  "enterobacter cloacae complex (organism)",
-  "enterococcus faecalis",
-  "genus enterococcus",
-  "interpretive information: 2019 novel coronavirus sars-cov-2 by pcr",
-  "multiple drug-resistant serratia marcescens",
-  "specimen received mislabeled"
-)
-
 
 pcr_results_original <- read_csv(
-  here("data/positivity-data", "all-elr-pcr-tests-updated-2020-11-09.csv"),
+  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/All PCR tests updated 1.26.21.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_integer(),
     Sex = col_character(),
     Ethnicity = col_character(),
     Race = col_character(),
-    Specimen.Collected.Date = col_date("%m-%d-%Y"),
-    Resulted.Organism = col_character(),
+    Specimen.Collected.Date = col_date("%Y-%m-%d"),
+    TestResult = col_character(),
     Zip = col_character(),
     unique_num = col_character()
   )
 ) 
+
+pcr_results_original <- pcr_results_original %>% 
+  mutate(Specimen.Collected.Date = format(pcr_results_original$Specimen.Collected.Date, "%m-%d-%Y"))
+
 
 specified_race <- c(
   "White", 
