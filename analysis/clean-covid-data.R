@@ -237,14 +237,14 @@ age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
 age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                 "40-49","50-59","60-69","70-79","80+")
 
+unique(pcr_results_original$Ethnicity)
 
 pcr_results_adjusted <- pcr_results_original %>%
-  filter(!is.na(Resulted.Organism)) %>%
-  mutate(test_result = fct_collapse(
-    str_to_lower(Resulted.Organism),
-    negative = negative_test_synonyms,
-    positive = positive_test_synonyms,
-    unknown = other_test_synonyms
+  mutate(TestResult = fct_collapse(
+    str_to_lower(TestResult),
+    negative = "negative",
+    positive = "positive",
+    unknown = c("inconclusive", "invalid")
   )) %>%
   mutate(sex = fct_collapse(
     str_to_lower(Sex),
@@ -256,15 +256,15 @@ pcr_results_adjusted <- pcr_results_original %>%
   mutate(Ethnicity = ifelse(is.na(Ethnicity), "Unknown", Ethnicity)) %>% 
   mutate(race = factor(
     case_when(
-      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[1]) ~ "white",
-      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[2]) ~ "asian",
-      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[3]) ~ "black",
+      (Ethnicity == "Not Hispanic or Latino") & (Race == specified_race[1]) ~ "white",
+      (Ethnicity == "Not Hispanic or Latino") & (Race == specified_race[2]) ~ "asian",
+      (Ethnicity == "Not Hispanic or Latino") & (Race == specified_race[3]) ~ "black",
       (Ethnicity == "Hispanic or Latino") & (Race %in% unspecified_race) ~ "hispanic",
-      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[4]) ~ "native",
-      (Ethnicity != "Hispanic or Latino") & (Race == specified_race[5]) ~ "islander",
-      ((Ethnicity != "Hispanic or Latino") & (Race %in% unspecified_race)) |
+      (Ethnicity == "Not Hispanic or Latino") & (Race == specified_race[4]) ~ "native",
+      (Ethnicity == "Not Hispanic or Latino") & (Race == specified_race[5]) ~ "islander",
+      ((Ethnicity == "Not Hispanic or Latino") & (Race %in% unspecified_race)) |
         ((Ethnicity == "Hispanic or Latino") & (Race %in% specified_race))  ~ "unknown",
-      TRUE ~ "NA"
+      TRUE ~ "NA" # when both ethnicity and race are unknown
     ),
     levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
   )) %>% 
