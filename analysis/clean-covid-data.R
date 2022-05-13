@@ -4,14 +4,16 @@ library(lubridate)
 library(forcats)
 
 
-start_date <- "2020-01-22" # earliest testing date (what dates are these supposed to be???)
-end_date <- "2021-01-25" # last testing date (???)
+start_date <- as.Date(strptime(as.factor("01-22-2020"), format = "%m-%d-%Y"), format = "%m-%d-%Y")  # earliest testing date (what dates are these supposed to be???)
+end_date <- as.Date(strptime(as.factor("2021-01-25"), format = "%Y-%m-%d")) # last testing date (???)
 
-daniel_est_beds <- 4879
-oc_icu_avail_beds_earliest_val <- 131
-oc_hos_covid_pateients_earliest_val <- 308
-oc_all_hos_bed_earliest_val <- 4213
-oc_icu_full_beds_earliest_val <- 71
+# Hospital Bed Data 
+
+# daniel_est_beds <- 4879
+# oc_icu_avail_beds_earliest_val <- 131
+# oc_hos_covid_pateients_earliest_val <- 308
+# oc_all_hos_bed_earliest_val <- 4213
+# oc_icu_full_beds_earliest_val <- 71
 
 
 # Combine zip code data ---------------------------------------------------
@@ -214,8 +216,8 @@ pcr_results_original <- read_csv(
   )
 ) 
 
-pcr_results_original <- pcr_results_original %>% 
-  mutate(Specimen.Collected.Date = format(pcr_results_original$Specimen.Collected.Date, "%m-%d-%Y"))
+# pcr_results_original <- pcr_results_original %>% 
+#   mutate(Specimen.Collected.Date = format(pcr_results_original$Specimen.Collected.Date, "%m-%d-%Y"))
 
 
 specified_race <- c(
@@ -237,10 +239,8 @@ age_breaks <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 200)
 age_labels <- c("0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
                 "40-49","50-59","60-69","70-79","80+")
 
-unique(pcr_results_adjusted$Race)
-
 pcr_results_adjusted <- pcr_results_original %>%
-  mutate(TestResult = fct_collapse(
+  mutate(test_result = fct_collapse(
     str_to_lower(TestResult),
     negative = "negative",
     positive = "positive",
@@ -277,16 +277,16 @@ pcr_results_adjusted <- pcr_results_original %>%
   ) %>%
   mutate(adj_time_days = scale(time_days, center = TRUE, scale = TRUE)) %>% 
   select(
-    id = unique_num, 
-    posted_date = Specimen.Collected.Date, 
-    time_days,
-    adj_time_days,
-    test_result, 
-    age = Age,
-    sex,
-    race,
-    ethnicity = Ethnicity,
-    zip = Zip,
+    id = unique_num, # not adjusted since original version
+    posted_date = Specimen.Collected.Date,  # not adjusted since original version
+    time_days, # new variable: time of specimen collection since first testing date (???)
+    adj_time_days, # new variable: scaled version of time_days variable
+    test_result, # adjusted previously from original version
+    age = Age, # not adjusted since original version
+    sex, # adjusted previously from original version
+    race, # adjusted previously from original version
+    ethnicity = Ethnicity, # not adjusted since original version
+    zip = Zip, # not adjusted since original version
   ) %>%
   filter((posted_date >= ymd(start_date)) & (posted_date <= ymd(end_date))) %>% 
   filter(!is.na(zip)) %>% 
