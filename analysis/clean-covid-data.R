@@ -112,20 +112,20 @@ zip_data_merged <- read_csv( # insurance
     )))
 
 
-zip_data_merged <- read_csv( # house crowding
-  here("data/zip-code-data", "house-crowding.csv"),
-  col_types = cols(
-    .default = col_skip(),
-    Location = col_character(),
-    `Indicator Rate Value` = col_double(),
-    `Period of Measure` = col_character(),
-    `Breakout Subcategory` = col_character()
-  )
-) %>% 
-  filter(`Period of Measure` == "2015-2019") %>% 
-  filter(`Breakout Subcategory` == "Owners") %>% 
-  select(zip = Location, house_crowding = `Indicator Rate Value`) %>% 
-  full_join(y =  zip_data_merged, by = "zip")
+# zip_data_merged <- read_csv( # house crowding
+#   here("data/zip-code-data", "house-crowding.csv"),
+#   col_types = cols(
+#     .default = col_skip(),
+#     Location = col_character(),
+#     `Indicator Rate Value` = col_double(),
+#     `Period of Measure` = col_character(),
+#     `Breakout Subcategory` = col_character()
+#   )
+# ) %>% 
+#   filter(`Period of Measure` == "2015-2019") %>% 
+#   filter(`Breakout Subcategory` == "Owners") %>% 
+#   select(zip = Location, house_crowding = `Indicator Rate Value`) %>% 
+#   full_join(y =  zip_data_merged, by = "zip")
 
 
 # ## OC Hospital data by date
@@ -353,11 +353,11 @@ pcr_results_reduced <- pcr_results_reduced %>%
 
 
 
-# Merge with zip code and hospital data
-usable_tests <- pcr_results_reduced %>% 
-  left_join(y = zip_data_merged, by = "zip") %>% 
-  mutate(zip = factor(zip)) %>% 
-  left_join(y = hosp_data_merged, by = "posted_date")
+# # Merge with zip code and hospital data
+# usable_tests <- pcr_results_reduced %>% 
+#   left_join(y = zip_data_merged, by = "zip") %>% 
+#   mutate(zip = factor(zip)) %>% 
+#   left_join(y = hosp_data_merged, by = "posted_date")
 
 
 
@@ -366,7 +366,7 @@ usable_tests <- pcr_results_reduced %>%
 
 # clean and match cases/mortality data ------------------------------------------
 mortality_og <- read_csv(
-  here("data/mortality-data", "all-positive-tests-updated-2020-11-09.csv"),
+  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/1.26.21 release to UCI team.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_double(),
@@ -383,7 +383,7 @@ mortality_og <- read_csv(
 ) 
 
 mortality_cleaned <-  mortality_og %>% 
-  mutate(death_date = replace_na(DtDeath, ymd("2020-03-01"))) %>%
+  mutate(death_date = replace_na(DtDeath, ymd("2020-01-22"))) %>%
   mutate(DeathDueCOVID = ifelse(is.na(DeathDueCOVID), "n", "y")) %>%
   filter(death_date >= as.Date(start_date) & death_date <= as.Date(end_date)) %>% 
   filter(SpCollDt >= as.Date(start_date) & SpCollDt <= as.Date(end_date)) %>% 
@@ -454,117 +454,16 @@ mortality_reduced <- mortality_cleaned %>%
   arrange(id, posted_date)
 
 mortality_merged <- mortality_reduced  %>% 
-  left_join(y = zip_data_merged, by = "zip") %>% 
-  left_join(y = hosp_data_merged, by = "posted_date")
+  left_join(y = zip_data_merged, by = "zip") 
 
+# %>% 
+#   left_join(y = hosp_data_merged, by = "posted_date")
+
+# 
 usable_cases <- mortality_merged
-
-
-
-# clean seropositivity data -----------------------------------------------
-sero_results_original <- read_csv(
-  here("data/seroprevelance-data", "oc-seroprevelance-data-2020-08-01.csv"),
-  col_types = cols(
-    .default = col_skip(),
-    E4 = col_integer(),
-    DV_PANEL = col_character(),
-    DV_IMPORT_TEST_RESULTresult = col_character(),
-    Q1 = col_integer(),
-    Q2 = col_integer(),
-    Q3 = col_character(),
-    Q6r1 = col_integer(),
-    Q6r2 = col_integer(),
-    Q6r3 = col_integer(),
-    Q6r4 = col_integer(),
-    Q6r5 = col_integer(),
-    Q6r6 = col_integer(),
-    Q6r7 = col_integer(),
-    Q6r8 = col_integer(),
-    Q7 = col_integer()
-  ) 
-)
-
-
-sero_results_adjusted <- sero_results_original %>% 
-  filter(E4 == 1) %>% # Only individuals who had a blood test completed
-  filter(DV_PANEL != 7) %>%  # Only individuals who are not home recruits
-  filter(
-    DV_IMPORT_TEST_RESULTresult == "Reactive" |
-      DV_IMPORT_TEST_RESULTresult == "Non-Reactive"
-  ) %>% 
-  mutate(covid_pos = factor(
-    DV_IMPORT_TEST_RESULTresult,
-    levels = c("Non-Reactive", "Reactive"),
-    labels = c("no", "yes")
-  )) %>% 
-  mutate(age_grp = factor(
-    case_when(
-      Q2 == 2 ~ "18-24",
-      Q2 == 3 ~ "25-29",
-      Q2 == 4 ~ "30-34",
-      Q2 == 5 ~ "35-39",
-      Q2 == 6 | Q2 == 7 ~ "40-49",
-      Q2 == 8 | Q2 == 9 ~ "50-59",
-      Q2 == 10 | Q2 == 11 ~ "60-69",
-      Q2 == 12 | Q2 == 13 ~ "70-79",
-      Q2 == 14 | Q2 == 15 ~ "80+"
-    ),
-    levels = c(
-      "18-24", "25-29", "30-34", "35-39", "40-49", "50-59", "60-69", "70-79", "80+"
-    )
-  )) %>% 
-  filter(Q1 == 1 | Q1 == 2) %>% 
-  mutate(sex = factor(
-    Q1,
-    levels = c(2, 1),
-    labels = c("female", "male")
-  )) %>% 
-  mutate(race = factor(
-    case_when(
-      ((Q6r1 == 1) & (Q6r2 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "white",
-      ((Q6r2 == 2) & (Q6r1 + Q6r3 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "black",
-      ((Q6r3 == 3) & (Q6r1 + Q6r2 + Q6r4 + Q6r5 + Q6r6 == 0)) ~ "hispanic",
-      ((Q6r4 == 4) & (Q6r1 + Q6r2 + Q6r3 + Q6r5 + Q6r6 == 0)) ~ "native",
-      ((Q6r5 == 5) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r6 == 0)) ~ "asian",
-      ((Q6r6 == 6) & (Q6r1 + Q6r2 + Q6r3 + Q6r4 + Q6r5 == 0)) ~ "islander",
-      TRUE ~ "unknown"
-    ),
-    levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
-  )) %>% 
-  select(
-    zip = Q3,
-    covid_pos,
-    age_grp,
-    sex,
-    race
-  ) %>% 
-  filter(race != "native") %>% 
-  mutate(race = droplevels(race, exclude = "native")) %>% 
-  filter(zip %in% zip_data_merged$zip)
-
-
-# Tabulate cumulative number of cases in each zip code
-cases_in_zip <- usable_cases %>% 
-  mutate(zip = as.character(zip)) %>% 
-  group_by(zip) %>% 
-  summarise(num_cases_in_zip = n()) %>% 
-  left_join(y = zip_data_merged, by = "zip") %>% 
-  mutate(perc_zip_covid_pos = 1000 * num_cases_in_zip/(population * 1000)) # 10% and unscale population
-
-
-
-sero_results_merged <- sero_results_adjusted %>% 
-  left_join(y = cases_in_zip, by = "zip") %>% 
-  mutate(zip = factor(zip))
-
-
-
-
 
 
 # save cleaned data -------------------------------------------------------
 save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata"))
 
 save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
-
-save(sero_results_merged, file = here("data/cleaned-data", "sero_results_merged.Rdata"))
