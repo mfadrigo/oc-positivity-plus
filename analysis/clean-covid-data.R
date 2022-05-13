@@ -353,14 +353,13 @@ pcr_results_reduced <- pcr_results_reduced %>%
 
 
 
-# # Merge with zip code and hospital data
-# usable_tests <- pcr_results_reduced %>% 
-#   left_join(y = zip_data_merged, by = "zip") %>% 
-#   mutate(zip = factor(zip)) %>% 
+# Merge with zip code (and hospital data?)
+usable_tests <- pcr_results_reduced %>%
+  left_join(y = zip_data_merged, by = "zip") %>%
+  mutate(zip = factor(zip)) 
+
+# %>%
 #   left_join(y = hosp_data_merged, by = "posted_date")
-
-
-
 
 
 
@@ -453,6 +452,8 @@ mortality_reduced <- mortality_cleaned %>%
   filter(!is.na(age) & age != 119) %>% 
   arrange(id, posted_date)
 
+
+# Merge with zip code (and hospital data?)
 mortality_merged <- mortality_reduced  %>% 
   left_join(y = zip_data_merged, by = "zip") 
 
@@ -464,6 +465,6 @@ usable_cases <- mortality_merged
 
 
 # save cleaned data -------------------------------------------------------
-save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata"))
+save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata")) # test data
 
-save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata"))
+save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata")) # mortality data
