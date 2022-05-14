@@ -442,7 +442,7 @@ ids_of_deaths <- mortality_cleaned %>%
 
 mortality_reduced <- mortality_cleaned %>%
   mutate(covid_death = ifelse(id %in% ids_of_deaths, "yes", "no")) %>%
-  mutate(death_due_to_covid = ifelse(covid_death == "y", 1, 0)) %>% 
+  mutate(death_due_to_covid = ifelse(covid_death == "yes", 1, 0)) %>% # bug fix from "y" to "yes"
   filter(!is.na(zip)) %>% 
   filter(zip %in% zip_data_merged$zip) %>%
   arrange(id, posted_date) %>%
@@ -461,6 +461,7 @@ mortality_merged <- mortality_reduced  %>%
 #   left_join(y = hosp_data_merged, by = "posted_date")
 
 # 
+
 usable_cases <- mortality_merged
 
 
@@ -468,3 +469,4 @@ usable_cases <- mortality_merged
 save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata")) # test data
 
 save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata")) # mortality data
+
