@@ -17,12 +17,15 @@ library(dplyr)
 
 ## Test Positivity Data From PCR Tests
 
+For this project our team used two separate COVID-19 datasets in order to test mortality and positivity in 
+
 ```{r}
 # Read in data
 # insert path to dataset on local computer 
-pcr_data <- read_csv("/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/All PCR tests updated 1.26.21.csv")
+pcr_data <- read_csv("/Users/Christie1/Desktop/COVID Project/All PCR tests updated 1.26.21.csv")
 
 glimpse(pcr_data) # get to know variables
+dim(pcr_data)
 head(pcr_data) # first 6 observations
 tail(pcr_data) # last 6 observations
 ```
@@ -46,11 +49,40 @@ pcr_data %>%
 ```{r}
 # Read in data
 # insert path to dataset on local computer 
-mortality_data <- read_csv("/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/1.26.21 release to UCI team.csv")
+mortality_data <- read_csv("/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv")
 
 glimpse(mortality_data) # get to know variables
 head(mortality_data) # first 6 observations
 tail(mortality_data) # last 6 observations
+
+usable_cases %>% 
+  filter(death_due_to_covid == 1) %>% 
+  nrow()
+
+usable_cases %>% 
+  filter(death_due_to_covid == 0) %>% 
+  nrow()
 ```
 
 __There are `r nrow(mortality_data)` observations and `r ncol(mortality_data)` variables in the dataset. Each observation represents an individual in Orange County who has taken a PCR Test that tested positive for COVID-19.__
+
+## Data Visualizations
+
+```{r}
+## Positivity Visualization based on month
+usable_tests %>% 
+  filter(covid_positive==1) %>% 
+  group_by(month = month(posted_date)) %>% 
+  summarise(covid_positive_2 = n()) %>% 
+  ggplot(aes(x = month, y = covid_positive_2))  +
+  geom_line(size = 0.5, color = "#0072B2") + 
+  geom_point(color = "white", fill = "#0072B2", shape = 21, size = 3) +
+  scale_y_continuous( name = "COVID positive cases")+ 
+  scale_x_continuous( name = "Month", 
+                      breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) + 
+  labs(title = "COVID Positive Cases in 2020")
+  
+```
+
+
+
