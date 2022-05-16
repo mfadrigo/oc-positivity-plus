@@ -1,0 +1,28 @@
+---
+title: "Mortality Modeling"
+author: "Christie Yang"
+date: "5/16/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+mortality_data <- read_csv("/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv")
+```
+
+## Mortality Dataset Logistic Regression Model
+
+```{r cars}
+fit0 <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days,
+    family = binomial, 
+    data = usable_cases
+    )
+summary(fit0)
+```
