@@ -10,13 +10,28 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(dplyr)
-mortality_data <- read_csv("/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv")
+
+# Mortality Data
+load(here("data/cleaned-data", "usable_cases.Rdata"))
+glimpse(usable_cases)
+
+require(ggplot2)
+require(reshape2)
+require(lme4)
+require(compiler)
+require(parallel)
+require(boot)
+require(lattice)
 ```
 
 ## Mortality Dataset Logistic Regression Model
 
+- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models. 
+
 ```{r cars}
-fit0 <- glm(
+# MODEL 0: without random intercept (and hospital bed data)
+
+model_0 <- glm(
     formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -24,5 +39,26 @@ fit0 <- glm(
     family = binomial, 
     data = usable_cases
     )
-summary(fit0)
+
+
+print(summary(model_0))
+print(BIC(model_0))
 ```
+
+```{r}
+# MODEL 1: with random intercept (without hospital bed data)
+
+model_1 <- glmer(
+    formula = death_due_to_covid  ~ decades_old + gender + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + (1|id),
+    family = binomial, 
+    data = usable_cases
+    )
+
+
+print(summary(model_1))
+print(BIC(model_1))
+```
+
