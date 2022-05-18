@@ -77,11 +77,8 @@ usable_tests %>%
   ggplot(aes(x = month, y = covid_positive_2))  +
   geom_line(size = 0.5, color = "#0072B2") + 
   geom_point(color = "white", fill = "#0072B2", shape = 21, size = 3) +
-  scale_y_continuous( name = "COVID positive cases")+ 
-  scale_x_continuous( name = "Month", 
-                      breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) + 
-  labs(title = "COVID Positive Cases in 2020")
-  
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) + 
+  labs(title = "COVID-19 Positive Cases in 2020", x = "Month", y="Positive Tests")
 ```
 
 
