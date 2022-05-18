@@ -1,6 +1,6 @@
 ---
 title: "Dataset Information"
-author: "Micah Fadrigo"
+author: "Micah Fadrigo, Christie Yang"
 date: "5/9/2022"
 output: html_document
 ---
@@ -13,73 +13,284 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(lubridate)
 library(dplyr)
+library(here)
+library(forcats)
+library(corrplot)
+library(reshape2)
 ```
 
 ## Test Positivity Data From PCR Tests
 
-For this project our team used two separate COVID-19 datasets in order to test mortality and positivity in 
-
 ```{r}
-# Read in data
-# insert path to dataset on local computer 
-pcr_data <- read_csv("/Users/Christie1/Desktop/COVID Project/All PCR tests updated 1.26.21.csv")
-
-glimpse(pcr_data) # get to know variables
-dim(pcr_data)
-head(pcr_data) # first 6 observations
-tail(pcr_data) # last 6 observations
+# Test Positivity Data
+load(here("data/cleaned-data", "usable_tests.Rdata"))
 ```
 
-__There are `r nrow(pcr_data)` observations and `r ncol(pcr_data)` variables in the dataset. Each observation represents an individual in Orange County who has taken a PCR Test.__
+
+### Exploratory Data Analysis
 
 ```{r}
-pcr_data %>% 
-  arrange(ymd(pcr_data$Specimen.Collected.Date)) %>% 
-  head()
+## Positivity Visualization based on month
+
+usable_tests %>%
+  filter(covid_positive==1) %>%
+  group_by(month = month(posted_date)) %>%
+  summarise(covid_positive_2 = n()) %>%
+  ggplot(aes(x = month, y = covid_positive_2))  +
+  geom_line(size = 0.5, color = "#0072B2") +
+  geom_point(color = "white", fill = "#0072B2", shape = 21, size = 3) +
+  scale_y_continuous( name = "COVID-19 Positive Cases")+
+  scale_x_continuous( name = "Month",
+                      breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) +
+  labs(title = "COVID-19 Positive Cases in 2020")
+
 ```
 
-```{r}
-pcr_data %>% 
-  arrange(ymd(pcr_data$Specimen.Collected.Date)) %>% 
-  tail(1)
-```
 
 ## Mortality Data
 
 ```{r}
-# Read in data
-# insert path to dataset on local computer 
-mortality_data <- read_csv("/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv")
-
-glimpse(mortality_data) # get to know variables
-head(mortality_data) # first 6 observations
-tail(mortality_data) # last 6 observations
-
-usable_cases %>% 
-  filter(death_due_to_covid == 1) %>% 
-  nrow()
-
-usable_cases %>% 
-  filter(death_due_to_covid == 0) %>% 
-  nrow()
+# Mortality Data
+load(here("data/cleaned-data", "usable_cases.Rdata"))
 ```
 
-__There are `r nrow(mortality_data)` observations and `r ncol(mortality_data)` variables in the dataset. Each observation represents an individual in Orange County who has taken a PCR Test that tested positive for COVID-19.__
-
-## Data Visualizations
+### Exploratory Data Analysis
 
 ```{r}
-## Positivity Visualization based on month
-usable_tests %>% 
-  filter(covid_positive==1) %>% 
-  group_by(month = month(posted_date)) %>% 
-  summarise(covid_positive_2 = n()) %>% 
-  ggplot(aes(x = month, y = covid_positive_2))  +
-  geom_line(size = 0.5, color = "#0072B2") + 
-  geom_point(color = "white", fill = "#0072B2", shape = 21, size = 3) +
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) + 
-  labs(title = "COVID-19 Positive Cases in 2020", x = "Month", y="Positive Tests")
+usable_cases <- usable_cases %>% 
+  mutate(zip = factor(zip),
+         death_due_to_covid = factor(death_due_to_covid)) 
 ```
 
+#### Demographic Variables
+
+##### Gender
+__Does mortality differ across genders?__ 
+
+```{r}
+usable_cases %>% 
+  ggplot(aes(x = gender,
+             fill = death_due_to_covid)) +
+  geom_bar(position = "fill") +
+  labs(x = "Gender",
+       y = "Proportion",
+       title = "Death Due to COVID-19 vs. Gender")
+```
+
+- __Interpretation__: Both females and males have similar proportions in deaths due to COVID-19, with males having a slightly higher proportion.
 
 
+##### Age
+__Does mortality differ across age groups?__
+
+```{r}
+usable_cases %>% 
+  ggplot(aes(x = age_group,
+             fill = death_due_to_covid)) +
+  geom_bar(position = "fill") +
+  labs(x = "Age Group",
+       y = "Proportion",
+       title = "Death Due to COVID-19 vs. Age Group") +
+  theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+```{r}
+usable_cases %>% 
+  ggplot(aes(x = age,
+             fill = death_due_to_covid,
+             color = death_due_to_covid)) +
+  geom_density(alpha = 0.5) + # label for x-axis
+  scale_fill_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") + # qualitative color scale
+  scale_color_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19")  +
+  labs(x = "Age",
+       y = "Density",
+       title = "Death Due to COVID-19 vs. Age Group")
+```
+
+- __Interpretation__: Age groups that range from zero to thirty-nine years old have little to no deaths due to COVID-19. Despite the small proportion of deaths due to COVID-19 being very small within the overall dataset, age groups ranging from forty years old to eighty years old and above have a higher risk of death due to COVID-19. Since the distribution associated with death due COVID-19 is left-skewed and the distribution associated with death not due to COVID-19 is right-skewed, this tells us that there is heterogeneity in risk of death within the age variable. 
+
+##### Race
+__Does mortality differ across race?__
+
+```{r}
+usable_cases %>% 
+  ggplot(aes(x = race,
+             fill = death_due_to_covid)) +
+  geom_bar(position = "fill") +
+  labs(x = "Race",
+       y = "Proportion") +
+  labs(x = "Race",
+       y = "Proportion",
+       title = "Death Due to COVID-19 vs. Race")
+```
+
+- __Interpretation__: Asians have the highest proportion of deaths due to COVID-19, which could indicate that they have a higher odds of dying from COVID-19. White individuals have the second highest proportion.
+
+##### Conclusion
+
+- Age, gender, and race each showcase heterogeneity in the risk of death with age being the greatest indicator and race the least indicator. 
+
+
+
+#### ZIP Code-level Predictors: Education, Insurance, Income
+
+- Living in ZIP codes with high education levels and health insurance coverage was also predictive of mortality outcomes 
+
+- educational attainment seems to be significant on its own, regardless of health insurance --> EDUCATION ON ITS OWN
+
+- health insurance is significant too, but does not have as dramatic effect as education --> HEALTH INSURANCE ON ITS OWN --> INTERACTION B/W EDUCATION AND HEALTH INSURANCE
+
+- ZIP code-level population density was sig. predictor of death
+--> POPULATION DENSITY ON ITS OWN
+
+- Risk for death decreased over study period
+
+* Note: Boxplots, density plots, etc. help us see if a particular response (1 or 0) tends to be associated with low/high values of an independent variable. If there exists an association between the response and the variable, we can conclude that ZIP codes that correspond to low or high values of that variable will yield similar patterns. *
+
+```{r}
+cormat <- round(cor(usable_cases[,15:18]), 2) # compute the correlations
+
+cormat[lower.tri(cormat)] <- NA
+
+melted_cormat <- melt(cormat)
+
+ggplot(melted_cormat,
+       aes(x = Var1,
+           y = Var2,
+           fill = value)) +
+  geom_tile(color = "white",
+            lwd = 1.5,
+            linetype = 1) +
+  geom_text(aes(label = value),
+            color = "white",
+            size = 4) +
+  scale_fill_gradient2(low = "#798234",
+                       mid = "#fdfbe4",
+                       high = "#d46780") +
+  labs(x = "X",
+       y = "Y",
+       title = "Correlation Heatmap of ZIP-Code Level Predictors")+
+  theme(axis.text.x=element_text(angle=25,hjust=1))
+```
+
+- __Interpretation__: `percent_insured` and `percent_bachelors` have the highest correlation (positive). ZIP codes where there is a high percentage of adults that have health insurance also tend to have a high percentage of adults that have a Bachelor's degree. High education levels is also associated with high median household income `med_income`.
+
+##### Health Insurance
+
+```{r}
+ggplot(usable_cases,
+       aes(x = percent_insured,
+           fill = death_due_to_covid,
+           color = death_due_to_covid)) +
+  geom_density(alpha = 0.5) + # label for x-axis
+  scale_fill_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") + # qualitative color scale
+  scale_color_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") +
+  labs(x = "Percentage of Adults with Health Insurance",
+       y = "Density",
+       title = "Death Due to COVID-19 vs. Percentage of Adults with Health Insurance")
+```
+
+- __Interpretation__: There is heterogeneity in risk for death within the `percent_insured` variable which describes the percentage of adults who had health insurance in the previous 5 years. The mode for the distribution representing deaths not due to COVID-19 is 0.067 and the mode for the distribution representing deaths due to COVID-19 is 0.049. This means that of those who did not die from COVID-19, most of them lived in ZIP codes where 6.7% of adults had health insurance in the previous 5 years. Of those who did die from COVID-19, most of them lived in ZIP codes where 4.9% of adults had health insurance in the previous 5 years.
+
+
+##### Education
+
+```{r}
+ggplot(usable_cases,
+       aes(x = death_due_to_covid,
+           y = percent_bachelors)) +
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  labs(x = "Death Due to COVID-19",
+       y = "Percentage of Adults with Bachelor's Degree",
+       title = "Death Due to COVID-19 vs. Percentage of Adults with Bachelor's Degree")
+```
+
+- __Interpretation__: There seems to be no heterogeneity in risk for death within the `percent_bachelors` variable which describes the percentage of adults >25 years old who have a Bachelor's degree. Despite a significantly higher amount of observations within the class of deaths not due to COVID-19, the distributions of each response value are similar in spread and mode. Most of the adults who did or did not die due to COVID-19 lived in ZIP codes where about 20% or about 43% of adults had a Bachelor's degree.
+
+
+##### Income
+
+```{r}
+ggplot(usable_cases,
+       aes(x = med_income,
+           fill = death_due_to_covid,
+           color = death_due_to_covid)) +
+  geom_density(alpha = 0.5) + # label for x-axis
+  scale_fill_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") + # qualitative color scale
+  scale_color_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") +
+  labs(x = "Median Household Income",
+       y = "Density",
+       title = "Death Due to COVID-19 vs. Percentage of Adults with Bachelor's Degree")
+```
+
+- __Interpretation__: There seems to be no heterogeneity in risk for death within the `med_income` variable which describes the median household income. Despite a significantly higher amount of observations within the class of deaths not due to COVID-19, the distributions of each response value are similar in spread and mode - at about 65,000 USD. Most of the adults who did or did not die due to COVID-19 lived in ZIP codes where the median household income was about 65,000 USD.
+
+
+##### Population Density
+
+```{r}
+ggplot(usable_cases,
+       aes(x = pop_density,
+           fill = death_due_to_covid,
+           color = death_due_to_covid)) +
+  geom_density(alpha = 0.5) + # label for x-axis
+  scale_fill_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") + # qualitative color scale
+  scale_color_brewer(palette = "Dark2", 
+       name = "Death Due to COVID-19") +
+  labs(x = "Population Density (persons/km^2)",
+       y = "Density",
+       title = "Death Due to COVID-19 vs. Population Density")
+```
+
+- __Interpretation__: There seems to be no heterogeneity in risk for death within the `pop_density` variable which the number of individuals in thousands, per square kilometer. Despite a significantly higher amount of observations within the class of deaths not due to COVID-19, the distributions of each response value are similar in spread and mode - at about 4250 individuals per square kilometer. Most of the adults who did or did not die due to COVID-19 lived in ZIP codes where the population density was about 4250 individuals per square kilometer.
+
+
+##### Conclusion  
+- Health insurance showcases the most heterogeneity in the risk of death.
+
+
+#### Interactions
+
+##### Age & Gender
+
+__Does the effect of age on mortality depend on gender?__ 
+
+```{r}
+usable_cases %>% 
+  ggplot(aes(x = gender,
+             y = age,
+             color = death_due_to_covid)) +
+  geom_boxplot() +
+  labs(x = "Gender",
+       y = "Age",
+       title = "Comparison of Effect of Age on Death Due to COVID-19 Across Genders")
+```
+
+- __Interpretation__: This boxplot is to visualize a possible interaction effect between age and gender. We are trying to examine whether the effect of age on the odds of dying from COVID-19 differs between genders. Does age disproportionately affect males more than females (or vice versa) in terms of the odds of dying from COVID-19? Across both gender levels, it is evident that those who are older have a higher odds of dying from COVID-19. There seems to be no significant difference in the effect of age on odds of dying from COVID-19 when comparing females and males.
+
+
+##### Education & Health Insurance 
+
+__Does the effect of insurance on mortality depend on education?__
+
+```{r}
+ggplot(usable_cases,
+       aes(x = adj_perc_bach_quar,
+           y = adj_perc_insured,
+           color = death_due_to_covid)) +
+  geom_boxplot() +
+  labs(x = "Quartile Associated with Scaled Percentage of Adults with Bachelor's Degree",
+       y = "Scaled Percentage of Adults with Health Insurance",
+       title = "Comparison of Effect of Health Insurance on Death Due to COVID-19 Across Education Levels")
+```
+
+- __Interpretation__: When comparing adults that live in ZIP codes where the percentage of adults with a Bachelor's degree falls beneath the 25th percentile to adults... ?
+
+- This boxplot is to visualize a possible interaction effect between health insurance and education. We are trying to examine whether the effect of health insurance on the odds of dying from COVID-19 differs between education levels. Across education levels, there seems to be heterogeneity in the effect of health insurance on the odds of dying from COVID-19.
