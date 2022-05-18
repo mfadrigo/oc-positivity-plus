@@ -24,12 +24,15 @@ require(boot)
 require(lattice)
 ```
 
-## Mortality Dataset Logistic Regression Model
+## Mortality Dataset Logistic Regression Model  
 
-- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models. 
+- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models.  
+
+### Assumptions of Mortality Logistic Regression  
+- 
 
 ```{r cars}
-# MODEL 0: without random intercept (and hospital bed data)
+# MODEL 0: without random intercept (and hospital bed data and housing data)
 
 model_0 <- glm(
     formula = death_due_to_covid  ~ decades_old + gender + race + 
@@ -45,9 +48,11 @@ print(summary(model_0))
 print(BIC(model_0))
 ```
 
+
 ```{r}
 # MODEL 1: with random intercept (without hospital bed data)
-
+# ERROR: "Model failed to converge with max|grad|"
+# Solution: 
 model_1 <- glmer(
     formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
@@ -61,4 +66,14 @@ model_1 <- glmer(
 print(summary(model_1))
 print(BIC(model_1))
 ```
+```{r}
+compare_bic <- BIC(model_0, model_1) 
+row.names(compare_bic) <- c("Model 0", "Model 1")
+compare_bic
+
+null <- model_1$null_deviance/-2
+proposed <- model_1$deviance/-2
+(null-proposed)/null
+```
+
 
