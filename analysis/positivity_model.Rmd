@@ -23,17 +23,17 @@ head(usable_tests)
 ```
 
 ```{r}
-  tic()
-  fit_time_lin <- glmer(
-    formula = covid_positive ~ age_group + sex + race + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              adj_time_days +
-              (1 | zip),              
-    family = binomial, 
-    data = all_pcr,
-    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
-    )
-  toc()
+tic()
+model_0 <- glmer(
+  formula = covid_positive ~ age_group + sex + race + 
+            adj_perc_bach_quar + adj_perc_insured_quar +
+            adj_pop_density + adj_med_income +
+            adj_time_days +
+            (1 | zip),              
+  family = binomial, 
+  data = usable_tests,
+  control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+  )
+toc()
 ```
 
