@@ -280,6 +280,8 @@ usable_cases %>%
 
 __Does the effect of insurance on mortality depend on education?__
 
+
+
 ```{r}
 ggplot(usable_cases,
        aes(x = adj_perc_bach_quar,
@@ -294,3 +296,5 @@ ggplot(usable_cases,
 - __Interpretation__: When comparing adults that live in ZIP codes where the percentage of adults with a Bachelor's degree falls beneath the 25th percentile to adults... ?
 
 - This boxplot is to visualize a possible interaction effect between health insurance and education. We are trying to examine whether the effect of health insurance on the odds of dying from COVID-19 differs between education levels. Across education levels, there seems to be heterogeneity in the effect of health insurance on the odds of dying from COVID-19.
+
+

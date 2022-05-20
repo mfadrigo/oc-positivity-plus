@@ -11,11 +11,9 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(here)
-
 # Mortality Data
 load(here("data/cleaned-data", "usable_cases.Rdata"))
 glimpse(usable_cases)
-
 require(ggplot2)
 require(reshape2)
 require(lme4)
@@ -27,10 +25,24 @@ require(lattice)
 
 ## Mortality Dataset Logistic Regression Model  
 
-- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models.  
+- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models. 
+
+### Response and Explanatory Variables
+
+|  Variable Type  |   Variable        | Data Type | Description |
+|-------------|-----------------|-------------|----------------------------------------|
+| Response    | death_due_to_covid          | Categorical | whether or not the individual died from COVID-19 |
+| Explanatory | decades_old             | Numeric     | the age of the individual in decades             |
+| Explanatory | gender       | Categorical | gender of the individual |
+| Explanatory | race   | Categorical | description of the individual's race |
+| Explanatory | adj_perc_bach_quar  | Categorical | quartile associated with scaled percentage of adults with a bachelor's degree within a particular ZIP code |
+| Explanatory | adj_perc_insured_quar            | Categorical | quartile associated with scaled percentage of adults with health insurance within a particular ZIP code |
+| Explanatory | adj_pop_density          | Numeric | scaled population density (thousands per square kilometer) |
+| Explanatory | adj_med_income  | Numeric     | scaled median household income in thousands |
+| Explanatory | adj_time_days | Numeric | scaled difference in time between the start date and the `posted_date` or the specimen collected date |
+| Explanatory | avail_icu_beds | Numeric | the number of intensive care unit beds available within the individual's ZIP code
 
 ### Assumptions of Mortality Logistic Regression  
-- 
 
 ```{r cars}
 # MODEL 0: without random intercept (and hospital bed data and housing data)
@@ -42,8 +54,6 @@ model_0 <- glm(
     family = binomial, 
     data = usable_cases
     )
-
-
 print(summary(model_0))
 print(BIC(model_0))
 ```
@@ -62,7 +72,6 @@ model_1 <- glmer(
     data = usable_cases,
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
-
 print(summary(model_1))
 print(BIC(model_1))
 ```
@@ -71,8 +80,8 @@ compare_bic <- BIC(model_0, model_1)
 row.names(compare_bic) <- c("Model 0", "Model 1")
 compare_bic
 ```
+
 Model 1 has an additional random intercept that factors in zip code. This model 
 has a lower BIC score than model 0 and is a better model. 
-
 
 
