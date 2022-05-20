@@ -41,7 +41,7 @@ require(lattice)
 | Explanatory | adj_pop_density          | Numeric | scaled population density (thousands per square kilometer) |
 | Explanatory | adj_med_income  | Numeric     | scaled median household income in thousands |
 | Explanatory | adj_time_days | Numeric | scaled difference in time between the start date and the `posted_date` or the specimen collected date |
-| Explanatory | avail_icu_beds | Numeric | the number of intensive care unit beds available within the individual's ZIP code
+| Explanatory | adj_covid_icu_beds | Numeric | the scaled number of intensive care unit beds occupied within the individual's ZIP code
 
 ### Assumptions of Mortality Logistic Regression  
 
@@ -91,6 +91,7 @@ model_1 <- glmer(
 print(summary(model_1))
 print(BIC(model_1))
 ```
+
 ```{r}
 compare_bic <- BIC(model_0, model_1) 
 row.names(compare_bic) <- c("Model 0", "Model 1")
@@ -99,5 +100,4 @@ compare_bic
 
 Model 1 has an additional random intercept that factors in zip code. This model 
 has a lower BIC score than model 0 and is a better model. 
-
 
