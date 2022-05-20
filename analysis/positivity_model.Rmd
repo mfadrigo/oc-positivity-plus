@@ -1,0 +1,21 @@
+---
+title: "Positivity Modeling"
+author: "Christie Yang"
+date: "5/20/2022"
+output: html_document
+---
+
+## Positivity Data Modeling
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(here)
+
+# Positivty Data
+load(here("data/cleaned-data", "usable_tests.Rmd"))
+
+```
+
