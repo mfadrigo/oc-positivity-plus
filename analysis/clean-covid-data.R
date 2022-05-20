@@ -107,7 +107,7 @@ zip_data_merged <- read_csv( # insurance
 ## All test categorizations
 
 pcr_results_original <- read_csv(
-  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/All PCR tests updated 1.26.21.csv",
+  "/Users/Christie1/Desktop/COVID Project/All PCR tests updated 1.26.21.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_integer(),
@@ -263,7 +263,7 @@ usable_tests <- pcr_results_reduced %>%
 
 # clean and match cases/mortality data ------------------------------------------
 mortality_og <- read_csv(
-  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/1.26.21 release to UCI team.csv",
+  "/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_double(),
@@ -361,6 +361,5 @@ usable_cases <- mortality_merged
 
 # save cleaned data -------------------------------------------------------
 save(usable_tests, file = here("data/cleaned-data", "usable_tests.Rdata")) # test data
-
 save(usable_cases, file = here("data/cleaned-data", "usable_cases.Rdata")) # mortality data
-
+write.csv(zip_data_merged, "zip_data.csv")
