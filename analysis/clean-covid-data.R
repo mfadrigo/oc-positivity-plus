@@ -7,6 +7,12 @@ library(forcats)
 start_date <- as.Date(strptime(as.factor("01-22-2020"), format = "%m-%d-%Y"), format = "%m-%d-%Y")  # earliest testing date (what dates are these supposed to be???)
 end_date <- as.Date(strptime(as.factor("2021-01-25"), format = "%Y-%m-%d")) # last testing date (???)
 
+daniel_est_beds <- # 4879
+oc_icu_avail_beds_earliest_val <- 131 
+oc_hos_covid_pateients_earliest_val <- 308
+oc_all_hos_bed_earliest_val <- 4213
+oc_icu_full_beds_earliest_val <- 71
+
 # Combine zip code data ---------------------------------------------------
 ## General zip code data
 
@@ -101,6 +107,77 @@ zip_data_merged <- read_csv( # insurance
       include.lowest = TRUE,
       labels = c("Q1", "Q2", "Q3", "Q4")
     )))
+
+
+# OC Hospital data by date -----------------------------------------------------
+hos_bed_gov <- read_csv(
+  here("data/zip-code-data", "covid19hospitalbycounty.csv"),
+  na = c("", " "),
+  col_types = cols(
+    .default = col_skip(),
+    county = col_character(),
+    todays_date = col_date("%Y-%m-%d"),
+    hospitalized_covid_patients = col_double(),
+    all_hospital_beds = col_double(),
+    icu_covid_confirmed_patients = col_double(),
+    icu_suspected_covid_patients = col_double(),
+    icu_available_beds = col_double()
+  )
+) %>% 
+  filter(county == "Orange") 
+
+
+first_date <- sort(hos_bed_gov$todays_date)[1]
+
+if(month(start_date) == month(first_date) & day(start_date) < day(first_date)) {
+  dates_missing <- seq(as.Date(start_date), first_date, by = "days")
+  dates_missing <- dates_missing[-length(dates_missing)]
+  num_dm <- length(dates_missing)
+  missing_rows <- data.frame(
+    rep("Orange", num_dm), 
+    dates_missing, 
+    rep(NA, num_dm), 
+    rep(NA, num_dm), 
+    rep(NA, num_dm),
+    rep(NA, num_dm),
+    rep(NA, num_dm)
+  )
+  colnames(missing_rows) <- colnames(hos_bed_gov)
+  hos_bed_gov <- rbind(missing_rows, hos_bed_gov)
+} else {
+  print("Error: fix hospital data dates")
+}
+
+# Beds were not recorded before 2020-04-20. To fill in missing:
+# For ICU available beds the earliest value is used
+# For percent of beds not used by COVID-19 patients the earliest value was used
+hosp_data_merged <- hos_bed_gov %>% 
+  mutate(avail_icu_beds = ifelse(
+    is.na(icu_available_beds), 
+    oc_icu_avail_beds_earliest_val,
+    icu_available_beds
+  )) %>% 
+  mutate(perc_avail_beds = ifelse(
+    is.na(hospitalized_covid_patients) | is.na(all_hospital_beds),
+    100 * (1 - oc_hos_covid_pateients_earliest_val / oc_all_hos_bed_earliest_val),
+    100 * (1 - hospitalized_covid_patients / all_hospital_beds)
+  )) %>% 
+  mutate(covid_icu_beds = ifelse(
+    is.na(icu_covid_confirmed_patients) | is.na(icu_suspected_covid_patients),
+    oc_icu_full_beds_earliest_val,
+    icu_covid_confirmed_patients + icu_suspected_covid_patients
+  )) %>% 
+  select(
+    posted_date = todays_date,
+    avail_icu_beds,
+    perc_avail_beds,
+    covid_icu_beds
+  ) %>% 
+  mutate(adj_perc_avail_beds = scale(perc_avail_beds, center = TRUE, scale = TRUE)) %>% 
+  mutate(adj_avail_icu_beds = scale(avail_icu_beds, center = TRUE, scale = TRUE)) %>% 
+  mutate(adj_covid_icu_beds = scale(covid_icu_beds, center = TRUE, scale = TRUE)) 
+
+
 
 
 # Clean all test data ----------------------------------------------------
@@ -253,11 +330,11 @@ pcr_results_reduced <- pcr_results_reduced %>%
   filter(!obs_to_be_dropped)
 
 
-
-# Merge with zip code (and hospital data?)
-usable_tests <- pcr_results_reduced %>%
-  left_join(y = zip_data_merged, by = "zip") %>%
-  mutate(zip = factor(zip)) 
+# Merge with zip code and hospital data
+usable_tests <- pcr_results_reduced %>% 
+  left_join(y = zip_data_merged, by = "zip") %>% 
+  mutate(zip = factor(zip)) %>% 
+  left_join(y = hosp_data_merged, by = "posted_date")
 
 
 
@@ -353,7 +430,8 @@ mortality_reduced <- mortality_cleaned %>%
 
 # Merge with zip code (and hospital data?)
 mortality_merged <- mortality_reduced  %>% 
-  left_join(y = zip_data_merged, by = "zip") 
+  left_join(y = zip_data_merged, by = "zip") %>% 
+  left_join(y = hosp_data_merged, by = "posted_date")
 
 
 usable_cases <- mortality_merged
