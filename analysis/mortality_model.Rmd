@@ -12,8 +12,6 @@ library(lubridate)
 library(dplyr)
 library(here)
 library(tictoc)
-# Mortality Data
-load(here("data/cleaned-data", "usable_cases.Rdata"))
 glimpse(usable_cases)
 require(ggplot2)
 require(reshape2)
@@ -22,6 +20,11 @@ require(compiler)
 require(parallel)
 require(boot)
 require(lattice)
+```
+
+```{r}
+# Mortality Data
+load(here("data/cleaned-data", "usable_cases.Rdata"))
 ```
 
 ## Mortality Dataset Logistic Regression Model  
@@ -41,25 +44,13 @@ require(lattice)
 | Explanatory | adj_pop_density          | Numeric | scaled population density (thousands per square kilometer) |
 | Explanatory | adj_med_income  | Numeric     | scaled median household income in thousands |
 | Explanatory | adj_time_days | Numeric | scaled difference in time between the start date and the `posted_date` or the specimen collected date |
-| Explanatory | avail_icu_beds | Numeric | the number of intensive care unit beds available within the individual's ZIP code
+| Explanatory | adj_covid_icu_beds | Numeric | the scaled number of intensive care unit beds occupied within the individual's ZIP code
 
 ### Assumptions of Mortality Logistic Regression  
 
 ```{r cars}
-# MODEL 0: without random intercept (and hospital bed data and housing data)
+# MODEL 0: (without random intercept) excludes hospital bed predictor
 model_0 <- glm(
-    formula = death_due_to_covid  ~ decades_old + gender + race + 
-              adj_perc_bach_quar + adj_perc_insured_quar +
-              adj_pop_density + adj_med_income +
-              adj_time_days + adj_covid_icu_beds,
-    family = binomial, 
-    data = usable_cases
-    )
-print(summary(model_0))
-print(BIC(model_0))
-
-# MODEL 02: without hospital data or random intercept (most basic)
-model_02 <- glm(
     formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
@@ -67,37 +58,108 @@ model_02 <- glm(
     family = binomial, 
     data = usable_cases
     )
-summary(model_02)
-BIC(model_02)
-
-## BIC score goes from 18237.1 -> 11791.32  when hospital data is added
 ```
 
 
 ```{r}
-# MODEL 1: with random intercept (without hospital bed data)
+# MODEL 1: (without random intercept) includes hospital bed predictor
+model_1 <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + adj_covid_icu_beds, # hospital bed predictor
+    family = binomial, 
+    data = usable_cases
+    )
+```
+
+```{r}
+compare_bic <- BIC(model_0, model_1) 
+row.names(compare_bic) <- c("Model 0", "Model 1")
+
+kable(compare_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex",
+      caption = "Model comparison using BIC shows a difference in modeling odds of mortality given tested positive for SARS-CoV-2 in Orange County. Model 1, the model with the additional hospital bed predictor, was chosen.") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+- We tested to see if adding a random intercept for ZIP code would improve the model.
+
+```{r}
+# MODEL 2: with random intercept 
 # ERROR: "Model failed to converge with max|grad|"
 # Solution: control parameter 
-model_1 <- glmer(
+model_2 <- glmer(
     formula = death_due_to_covid  ~ decades_old + gender + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
               adj_time_days + adj_covid_icu_beds + 
-            (1|zip),
+            (1|zip), # random intercept
     family = binomial, 
     data = usable_cases,
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
-print(summary(model_1))
-print(BIC(model_1))
 ```
+
 ```{r}
-compare_bic <- BIC(model_0, model_1) 
-row.names(compare_bic) <- c("Model 0", "Model 1")
+print(summary(model_2))
+model_2_BIC <- BIC(model_2)
+```
+
+- Now we compared Model 1 (without random intercept for ZIP code) and Model 2 (with random intercept for ZIP code).
+
+```{r}
+compare_bic <- BIC(model_1, model_2) 
+row.names(compare_bic) <- c("Model 1", "Model 2")
 compare_bic
 ```
 
-Model 1 has an additional random intercept that factors in zip code. This model 
-has a lower BIC score than model 0 and is a better model. 
+- We chose Model 2 since it has a lower BIC score than Model 1 and we decided to include a random intercept for ZIP code in future test positivity models.
 
+```{r}
+exp(cbind(OR = coef(model_2), confint(model_2)))
+```
+
+
+### Interpretations
+
+- We decided to go with a multivariate model since we are able to control for different predictors while simultaneously interpreting the effect of a single predictor. The  covariates in Model 2 that remained significant at the 5% significance level were: age, gender, education, health insurance, 
+
+#### Intercept -----------------------
+
+- Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a ZIP code in the first quartile of college degree and insured with the average population density and average number of ICU beds filled with COVID patients in Orange County. The odds of this individual testing dying is estimated to be .
+
+#### Age -----------------------
+
+- For a 10 year increase in age, we expect the odds of death due to COVID-19 to change by a multiplicative factor of ----.
+
+
+#### Gender -----------------------
+
+- The odds of death from COVID-19 for a male is expected to be ---- times that of a female. 
+
+
+#### Education -----------------------
+
+- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
+  - The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
+  - The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
+  
+  
+#### Health Insurance -----------------------
+
+- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
+  - The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
+  - The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
+  
+  
+#### Population Density (similar effect as house crowding???) -----------
+
+- Persons who tested positive for COVID-19 and lived in ZIP codes with high population densities had ---- % lower/higher odds of dying from COVID-19.
+
+
+#### Hospital Bed Predictor -----------------------
+
+- Persons who tested positive for COVID-19 and lived in ZIP codes with high levels of occupied ICU beds had ---- % higher odds of dying from COVID-19.
 
