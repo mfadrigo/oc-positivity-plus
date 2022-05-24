@@ -14,6 +14,8 @@ library(lubridate)
 library(dplyr)
 library(here)
 library(tictoc)
+library(beepr)
+library(splines)
 
 
 # Positivity Data
@@ -35,5 +37,28 @@ model_0 <- glmer(
   control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
   )
 toc()
+beep()
 ```
+
+```{r}
+tic()
+fit_time_quad <- glmer(
+  formula = covid_positive ~ age_group + sex + race + 
+            adj_perc_bach_quar + adj_perc_insured_quar +
+            adj_pop_density + adj_med_income +
+            I(adj_time_days) + I(adj_time_days^2) + 
+            (1 | zip),              
+  family = binomial, 
+  data = usable_tests,
+  control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+  )
+toc()
+beep()
+```
+
+```{r}
+
+```
+
+
 
