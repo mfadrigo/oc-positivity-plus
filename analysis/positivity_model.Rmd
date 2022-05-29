@@ -23,8 +23,6 @@ library(lubridate)
 library(dplyr)
 library(here)
 library(tictoc)
-library(beepr)
-library(splines)
 library(lme4)
 
 
@@ -70,43 +68,6 @@ if (params$refit_model1) {
 - Time is quadratic to see if the rate of change in the mean response depends on time
 - No interaction term between median household income and time
 ```{r}
-tic()
-model_0 <- glmer(
-  formula = covid_positive ~ age_group + sex + race + 
-            adj_perc_bach_quar + adj_perc_insured_quar +
-            adj_pop_density + adj_med_income +
-            adj_time_days +
-            (1 | zip),              
-  family = binomial, 
-  data = usable_tests,
-  control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
-  )
-toc()
-beep()
-```
-
-```{r}
-tic()
-fit_time_quad <- glmer(
-  formula = covid_positive ~ age_group + sex + race + 
-            adj_perc_bach_quar + adj_perc_insured_quar +
-            adj_pop_density + adj_med_income +
-            I(adj_time_days) + I(adj_time_days^2) + 
-            (1 | zip),              
-  family = binomial, 
-  data = usable_tests,
-  control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
-  )
-toc()
-beep()
-```
-
-```{r}
-
-```
-
-
-=======
 if (params$refit_model2) {
   tic()
   fit_time_quad <- glmer(
@@ -233,5 +194,3 @@ kable(compare_bic,
       caption = "Model comparison using BIC supports Model ___ to model odds of testing positive for COVID-19 in Orange County.") %>%
   kable_styling(latex_options = "HOLD_position")
 ```
-
-
