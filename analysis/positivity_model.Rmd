@@ -3,6 +3,15 @@ title: "Positivity Modeling"
 author: "Christie Yang"
 date: "5/20/2022"
 output: html_document
+
+params:
+  reclean_data: FALSE
+  refit_model1: TRUE
+  refit_model2: TRUE
+  refit_model3: TRUE
+  refit_model4: TRUE
+  refit_model5: TRUE
+
 ---
 
 ## Positivity Data Modeling
@@ -16,6 +25,7 @@ library(here)
 library(tictoc)
 library(beepr)
 library(splines)
+library(lme4)
 
 
 # Positivity Data
@@ -24,6 +34,41 @@ head(usable_tests)
 
 ```
 
+- All of the following models have a random intercept for ZIP code.
+- Population density to replace house crowding density.
+
+### Model 1 --------------------------------------------------------------------
+
+- Time is linear (untransformed)
+- No interaction term between median household income and time
+```{r}
+if (params$refit_model1) {
+  tic()
+  fit_time_lin <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days +
+              (1 | zip),              
+    family = binomial, 
+    data = usable_tests,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  # 
+  # 2730.94 sec elapsed
+  # updated and saved 2021-06-04
+  save(fit_time_lin, file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_lin.Rdata"))
+}
+```
+
+
+### Model 2 --------------------------------------------------------------------
+
+- Time is quadratic to see if the rate of change in the mean response depends on time
+- No interaction term between median household income and time
 ```{r}
 tic()
 model_0 <- glmer(
@@ -60,5 +105,133 @@ beep()
 
 ```
 
+
+=======
+if (params$refit_model2) {
+  tic()
+  fit_time_quad <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              I(adj_time_days) + I(adj_time_days^2) + 
+              (1 | zip),              
+    family = binomial, 
+    data = usable_tests,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  # 
+  # 2916.06 sec elapsed
+  # Updated 2020-06-04
+  save(fit_time_quad, file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_quad.Rdata"))
+}
+```
+
+
+### Model 3 --------------------------------------------------------------------
+
+- time is quadratic to see if the rate of change in the mean response depends on time
+- interaction term between median household income and time
+```{r}
+if (params$refit_model3) {
+  tic()
+  fit_time_quad_inter <- glmer(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + I(adj_time_days^2) + 
+              adj_time_days:adj_med_income + I(adj_time_days^2):adj_med_income +
+              (1 | zip),              
+    family = binomial, 
+    data = usable_tests,
+    control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
+    )
+  toc()
+  # 2903.28 sec elapsed
+  # updated 2021-06-04
+  save(fit_time_quad_inter, file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_quad_inter.Rdata"))
+}
+```
+
+
+### Model 4 --------------------------------------------------------------------
+
+- GAM: used when the linear predictor depends on __unknown__ smoothed functions
+- GAM preferred over GLM because we want to replace the linear term (time variable) with a non-linear function. 
+- Specified bs = "ts" in smoothing function to indicate the type of spline
+- No interaction term between median household income and time
+
+```{r}
+if (params$refit_model4) {
+  tic()
+  fit_time_gam <- gam(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density  + adj_med_income +
+              s(time_days, bs = "ts", k = -1) + 
+              s(zip, bs = "re"), # random intercept in GAM             
+    family = binomial, 
+    data = usable_tests,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+  # 
+  # updated and saved 2021-06-04
+  # 915.72 sec elapsed
+  save(fit_time_gam, file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_gam.Rdata"))
+}
+```
+
+### Model 5 --------------------------------------------------------------------
+
+- Identical to Model 4 but added back interaction term between median household
+income and time
+
+```{r}
+if (params$refit_model5) {
+  tic()
+  fit_time_gam_inter <- gam(
+    formula = covid_positive ~ age_group + sex + race + 
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density  + adj_med_income +
+              s(time_days) +
+              ti(time_days, adj_med_income, bs = "ts") + # interaction term in GAM
+              s(zip, bs = "re"),              
+    family = binomial, 
+    data = usable_tests,
+    method = "REML",
+    gamma = 1.5
+    )
+  toc()
+  # 
+# 1889.62 sec elapsed
+# updated and saved 2021-06-04
+  save(fit_time_gam_inter, file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
+} else {
+  load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
+}
+```
+
+
+# BIC Scores
+
+```{r}
+compare_bic <- BIC(fit_time_lin, fit_time_quad, fit_time_quad_inter, fit_time_gam, fit_time_gam_inter) 
+
+row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5")
+
+kable(compare_bic,
+      col.names = c("Degrees of Freedom", "BIC"),
+      format = "latex",
+      caption = "Model comparison using BIC supports Model ___ to model odds of testing positive for COVID-19 in Orange County.") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
 
 
