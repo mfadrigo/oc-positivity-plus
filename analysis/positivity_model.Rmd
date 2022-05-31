@@ -24,7 +24,7 @@ library(dplyr)
 library(here)
 library(tictoc)
 library(lme4)
-
+library(mgcv)
 
 # Positivity Data
 load(here("data/cleaned-data", "usable_tests.Rdata"))
@@ -133,7 +133,7 @@ if (params$refit_model4) {
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density  + adj_med_income +
-              s(time_days, bs = "ts", k = -1) + 
+              s(time_days, bs ="ts") + 
               s(zip, bs = "re"), # random intercept in GAM             
     family = binomial, 
     data = usable_tests,
@@ -193,4 +193,5 @@ kable(compare_bic,
       format = "latex",
       caption = "Model comparison using BIC supports Model ___ to model odds of testing positive for COVID-19 in Orange County.") %>%
   kable_styling(latex_options = "HOLD_position")
+beep()
 ```
