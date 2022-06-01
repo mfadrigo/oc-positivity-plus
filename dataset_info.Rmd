@@ -17,13 +17,25 @@ library(here)
 library(forcats)
 library(corrplot)
 library(reshape2)
+library(lemon)
+library(kableExtra)
+
+knit_print.data.frame <- lemon_print
+load(here("data/cleaned-data", "usable_tests.Rdata"))
+load(here("data/cleaned-data", "usable_cases.Rdata"))
 ```
 
 ## Test Positivity Data From PCR Tests
 
-```{r}
+```{r results='asis',render=lemon_print}
+kable(head(usable), caption='usable_cases')
 # Test Positivity Data
-load(here("data/cleaned-data", "usable_tests.Rdata"))
+head(usable_cases)%>%
+  kbl() %>%
+  kable_styling()
+
+head(usable_tests) # 186,5151 x 33
+head(usable_cases) # 211,251 x 33
 ```
 
 
