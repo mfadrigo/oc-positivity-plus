@@ -180,6 +180,8 @@ if (params$refit_model5) {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 }
 
+summary(fit_time_gam_inter)
+
 ```
 
 
@@ -211,6 +213,23 @@ compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
   
   return("model_sum" = model_sum)
 }
+
+parameter_names <- c(
+  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density"
+  )
+
+model5 <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  param_names = parameter_names
+)
+
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
 #####
 ```
 
@@ -380,7 +399,11 @@ ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
 
 ```{r}
 ## testing concurvity assumption
-concurvity(fit_time_gam_inter)
+#concurvity(fit_time_gam_inter)
+summy <- summary(fit_time_gam_inter)
+summy %>%  kbl(caption = "Summary Model 5") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+summary(fit_time_gam_inter)
 
 ```
 
