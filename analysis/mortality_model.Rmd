@@ -1,8 +1,17 @@
 ---
 title: "Mortality Modeling"
-author: "Christie Yang"
+author: "Christie Yang, Micah Fadrigo"
 date: "5/16/2022"
 output: html_document
+
+params:
+  refit_model_no_hospital: FALSE
+  refit_model_covid_beds: FALSE
+  refit_model_avail_beds: FALSE
+  refit_model_avail_beds_not_percentage: FALSE
+  refit_model_inter_time_bed: FALSE
+  refit_model_random_zip: FALSE
+  
 ---
 
 ```{r setup, include=FALSE}
@@ -12,14 +21,19 @@ library(lubridate)
 library(dplyr)
 library(here)
 library(tictoc)
-glimpse(usable_cases)
-require(ggplot2)
-require(reshape2)
-require(lme4)
-require(compiler)
-require(parallel)
-require(boot)
-require(lattice)
+library(kableExtra)
+library(ggplot2)
+library(reshape2)
+library(lme4)
+library(compiler)
+library(parallel)
+library(boot)
+library(lattice)
+library(broom)
+library(beepr)
+library(mgcv)
+library(sandwich)
+library(rsq)
 ```
 
 ```{r}
@@ -27,9 +41,13 @@ require(lattice)
 load(here("data/cleaned-data", "usable_cases.Rdata"))
 ```
 
+
 ## Mortality Dataset Logistic Regression Model  
 
-- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two ways of scoring a model based on its log-likelihood and complexity. BIC penalizes more for model complexity than AIC and so BIC is more likely to choose simpler models. 
+- Akaike and Bayesian Information Criterion (AIC & BIC respectively) are two 
+waysof scoring a model based on its log-likelihood and complexity. BIC penalizes
+more for model complexity than AIC and so BIC is more likely to choose simpler 
+models. 
 
 ### Response and Explanatory Variables
 
@@ -44,122 +62,378 @@ load(here("data/cleaned-data", "usable_cases.Rdata"))
 | Explanatory | adj_pop_density          | Numeric | scaled population density (thousands per square kilometer) |
 | Explanatory | adj_med_income  | Numeric     | scaled median household income in thousands |
 | Explanatory | adj_time_days | Numeric | scaled difference in time between the start date and the `posted_date` or the specimen collected date |
-| Explanatory | adj_covid_icu_beds | Numeric | the scaled number of intensive care unit beds occupied within the individual's ZIP code
+| Explanatory | adj_covid_icu_beds | Numeric | the scaled number of intensive care unit beds occupied by COVID-19 confirmed or suspected patients |
+| Explanatory | adj_avail_icu_beds | Numeric | the scaled number of intensive care unit beds available
 
-### Assumptions of Mortality Logistic Regression  
+### Assumptions of Mortality Logistic Regression
+
+```{r}
+# Assumption 1: Binary Outcome Type (Dying from COVID-19 or not)
+
+# Assumption 2: Linearity of Independent Variables and log-odds
+# Ensure the relationship between the logit (aka log-odds) of the outcome and each continuous independent variable is linear.
+usable_cases_2 <- na.omit(usable_cases)
+
+model <- glm(death_due_to_covid  ~ decades_old + gender + race +
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + adj_covid_icu_beds,
+              data = usable_cases_2,
+              family = binomial)
+
+log_odds <- predict(model)
+
+mydata <- usable_cases_2 %>%
+  dplyr::select_if(is.numeric)
+
+predictors <- colnames(mydata)
+
+mydata <- mydata %>%
+  mutate(logit = log_odds) %>%
+  gather(key = "predictors", value = "predictor.value", -logit)
+
+# tic()
+#
+# p1 <- ggplot(mydata, aes(logit, predictor.value))+
+#   geom_point(size = 0.5, alpha = 0.5) +
+#   geom_smooth(method = "loess") +
+#   theme_bw() +
+#   facet_wrap(~predictors, scales = "free_y")
+#
+# toc()
+#
+# ggsave("mortality_linearity.png", plot = p1)
+# beep(sound = 1)
+
+# The smoothed scatter plots show that variables ________ are all quite linearly associated with the morality outcome in logit scale.
+
+
+# The variable ________ is not linear and might need some transformations. If the scatter plot shows non-linearity, you need other methods to build the model such as including 2 or 3-power terms, fractional polynomials and spline function.
+```
+
+```{r}
+# Assumption 3: Ensure there are no influential values (extreme values or outliers) in the continuous predictors. Influential values are extreme individual data points that can alter the quality of the logistic regression model. Note that, not all outliers are influential observations. To check whether the data contains potential influential observations, the standardized residual error can be inspected. Data points with an absolute standardized residuals above 3 represent possible outliers and may deserve closer attention.
+
+# Extract model results
+model.data <- augment(model) %>%
+  mutate(index = 1:n()) # numbers observation
+
+model.data %>%
+  top_n(3, .cooksd)
+
+# Plot standardized residuals
+ggplot(model.data,
+       aes(index, .std.resid)) +
+  geom_point(aes(color = death_due_to_covid),
+             alpha = .5) +
+  theme_bw()
+```
+
+```{r}
+# Assumption 4: Mullticollinearity
+
+# Multicollinearity corresponds to a situation where the data contain highly correlated predictor variables. Multicollinearity is an important issue in regression analysis and should be fixed by removing the concerned variables. It can be assessed using the R function vif() [car package], which computes the variance inflation factors. As a rule of thumb, a VIF value that exceeds 4 or 10 indicates a problematic amount of collinearity. In our example, there is no collinearity: all variables have a value of VIF well below 4.
+
+car::vif(model)
+
+# better than correlation heatmap because collinearity can exist between three or more variables even if no pair of variables is seen to have an exceptionally high correlation
+```
+
+
+# Modeling ---------------------------------------------------------------------
+
+## Model 1: model_no_hospital
 
 ```{r cars}
-# MODEL 0: (without random intercept) excludes hospital bed predictor
-model_0 <- glm(
-    formula = death_due_to_covid  ~ decades_old + gender + race + 
+if (params$refit_model_no_hospital) {
+  tic()
+  model_no_hospital <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
               adj_time_days,
-    family = binomial, 
+    family = binomial,
     data = usable_cases
     )
+  toc()
+  #
+  # 3.316 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_no_hospital, file = here("analysis/testing-mortality-regression-results", "model_no_hospital.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_no_hospital.Rdata"))
+}
+
 ```
 
+## Model 2: model_covid_beds ; All predictors (adj_covid_icu_beds = scaled # occupuied icu beds by covid pts)
 
 ```{r}
-# MODEL 1: (without random intercept) includes hospital bed predictor
-model_1 <- glm(
-    formula = death_due_to_covid  ~ decades_old + gender + race + 
+
+if (params$refit_model_covid_beds) {
+  tic()
+  model_covid_beds <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
               adj_time_days + adj_covid_icu_beds, # hospital bed predictor
-    family = binomial, 
+    family = binomial,
     data = usable_cases
     )
+  toc()
+  #
+  # 3.928 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_covid_beds, file = here("analysis/testing-mortality-regression-results", "model_covid_beds.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_covid_beds.Rdata"))
+}
 ```
 
 ```{r}
-compare_bic <- BIC(model_0, model_1) 
-row.names(compare_bic) <- c("Model 0", "Model 1")
-
-kable(compare_bic,
-      col.names = c("Degrees of Freedom", "BIC"),
-      format = "latex",
-      caption = "Model comparison using BIC shows a difference in modeling odds of mortality given tested positive for SARS-CoV-2 in Orange County. Model 1, the model with the additional hospital bed predictor, was chosen.") %>%
-  kable_styling(latex_options = "HOLD_position")
+compare_bic <- BIC(model_no_hospital, model_covid_beds)
+row.names(compare_bic) <- c("model_no_hospital", "model_covid_beds")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+ kable_classic(full_width = F, html_font = "Cambria")
 ```
 
-- We tested to see if adding a random intercept for ZIP code would improve the model.
+## Model 3A: model_avail_beds ; All predictors (adj_perc_avail_beds = __percentage__ of avail icu beds)
 
 ```{r}
-# MODEL 2: with random intercept 
-# ERROR: "Model failed to converge with max|grad|"
-# Solution: control parameter 
-model_2 <- glmer(
-    formula = death_due_to_covid  ~ decades_old + gender + race + 
+if (params$refit_model_avail_beds) {
+  tic()
+  model_avail_beds <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density + adj_med_income +
-              adj_time_days + adj_covid_icu_beds + 
-            (1|zip), # random intercept
-    family = binomial, 
+              adj_time_days + adj_perc_avail_beds, # hospital bed predictor
+    family = binomial,
+    data = usable_cases
+    )
+  toc()
+  #
+  # 2.858 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_avail_beds, file = here("analysis/testing-mortality-regression-results", "model_avail_beds.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_avail_beds.Rdata"))
+}
+```
+
+## Model 3B: model_avail_beds_not_percentage ; All predictors (adj_avail_icu_beds = __number__ of avail icu beds)
+
+```{r}
+if (params$refit_model_avail_beds_not_percentage) {
+  tic()
+  model_avail_beds_not_percentage <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days + adj_avail_icu_beds, # hospital bed predictor
+    family = binomial,
+    data = usable_cases
+    )
+  toc()
+  #
+  # 3.66 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_avail_beds_not_percentage, file = here("analysis/testing-mortality-regression-results", "model_avail_beds_not_percentage.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_avail_beds_not_percentage.Rdata"))
+}
+
+```
+
+```{r}
+compare_bic <- BIC(model_covid_beds, model_avail_beds, model_avail_beds_not_percentage)
+row.names(compare_bic) <- c("model_covid_beds", "model_avail_beds", "model_avail_beds_not_percentage")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+ kable_classic(full_width = F, html_font = "Cambria")
+```
+
+## Model 4: model_inter_time_bed
+
+```{r}
+if (params$refit_model_inter_time_bed) {
+  tic()
+  model_inter_time_bed <- glm(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days +  adj_covid_icu_beds + adj_time_days:adj_covid_icu_beds,
+    family = binomial,
+    data = usable_cases
+    )
+  toc()
+  #
+  # 3.041 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_inter_time_bed, file = here("analysis/testing-mortality-regression-results", "model_inter_time_bed.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_inter_time_bed.Rdata"))
+}
+```
+
+```{r}
+compare_bic <- BIC(model_covid_beds, model_inter_time_bed)
+row.names(compare_bic) <- c("model_covid_beds", "model_inter_time_bed")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+ kable_classic(full_width = F, html_font = "Cambria")
+```
+
+- The effect of the number of occupied ICU beds in OC on the odds of dying from COVID-19 could potentially depend on time. For example, an increase by 100 in the number of occupied ICU beds in OC may result in a higher or lower risk of dying from COVID-19 for an individual depending on when they first tested positive. From the model comparison, adding an interaction term between time and percentage of available ICU beds improved the model.
+
+
+
+## Model 5: model_random_zip ; All predictors (adj_covid_icu_beds + interaction), random intercept
+
+```{r}
+if (params$refit_model_random_zip) {
+  tic()
+  model_random_zip <- glmer(
+    formula = death_due_to_covid  ~ decades_old + gender + race +
+              adj_perc_bach_quar + adj_perc_insured_quar +
+              adj_pop_density + adj_med_income +
+              adj_time_days +  adj_covid_icu_beds + adj_time_days:adj_covid_icu_beds +
+      (1|zip), # random intercept
+    family = binomial,
     data = usable_cases,
     control = glmerControl(optimizer ="bobyqa", optCtrl = list(maxfun = 2e6))
     )
+    toc()
+  #
+  # 2055.78 sec elapsed
+  # updated and saved 2022-06-08
+    save(model_random_zip, file = here("analysis/testing-mortality-regression-results", "model_random_zip.Rdata"))
+  } else {
+    load(file = here("analysis/testing-mortality-regression-results", "model_random_zip.Rdata"))
+}
 ```
+
 
 ```{r}
-print(summary(model_2))
-model_2_BIC <- BIC(model_2)
+compare_bic <- BIC(model_inter_time_bed, model_random_zip)
+row.names(compare_bic) <- c("model_inter_time_bed", "model_random_zip")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+ kable_classic(full_width = F, html_font = "Cambria")
 ```
 
-- Now we compared Model 1 (without random intercept for ZIP code) and Model 2 (with random intercept for ZIP code).
+- Space is a confounder in which people within close spacial proximity will have similar risk of dying from COVID-19. Each individual belongs to a certain zip code, and individuals within each zip code are correlated. When we have clustered data with correlations within the clusters, we can control for this by adding a random intercept for cluster ID, or zip code in this case. From the model comparison, adding a random intercept for zip code improved the model.
 
 ```{r}
-compare_bic <- BIC(model_1, model_2) 
-row.names(compare_bic) <- c("Model 1", "Model 2")
-compare_bic
+compare_bic <- BIC(model_no_hospital, 
+                   model_covid_beds, 
+                   model_avail_beds, 
+                   model_avail_beds_not_percentage, 
+                   model_inter_time_bed, 
+                   model_random_zip)
+row.names(compare_bic) <- c("model_no_hospital",
+                            "model_covid_beds",
+                            "model_avail_beds",
+                            "model_avail_beds_not_percentage",
+                            "model_inter_time_bed", 
+                            "model_random_zip")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+ kable_classic(full_width = F, html_font = "Cambria")
 ```
 
-- We chose Model 2 since it has a lower BIC score than Model 1 and we decided to include a random intercept for ZIP code in future test positivity models.
 
 ```{r}
-exp(cbind(OR = coef(model_2), confint(model_2)))
+# rsq(model_random_zip,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+se <- sqrt(diag(vcov(model_random_zip)))
+
+tab <- cbind(Est = fixef(model_random_zip),
+             LL = fixef(model_random_zip) - 1.96 * se, 
+             UL = fixef(model_random_zip) + 1.96 *se
+             )
+
+print(exp(tab))
 ```
 
+
+```{r}
+index <- c(1:20)
+tab_2 <- data.frame(exp(tab))
+
+plot1 <- ggplot(tab_2, aes(y = index, x = tab_2[, 1])) +
+  geom_point(shape = 18, size = 5) +  
+  geom_errorbarh(aes(xmin = LL, xmax = UL), height = 0.25) +
+  geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) +
+  scale_y_continuous(name = "", breaks=1:20, labels = row.names(tab_2), trans = "reverse") +
+  scale_x_continuous(breaks = seq(0, 2.5, by = 0.5)) + 
+  xlab("Adjusted Odds Ratio (95% CI)") + 
+  ylab(" ") + 
+  theme_bw() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=0)
+  ) +
+  ggtitle("Logistic regression results for odds ratio of COVID-19 related mortality given SARS-CoV-2 positive \n in Orange County")
+
+plot1
+```
 
 ### Interpretations
 
-- We decided to go with a multivariate model since we are able to control for different predictors while simultaneously interpreting the effect of a single predictor. The  covariates in Model 2 that remained significant at the 5% significance level were: age, gender, education, health insurance, 
+- We decided to go with a multivariate model since we are able to control for different predictors while simultaneously interpreting the effect of a single predictor. The covariates in our final model that were significant at the 5% significance level were: age, gender, education, covid icu beds, race(some levels), health insurance (only highest level was significant). The interaction term between time and the covid icu beds predictor was also significiant. 
 
 #### Intercept -----------------------
 
-- Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a ZIP code in the first quartile of college degree and insured with the average population density and average number of ICU beds filled with COVID patients in Orange County. The odds of this individual testing dying is estimated to be .
+- Model intercept represents odds of death for a white female diagnosed with SARS-CoV-2 in the 0 to 4 age group in a ZIP code in the first quartile of college degree and insured with the average population density and average number of ICU beds filled with COVID patients in Orange County. The odds of this individual dying is estimated to be 0 (0,0).
 
 #### Age -----------------------
 
-- For a 10 year increase in age, we expect the odds of death due to COVID-19 to change by a multiplicative factor of ----.
+- For a 10 year increase in age, we observed an associated 2.7-fold increase in the odds of dying from COVID-19.
 
 
 #### Gender -----------------------
 
-- The odds of death from COVID-19 for a male is expected to be ---- times that of a female. 
+- The odds of death from COVID-19 for a male is expected to be 2 times that of a female. 
 
+#### Race -----------------------
+
+- Compared to non-hispanic whites, Asians had a 38% higher odds of dying from COVID-19.
+
+- Compared to non-hispanic whites, Hispanics had a 37% lower odds of dying from
+COVID-19.
+
+- Compared to non-hispanic whites, those with an unknown race had a 56% lower odds of dying from COVID-19.
 
 #### Education -----------------------
 
-- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
-  - The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
-  - The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of college degree is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of college degree.
+*** NOTE: Quartile associated with scaled percentage of adults with a bachelor's degree within a particular ZIP code. Depending on the distribution of the percentages, you will fall within the lower 25%, between 25% and 50%, between 50% and 75%, or the top 25% of the data. For example, if a particular individual's value is Q1, then that would would mean they live in a ZIP code where the percentage of adults with a bachelor's degree is low relative to other ZIP codes. 
+
+- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of college degree is expected to be __0.82__ times that of a similar individual in a ZIP code in the first quartile of college degree.
+  * The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of college degree is expected to be __0.73__ times that of a similar individual in a ZIP code in the first quartile of college degree.
+  * The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of college degree is expected to be __0.54__ times that of a similar individual in a ZIP code in the first quartile of college degree.
   
+- Living in ZIP codes with the highest education levels was also predictive of mortality outcomes. The odds of dying from COVID-19 for an individual in a ZIP code in the third or fourth quartile of college degree was 27% and 46% lower (respectively) than that of a similar individual in a ZIP code in the first quartile of college degree.
   
 #### Health Insurance -----------------------
 
-- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
-  - The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
-  - The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of health insurance is expected to be ---- times that of a similar individual in a ZIP code in the first quartile of health insurance.
+- The odds of death from COVID-19 for an individual in a ZIP code in the __second__ quartile of health insurance is expected to be __0.87__ times that of a similar individual in a ZIP code in the first quartile of health insurance.
+  - The odds of death from COVID-19 for an individual in a ZIP code in the __third__ quartile of health insurance is expected to be __0.97__ times that of a similar individual in a ZIP code in the first quartile of health insurance.
+  * The odds of death from COVID-19 for an individual in a ZIP code in the __fourth__ quartile of health insurance is expected to be __0.61__ times that of a similar individual in a ZIP code in the first quartile of health insurance.
   
   
-#### Population Density (similar effect as house crowding???) -----------
-
-- Persons who tested positive for COVID-19 and lived in ZIP codes with high population densities had ---- % lower/higher odds of dying from COVID-19.
+- Living in a ZIP code with the highest level of health insurance was predictive of mortality outcomes. The odds of dying from COVID-19 for an individual in a ZIP code in the fourth quartile was 39% lower than that of a similar individual in a ZIP code in the first quartile of health insurance.
 
 
 #### Hospital Bed Predictor -----------------------
 
-- Persons who tested positive for COVID-19 and lived in ZIP codes with high levels of occupied ICU beds had ---- % higher odds of dying from COVID-19.
+- The odds of dying from COVID-19 for an individual who tested positive on a day with a high number of occupied ICU beds was 21% lower than that of a similar individual who tested positive on a day with a lower number of occupied ICU beds
 
+#### Interaction Term (adj_time_days:adj_covid_icu_beds) ---------------------------
+
+__Does the effect of the number of occupied ICU beds in OC on the risk of dying from COVID-19 depend on time?__
+
+- The effect of the number of occupied ICU beds in OC on odds of dying from COVID-19 depends on the time of which the individual tested positive (relative to the first testing date).
+
+- The added effect of an increase in time_days by 1 for a 1 unit increase in covid_icu_beds on the odds of dying from COVID-19 is a 24% lower odds.
