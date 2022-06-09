@@ -43,7 +43,9 @@ Code can be found in the corresponding .Rmd files in the analysis folder.
 
 ## Run Models  
 Once given access to the two positivity and mortality data sets, you can run the models build.  
-- In order to run the "positivity_model.Rmd", "mortality_model.Rmd", and "MLprediction.jpynb", you first need to run the "clean-covid-data.R" file found in the analysis folder.  
-- This will load the cleaned data that was merged with the hospital and zip code data. 
+- First, download the individual-level, zip-code level, and hospital datasets (found in data folder) and save them locally  
+- Run the  "analysis/clean-covid-data.R"" file to obtain and save the cleaned/merged datasets  
+- Finally, run either the "mortality_model.Rmd","positivity_model.Rmd", and "MLprediction.jpynb"  
 - After this the model files should be allowed to run properly and illustrate the visualizations created. 
+
 
