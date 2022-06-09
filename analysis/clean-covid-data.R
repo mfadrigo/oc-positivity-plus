@@ -115,12 +115,19 @@ hos_bed_gov <- read_csv(
   na = c("", " "),
   col_types = cols(
     .default = col_skip(),
+    # The County where the hospital is located.
     county = col_character(),
+    # Date for which counts were reported.
     todays_date = col_date("%Y-%m-%d"),
+    # The number of patients currently hospitalized in an inpatient bed who have suspected or confirmed COVID.
     hospitalized_covid_patients = col_double(),
+    # The total number of beds in the facility, including all surge beds, inpatient and outpatient post-surgical beds, labor and delivery unit beds, and observation beds. This includes the total number of beds for which the hospital could provide staff and equipment and is not necessarily reflective of the beds that are staffed at the time the facility reports. This field does not include emergency department (ED) bays.
     all_hospital_beds = col_double(),
+    # The number of laboratory-confirmed positive COVID patients that are in the ICU at the hospital. This includes all ICU beds (NICU, PICU, and adult).
     icu_covid_confirmed_patients = col_double(),
+    # The number of symptomatic patients, with tests for COVID pending laboratory confirmation, that are in the ICU at the hospital. This includes all ICU beds (NICU, PICU, and adult).
     icu_suspected_covid_patients = col_double(),
+    # The number of ICU beds available at the hospital. This includes all ICU beds (NICU, PICU, and adult).
     icu_available_beds = col_double()
   )
 ) %>% 
@@ -180,11 +187,11 @@ hosp_data_merged <- hos_bed_gov %>%
 
 
 
-# Clean all test data ----------------------------------------------------
+# Clean pcr test data ----------------------------------------------------
 ## All test categorizations
 
 pcr_results_original <- read_csv(
-  "/Users/Christie1/Desktop/COVID Project/All PCR tests updated 1.26.21.csv",
+  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/All PCR tests updated 1.26.21.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_integer(),
@@ -338,9 +345,9 @@ usable_tests <- pcr_results_reduced %>%
 
 
 
-# clean and match cases/mortality data ------------------------------------------
+# Clean mortality data  ------------------------------------------
 mortality_og <- read_csv(
-  "/Users/Christie1/Desktop/COVID Project/1.26.21 release to UCI team.csv",
+  "/Users/micahfadrigo/Desktop/STATS170B_COVID_PROJECT/DATA/1.26.21 release to UCI team.csv",
   col_types = cols(
     .default = col_skip(),
     Age = col_double(),
@@ -349,9 +356,9 @@ mortality_og <- read_csv(
     Race = col_character(),
     ReportedCity = col_character(),
     Zip = col_double(),
-    SpCollDt = col_date(),
+    SpCollDt = col_date(), # date of first test positivity ?
     DeathDueCOVID = col_character(),
-    DtDeath = col_date(),
+    DtDeath = col_date(), # date of death
     unique_num = col_character()
   )
 ) 
@@ -364,7 +371,7 @@ mortality_cleaned <-  mortality_og %>%
   select(
     id = unique_num,
     zip = Zip,
-    posted_date = SpCollDt,
+    posted_date = SpCollDt, # posted date = date of first test positivity
     age = Age,
     gender = Gender,
     race = Race,
@@ -400,7 +407,8 @@ mortality_cleaned <-  mortality_og %>%
     ),
     levels = c("white", "asian", "black", "hispanic", "native", "islander", "unknown")
   )) %>% 
-  mutate(
+  mutate( 
+    # rounded number of days between the start date and the person's test positivity date
     time_days = as.integer(round(difftime(
       posted_date, 
       start_date, 
@@ -431,6 +439,7 @@ mortality_reduced <- mortality_cleaned %>%
 # Merge with zip code (and hospital data?)
 mortality_merged <- mortality_reduced  %>% 
   left_join(y = zip_data_merged, by = "zip") %>% 
+  mutate(zip = factor(zip)) %>% 
   left_join(y = hosp_data_merged, by = "posted_date")
 
 
