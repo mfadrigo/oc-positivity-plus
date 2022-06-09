@@ -17,19 +17,23 @@ library(here)
 library(forcats)
 library(corrplot)
 library(reshape2)
+library(kableExtra)
+
+load(here("data/cleaned-data", "usable_tests.Rdata"))
+load(here("data/cleaned-data", "usable_cases.Rdata"))
 ```
 
 ## Test Positivity Data From PCR Tests
 
 ```{r}
-# Test Positivity Data
-load(here("data/cleaned-data", "usable_tests.Rdata"))
+head(usable_tests) # 186,5151 x 33
+head(usable_cases) # 211,251 x 33
 ```
 
 
 ### Exploratory Data Analysis
 
-```{r}
+```{r fig.align="center", fig.cap= "Figure 7. In order to visualize the trends of positivity throughout the year, we created a scatter plot illustrating the number of positive tests for each month of the year. In general, the dataset captures the first and second wave of COVID-19. The first wave occurs from January to March and the second is captured at the end of the year from August to December."}
 ## Positivity Visualization based on month
 
 usable_tests %>%
@@ -83,7 +87,7 @@ usable_cases %>%
 ##### Age
 __Does mortality differ across age groups?__
 
-```{r}
+```{r }
 usable_cases %>% 
   ggplot(aes(x = age_group,
              fill = death_due_to_covid)) +
@@ -94,7 +98,8 @@ usable_cases %>%
   theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
 
-```{r}
+
+```{r fig.align="center", fig.cap= "Figure 5. Age groups that range from zero to thirty-nine years old have little to no deaths due to COVID-19, while ages ranging from forty years old to eighty years old and above have a higher risk of death due to COVID-19. Since the distributions associated with death due to COVID-19 are oppositely skewed, this tells us that there is heterogeneity in risk of death within the age variable. "}
 usable_cases %>% 
   ggplot(aes(x = age,
              fill = death_due_to_covid,
@@ -179,7 +184,7 @@ ggplot(melted_cormat,
 
 ##### Health Insurance
 
-```{r}
+```{r fig.align="center", fig.cap="Figure 6. There is heterogeneity in risk for death within the `percent_insured` variable which describes the percentage of adults within a ZIP code who had health insurance in the previous 5 years. The mode for the distribution representing deaths not due to COVID-19 is 0.067 and the mode for the distribution representing deaths due to COVID-19 is 0.049. This means that of those who did not die from COVID-19, most of them lived in ZIP codes where 6.7% of adults had health insurance in the previous 5 years. Of those who did die from COVID-19, most of them lived in ZIP codes where 4.9% of adults had health insurance in the previous 5 years."}
 ggplot(usable_cases,
        aes(x = percent_insured,
            fill = death_due_to_covid,

@@ -6,11 +6,11 @@ output: html_document
 
 params:
   reclean_data: FALSE
-  refit_model1: TRUE
-  refit_model2: TRUE
-  refit_model3: TRUE
-  refit_model4: TRUE
-  refit_model5: TRUE
+  refit_model1: FALSE
+  refit_model2: FALSE
+  refit_model3: FALSE
+  refit_model4: FALSE
+  refit_model5: FALSE
 
 ---
 
@@ -22,12 +22,14 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(here)
-library(tictoc)
-
+library(tictoc)     
+library(lme4)       # GLM
+library(mgcv)       # GAM modeling
+library(kableExtra) # table formatting
+library(mgcv.helper)
 
 # Positivity Data
 load(here("data/cleaned-data", "usable_tests.Rdata"))
-head(usable_tests)
 
 ```
 
@@ -132,7 +134,7 @@ if (params$refit_model4) {
     formula = covid_positive ~ age_group + sex + race + 
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density  + adj_med_income +
-              s(time_days, bs = "ts", k = -1) + 
+              s(time_days, bs ="ts") + 
               s(zip, bs = "re"), # random intercept in GAM             
     family = binomial, 
     data = usable_tests,
@@ -162,7 +164,7 @@ if (params$refit_model5) {
               adj_perc_bach_quar + adj_perc_insured_quar +
               adj_pop_density  + adj_med_income +
               s(time_days) +
-              ti(time_days, adj_med_income, bs = "ts") + # interaction term in GAM
+              ti(time_days, adj_med_income, bs = "ts") + 
               s(zip, bs = "re"),              
     family = binomial, 
     data = usable_tests,
@@ -177,21 +179,228 @@ if (params$refit_model5) {
 } else {
   load(file = here("analysis/testing-positive-regression-results", "fit_time_gam_inter.Rdata"))
 }
+
+summary(fit_time_gam_inter)
+
 ```
 
 
 # BIC Scores
 
 ```{r}
+# Model 5 had the lowest BIC score 
 compare_bic <- BIC(fit_time_lin, fit_time_quad, fit_time_quad_inter, fit_time_gam, fit_time_gam_inter) 
-
 row.names(compare_bic) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5")
-
-kable(compare_bic,
-      col.names = c("Degrees of Freedom", "BIC"),
-      format = "latex",
-      caption = "Model comparison using BIC supports Model ___ to model odds of testing positive for COVID-19 in Orange County.") %>%
-  kable_styling(latex_options = "HOLD_position")
+compare_bic %>% kbl(caption = "Model Comparison using BIC") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
 ```
+
+```{r}
+##### function 
+compute_ci_gam_logistic <- function(model, alpha = 0.05, param_names) {
+  #does not include intercept or median income
+  model_summary <- summary(model)
+  in_med_inc <- length(model_summary$p.coeff)
+  coeffs <- model_summary$p.coeff[-c(1, in_med_inc)]
+  se <- sqrt(diag(vcov(model, unconditional = TRUE)))[2:(length(coeffs) + 1)]
+  model_sum <- data.frame(
+    "odds" = exp(coeffs),
+    "lower_bound" = exp(coeffs - qnorm(1 - alpha / 2) * se),
+    "upper_bound" = exp(coeffs + qnorm(1 - alpha / 2) * se),
+    "p-value" =  model_summary$p.pv[-c(1, in_med_inc)],
+    "param_names" = param_names
+  )
+  
+  return("model_sum" = model_sum)
+}
+
+parameter_names <- c(
+  "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Male",
+  "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "2nd Quartile", "3rd Quartile", "4th Quartile",
+  " 2nd Quartile", " 3rd Quartile", " 4th Quartile",
+  "Population Density"
+  )
+
+model5 <- compute_ci_gam_logistic(
+  model = fit_time_gam_inter,
+  param_names = parameter_names
+)
+
+gam_smooth_var_ci <- gam.vcomp(fit_time_gam_inter)
+#####
+```
+
+```{r final-model-results-table, , results='asis'}
+fit_final_model <- model5
+
+rr_fm <- round(fit_final_model[, "odds"], 3)
+ci_lb_fm <- round(fit_final_model[, "lower_bound"], 2)
+ci_ub_fm <- round(fit_final_model[, "upper_bound"], 2)
+#p_values_fm <- fit_final_model$p.value
+#p_values_fm <- ifelse(p_values_fm <= 0.001, "0.000", paste(round(p_values_fm, 3)))
+# The 5 accounts for the reference groups
+table_fm <- data.frame(matrix(NA, nrow = nrow(fit_final_model) + 5, ncol = 3))
+colnames(table_fm) <- c("SARS-CoV-2+", "Total", "with (95% CI[note])")
+rownames(table_fm) <- c(
+  "0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", 
+  "35-39", "40-49", "50-59", "60-69", "70-79", "80+",
+  "Female", "Male",
+  "White", "Asian", "Black", "Hispanic", "Native American", "Pacific Islander", "Unknown",
+  "1st Quartile", "2nd Quartile", "3rd Quartile", "4th Quartile",
+  "1st Quartile ", "2nd Quartile ", "3rd Quartile ", "4th Quartile ",
+  "Population Density (1000ppl/km^2)"
+  )
+reference_group <- c(
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE,
+  TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  TRUE, FALSE, FALSE, FALSE,
+  FALSE
+  )
+          
+non_ref_counter <- 1
+for(i in 1:nrow(table_fm)) {
+  if (reference_group[i]) {
+    #table_fm[i, 1] <- "Reference"
+    table_fm[i, 3] <- "Reference"
+  } else {
+    table_fm[i, 3] <- paste(rr_fm[non_ref_counter], " (", 
+                          ci_lb_fm[non_ref_counter], ", ", 
+                          ci_ub_fm[non_ref_counter], ")", 
+                          sep = "")
+    #table_fm[i, 2] <- p_values_fm[non_ref_counter]
+    non_ref_counter <- non_ref_counter + 1
+  }
+}      
+
+variable_counts <- data.frame(matrix(NA,  nrow = nrow(fit_final_model) + 4, ncol = 2))
+all_pcr_ppl <- usable_tests[!duplicated(usable_tests$id), ]
+cov_pos_pcr_ppl <- all_pcr_ppl[all_pcr_ppl$covid_positive == 1, ]
+quant_vars <- c("pop_density")
+order_quant_vars <- c(nrow(table_fm) - 1)
+variable_counts[order_quant_vars, c(1)] <- c("")
+
+qual_vars <- c("age_group", "sex", "race", "adj_perc_bach_quar", "adj_perc_insured_quar")
+order_qual_vars <- (1:nrow(table_fm))[-order_quant_vars]
+
+qual_vars_ordered <- c(
+  "age_group.0-4","age_group.5-9", "age_group.10-14", "age_group.15-19",
+  "age_group.20-24", "age_group.25-29", "age_group.30-34", "age_group.35-39",
+  "age_group.40-49", "age_group.50-59", "age_group.60-69", "age_group.70-79",
+  "age_group.80+", 
+  "sex.female", "sex.male", 
+  "race.white", "race.asian",
+  "race.black", "race.hispanic",
+  "race.native", "race.islander",
+  "race.unknown",
+  "adj_perc_bach_quar.Q1", "adj_perc_bach_quar.Q2",
+  "adj_perc_bach_quar.Q3", "adj_perc_bach_quar.Q4",
+  "adj_perc_insured_quar.Q1", "adj_perc_insured_quar.Q2",
+  "adj_perc_insured_quar.Q3", "adj_perc_insured_quar.Q4"
+  )
+ 
+calc_freq <- function(df, order_vars) {
+  qual_count <- unlist(apply(df, MARGIN = 2, FUN = table))
+
+  qual_count <- qual_count[order_vars]
+  qual_freq <- round(100 * qual_count / nrow(df), 2)
+  paste(qual_count, " (", qual_freq, "%)", sep = "")
+}
+
+variable_counts[order_qual_vars, 2] <- calc_freq(all_pcr_ppl[, qual_vars], qual_vars_ordered)
+variable_counts[order_qual_vars, 1] <- calc_freq(cov_pos_pcr_ppl[, qual_vars], qual_vars_ordered)
+
+table_fm[, 2] <- variable_counts[, 2]
+table_fm[, 1] <- variable_counts[, 1]
+
+fm_sum <- summary(fit_time_gam)
+intercept <- paste0(
+  round(exp(fm_sum$p.coeff[1]), 3),
+  " (",
+  round(exp(fm_sum$p.coeff[1] - qnorm(0.975) * fm_sum$se[1]), 2),
+  ",",
+  round(exp(fm_sum$p.coeff[1] + qnorm(0.975) * fm_sum$se[1]), 2),
+  ")"
+)
+
+model5 %>% kbl(caption = "Model 5 Logistic Results ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+table_fm %>% kbl(caption =  "Model 5 logistic regression results for linear fixed effects of odds of testing positive for SARS-CoV-2 in Orange County. This table excludes the coefficient for median income due to the interaction between median income and time.") %>% 
+  kable_classic(full_width = F) %>% 
+  pack_rows("Age", 1, 13, bold = FALSE) %>%
+  pack_rows("Gender", 14,15, bold = FALSE) %>%
+  pack_rows("Race/ethnicity", 16, 23, bold = FALSE) %>%
+  pack_rows("% with College Degree[note]", 24, 27, bold = FALSE) %>%
+  pack_rows("% with Insurance", 28, 31, bold = FALSE) %>% 
+  add_header_above(c(" " = 1, "Counts" = 2, "Adjusted Odds Ratio[note]" = 1), line = FALSE)
+
+```
+
+```{r fig.align="center", fig.cap="Figure 5. Model 5 results for each fixed effects odds of testing positive for COVID-19 in Orange County. Note that median income and time were excluded due to the interaction term. Groups 10-14 and 15-19 had almost 1.8 times the odds of testing positive than individuals in groups 0-4. A dotted line was also added to help illustrate which features were significant."}
+
+fm_results_with_ref <- rbind(
+  c(1, 0.99, 1.01, 0, paste0(c("Age", rep(" ", 34), "[ref: 0-4 years]"), collapse = "")),
+  model5[1:12, ],
+  c(1, 0.99, 1.01, 0, paste0(c("Gender", rep(" ", 33), "[ref: Female]"), collapse = "")),
+  model5[13, ],
+  c(1, 0.99, 1.01, 0, paste0(c("Race/ethnicity", rep(" ", 25), "[ref: White]"), collapse = "")),
+  model5[14:19, ],
+  c(1, 0.99, 1.01, 0, "% with College Degree [ref: 1st Quartile]"),
+  model5[20:22, ],
+  c(1, 0.99, 1.01, 0, paste0(c("% with Insurance", rep(" ", 10), "[ref: 1st Quartile]"), collapse = "")),
+  model5[23:25, ],
+  c(as.character(model5[26, -5]), "Population Density (1000ppl/km^2)")
+)
+
+fm_results_with_ref$odds <- as.double(fm_results_with_ref$odds)
+fm_results_with_ref$lower_bound <- as.double(fm_results_with_ref$lower_bound)
+fm_results_with_ref$upper_bound <- as.double(fm_results_with_ref$upper_bound)
+
+variable_colors <- c(
+  "white",
+  rep("black", 12),
+  "white",
+  rep("black", 1),
+  "white",
+  rep("black", 6),
+  "white",
+  rep("black", 3),
+  "white",
+  rep("black", 4)
+)
+
+
+ggplot(fm_results_with_ref, aes(x = param_names, y = odds), size = 5) +
+  ylim(min(fm_results_with_ref$lower_bound), max(fm_results_with_ref$upper_bound)) +
+  geom_point(color = variable_colors) +
+  geom_linerange(aes(ymin = lower_bound, ymax = upper_bound), color = variable_colors) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+  ylab("Adjusted Odds Ratio") +
+  coord_flip() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.x=element_text(size = 12, colour="black"),
+    axis.text.y=element_text(colour="black", hjust = 1),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    panel.grid.major = element_line(colour = "gray"),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust=0),
+    plot.caption.position = "plot",
+    plot.caption = element_text(hjust = 0)
+  ) + 
+  scale_x_discrete(limits = rev(fm_results_with_ref$param_names)) +
+  scale_y_continuous(breaks = seq(0, 2.5, by = 0.5)) +
+  ggtitle("Logistic regression odds ratio of testing COVID positive \n in Orange County")
+
+```
+
+
+
 
 
